@@ -1,6 +1,7 @@
 import os
+import pandas as pd
 from shapely.geometry.polygon import Polygon
-from sentinelhub import Geometry, CRS, bbox_to_dimensions, DataCollection, SentinelHubStatistical, SHConfig
+from sentinelhub import Geometry, CRS, bbox_to_dimensions, DataCollection, SentinelHubStatistical, SHConfig, parse_time
 
 
 class Config:
@@ -39,6 +40,8 @@ class Indicator(Config):
         self.aggregation = None
         self.eval_script = None
         self.request = None
+        self.stats = None
+        self.dataframe = []
 
         self._get_geometry()
         self._get_dimensions()
@@ -114,6 +117,84 @@ class Indicator(Config):
             config=self.config
         )
 
+    def get_data(self):
+        # self.stats = self.request.get_data()[0]
+        self.stats = {
+            'data': [
+                {
+                    'interval': {
+                        'from': '2022-11-03T00:00:00Z',
+                        'to': '2022-11-04T00:00:00Z'
+                    },
+                    'outputs': {
+                        'default': {
+                            'bands': {
+                                'B0': {
+                                    'stats': {
+                                        'min': -32.855716705322266,
+                                        'max': 0.0,
+                                        'mean': -17.766170086013563,
+                                        'stDev': 4.783611955936163,
+                                        'sampleCount': 3410,
+                                        'noDataCount': 2014
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ],
+            'status': 'OK'
+        }
+        print(self.stats)
+
+    @staticmethod
+    def get_band_stats(bands):
+        for key, values in bands.items():
+            band = Band(name=key, stats=values["stats"])
+            band.check_valid()
+            yield band
+
+    def stats_to_df(self):
+        for item in self.stats["data"]:
+            df_entry = {"interval_from": parse_time(item["interval"]["from"]),
+                        "interval_to": parse_time(item["interval"]["to"])}
+
+            bands = Bands()
+
+            for band in self.get_band_stats(item["outputs"]["default"]["bands"]):
+                if not band.valid:
+                    continue
+
+                for stat_name, stat_value in band.stats.items():
+                    df_entry[f"{band.name}_{stat_name}"] = stat_value
+
+                bands.bands.append(band)
+
+            if bands.check_valid():
+                self.dataframe.append(df_entry)
+
+        self.dataframe = pd.DataFrame(self.dataframe)
+
+
+class Band:
+    def __init__(self, name=None, stats=None):
+        self.name = name
+        self.valid = False
+        self.stats = stats
+
+    def check_valid(self):
+        if self.stats["sampleCount"] > self.stats["noDataCount"]:
+            self.valid = True
+
+
+class Bands:
+    def __init__(self):
+        self.bands = []
+
+    def check_valid(self):
+        return any([band.valid for band in self.bands])
+
 
 if __name__ == "__main__":
     aoi = Polygon([
@@ -138,5 +219,6 @@ if __name__ == "__main__":
         end_date="2022-11-10"
     )
 
-    indicator.get_request()
-    stats = indicator.request.get_data()[0]
+    # indicator.get_request()
+    indicator.get_data()
+    indicator.stats_to_df()
