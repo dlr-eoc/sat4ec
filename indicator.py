@@ -1,7 +1,17 @@
 import os
 import pandas as pd
+from pathlib import Path
+from datetime import datetime
 from shapely.geometry.polygon import Polygon
-from sentinelhub import Geometry, CRS, bbox_to_dimensions, DataCollection, SentinelHubStatistical, SHConfig, parse_time
+from sentinelhub import (
+    Geometry,
+    CRS,
+    bbox_to_dimensions,
+    DataCollection,
+    SentinelHubStatistical,
+    SHConfig,
+    parse_time,
+)
 
 
 class Config:
@@ -28,7 +38,16 @@ class Config:
 
 
 class Indicator(Config):
-    def __init__(self, aoi=None, start_date=None, end_date=None, crs=CRS.WGS84, resolution=5, ascending=True):
+    def __init__(
+        self,
+        aoi=None,
+        out_dir=None,
+        start_date=None,
+        end_date=None,
+        crs=CRS.WGS84,
+        resolution=5,
+        ascending=True,
+    ):
         super().__init__()
         self.aoi = aoi
         self.crs = crs
@@ -41,7 +60,8 @@ class Indicator(Config):
         self.eval_script = None
         self.request = None
         self.stats = None
-        self.dataframe = []
+        self.dataframe = None
+        self.out_dir = out_dir
 
         self._get_geometry()
         self._get_dimensions()
@@ -62,6 +82,11 @@ class Indicator(Config):
 
         else:
             self.collection = DataCollection.SENTINEL1_IW_DES
+
+    def _correct_datatypes(self):
+        # Select columns with float64 dtype
+        float64_cols = list(self.dataframe.select_dtypes(include="float64"))
+        self.dataframe[float64_cols] = self.dataframe[float64_cols].astype("float32")
 
     def get_request(self):
         # evalscript (unit: dB)
@@ -102,51 +127,31 @@ class Indicator(Config):
             aggregation=SentinelHubStatistical.aggregation(
                 evalscript=self.eval_script,
                 time_interval=self.interval,
-                aggregation_interval='P1D',  # interval set to 1 day increment
-                size=self.size
+                aggregation_interval="P1D",  # interval set to 1 day increment
+                size=self.size,
             ),
             input_data=[
                 SentinelHubStatistical.input_data(
                     self.collection,
-                    other_args={"dataFilter": {"mosaickingOrder": "mostRecent", "resolution": "HIGH"},
-                                "processing": {"orthorectify": "True", "backCoeff": "SIGMA0_ELLIPSOID",
-                                               "demInstance": "COPERNICUS"}},
+                    other_args={
+                        "dataFilter": {
+                            "mosaickingOrder": "mostRecent",
+                            "resolution": "HIGH",
+                        },
+                        "processing": {
+                            "orthorectify": "True",
+                            "backCoeff": "SIGMA0_ELLIPSOID",
+                            "demInstance": "COPERNICUS",
+                        },
+                    },
                 )
             ],
             geometry=self.geometry,
-            config=self.config
+            config=self.config,
         )
 
     def get_data(self):
-        # self.stats = self.request.get_data()[0]
-        self.stats = {
-            'data': [
-                {
-                    'interval': {
-                        'from': '2022-11-03T00:00:00Z',
-                        'to': '2022-11-04T00:00:00Z'
-                    },
-                    'outputs': {
-                        'default': {
-                            'bands': {
-                                'B0': {
-                                    'stats': {
-                                        'min': -32.855716705322266,
-                                        'max': 0.0,
-                                        'mean': -17.766170086013563,
-                                        'stDev': 4.783611955936163,
-                                        'sampleCount': 3410,
-                                        'noDataCount': 2014
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            ],
-            'status': 'OK'
-        }
-        print(self.stats)
+        self.stats = self.request.get_data()[0]
 
     @staticmethod
     def get_band_stats(bands):
@@ -156,9 +161,13 @@ class Indicator(Config):
             yield band
 
     def stats_to_df(self):
+        target = []
+
         for item in self.stats["data"]:
-            df_entry = {"interval_from": parse_time(item["interval"]["from"]),
-                        "interval_to": parse_time(item["interval"]["to"])}
+            df_entry = {
+                "interval_from": pd.to_datetime(parse_time(item["interval"]["from"])),
+                "interval_to": pd.to_datetime(parse_time(item["interval"]["to"])),
+            }
 
             bands = Bands()
 
@@ -172,9 +181,21 @@ class Indicator(Config):
                 bands.bands.append(band)
 
             if bands.check_valid():
-                self.dataframe.append(df_entry)
+                target.append(df_entry)
 
-        self.dataframe = pd.DataFrame(self.dataframe)
+        self.dataframe = pd.DataFrame(target)
+        self._correct_datatypes()
+
+    def save(self):
+        out_file = self.out_dir.joinpath(
+            datetime.now().strftime("%Y_%m_%d"),
+            f"indicator_1_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.csv",
+        )
+
+        if not out_file.parent.exists():
+            out_file.parent.mkdir(parents=True, exist_ok=True)
+
+        self.dataframe.to_csv(out_file)
 
 
 class Band:
@@ -197,28 +218,33 @@ class Bands:
 
 
 if __name__ == "__main__":
-    aoi = Polygon([
-        (3.754824, 51.096633),
-        (3.753451, 51.096242),
-        (3.755747, 51.093102),
-        (3.755661, 51.09511),
-        (3.755211, 51.094989),
-        (3.754953, 51.095393),
-        (3.755211, 51.09608),
-        (3.755125, 51.0967),
-        (3.755447, 51.097953),
-        (3.755168, 51.098048),
-        (3.755009, 51.097886),
-        (3.754116, 51.097697),
-        (3.754824, 51.096633),
-    ])
+    aoi = Polygon(
+        [
+            (3.754824, 51.096633),
+            (3.753451, 51.096242),
+            (3.755747, 51.093102),
+            (3.755661, 51.09511),
+            (3.755211, 51.094989),
+            (3.754953, 51.095393),
+            (3.755211, 51.09608),
+            (3.755125, 51.0967),
+            (3.755447, 51.097953),
+            (3.755168, 51.098048),
+            (3.755009, 51.097886),
+            (3.754116, 51.097697),
+            (3.754824, 51.096633),
+        ]
+    )
 
     indicator = Indicator(
         aoi=aoi,
-        start_date="2022-11-01",
-        end_date="2022-11-10"
+        out_dir=Path(r"/mnt/data1/gitlab/sat4ec/results"),
+        start_date="2020-11-01",
+        end_date="2022-11-30",
+        ascending=False,
     )
 
-    # indicator.get_request()
+    indicator.get_request()
     indicator.get_data()
     indicator.stats_to_df()
+    indicator.save()
