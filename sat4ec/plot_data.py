@@ -12,14 +12,15 @@ pd.options.display.max_columns = 100
 class Plot:
     def __init__(self, data=None):
         if isinstance(data, (str, Path)):
-            if data.is_file() and data.suffix == "csv":
+            if data.is_file() and data.suffix == ".csv":
                 self._get_dataframe(data)
 
             elif data.is_dir():
                 data = list(data.glob("*.csv"))[-1]  # get latest dataset
                 self._get_dataframe(data)
 
-            self._file = data
+            self.filename = data
+            self._get_orbit()
 
         elif isinstance(data, pd.DataFrame):
             self.dataframe = data
@@ -30,6 +31,10 @@ class Plot:
 
     def _get_dataframe(self, data):
         self.dataframe = pd.read_csv(data)
+
+    def _get_orbit(self):
+        # TODO: also get orbit from dataframe if not file was provided
+        self.asc = True if self.filename.stem.split("_")[2] == "asc" else False
 
     def _prepare_dataframe(self):
         self.dataframe["interval_from"] = pd.to_datetime(self.dataframe["interval_from"])  # transform to datetime
@@ -62,11 +67,12 @@ class Plot:
         sns.lineplot(x="month_short", y="B0_stDev", data=self.dataframe)
 
     def save_plot(self):
-        self.fig.savefig(Path.cwd().joinpath("test.jpg"))
+        orbit = "asc" if self.asc else "des"
+        self.fig.savefig(Path.cwd().joinpath(f"{orbit}.jpg"))
 
 
 if __name__ == "__main__":
-    plotter = Plot(data=Path(r"/mnt/data1/gitlab/sat4ec/results/2023_03_14"))
+    plotter = Plot(data=Path(r"/mnt/data1/gitlab/sat4ec/results/2023_08_09/indicator_1_asc_2023_08_09_10_07_47.csv"))
     plotter.plot_dataframe()
     plotter.save_plot()
     # plotter.plot_monthly_aggregated()

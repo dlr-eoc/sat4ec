@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from aoi_check import AOI
 from pathlib import Path
 from datetime import datetime
 from shapely.geometry.polygon import Polygon
@@ -68,6 +69,7 @@ class Indicator(Config):
         self._get_collection()
 
     def _get_geometry(self):
+        print(type(self.aoi))
         self.geometry = Geometry(self.aoi, crs=self.crs)  # shapely polygon with CRS
 
     def _get_dimensions(self):
@@ -88,7 +90,69 @@ class Indicator(Config):
         float64_cols = list(self.dataframe.select_dtypes(include="float64"))
         self.dataframe[float64_cols] = self.dataframe[float64_cols].astype("float32")
 
-    def get_request(self):
+    def get_request_grd(self):
+        # evalscript (unit: dB)
+        self.eval_script = """
+        //VERSION=3
+        function setup() {
+          return {
+            input: [{
+              bands: ["VH", "dataMask"]
+            }],
+            output: [
+              {
+                id: "default",
+                bands: 1
+              },
+              {
+                id: "dataMask",
+                bands: 1
+              }]
+          };
+        }
+
+        function evaluatePixel(samples) {
+            return {
+                default: [toDb(samples.VH)],
+                dataMask: [samples.dataMask],
+            };
+        }
+
+        function toDb(sigma_linear) {
+           if(sigma_linear === 0) return 0;
+           return (10 * Math.log10(sigma_linear))  //equation from GEE Sentinel-1 Prepocessing
+        }
+        """
+
+        # statistical API request (unit: dB)
+        self.request = SentinelHubStatistical(
+            aggregation=SentinelHubStatistical.aggregation(
+                evalscript=self.eval_script,
+                time_interval=self.interval,
+                aggregation_interval="P1D",  # interval set to 1 day increment
+                size=self.size,
+            ),
+            input_data=[
+                SentinelHubStatistical.input_data(
+                    self.collection,
+                    other_args={
+                        "dataFilter": {
+                            "mosaickingOrder": "mostRecent",
+                            "resolution": "HIGH",
+                        },
+                        "processing": {
+                            "orthorectify": "True",
+                            "backCoeff": "SIGMA0_ELLIPSOID",
+                            "demInstance": "COPERNICUS",
+                        },
+                    },
+                )
+            ],
+            geometry=self.geometry,
+            config=self.config,
+        )
+
+    def get_request_slc(self):
         # evalscript (unit: dB)
         self.eval_script = """
         //VERSION=3
@@ -187,9 +251,10 @@ class Indicator(Config):
         self._correct_datatypes()
 
     def save(self):
+        orbit = "asc" if self.ascending else "des"
         out_file = self.out_dir.joinpath(
             datetime.now().strftime("%Y_%m_%d"),
-            f"indicator_1_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.csv",
+            f"indicator_1_{orbit}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.csv",
         )
 
         if not out_file.parent.exists():
@@ -218,33 +283,19 @@ class Bands:
 
 
 if __name__ == "__main__":
-    aoi = Polygon(
-        [
-            (3.754824, 51.096633),
-            (3.753451, 51.096242),
-            (3.755747, 51.093102),
-            (3.755661, 51.09511),
-            (3.755211, 51.094989),
-            (3.754953, 51.095393),
-            (3.755211, 51.09608),
-            (3.755125, 51.0967),
-            (3.755447, 51.097953),
-            (3.755168, 51.098048),
-            (3.755009, 51.097886),
-            (3.754116, 51.097697),
-            (3.754824, 51.096633),
-        ]
-    )
+    with AOI(data=Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/munich_airport_1.geojson")) as aoi:
+        aoi.get_features()
 
-    indicator = Indicator(
-        aoi=aoi,
-        out_dir=Path(r"/mnt/data1/gitlab/sat4ec/results"),
-        start_date="2020-11-01",
-        end_date="2022-11-30",
-        ascending=False,
-    )
+        indicator = Indicator(
+            aoi=aoi.geometry,
+            out_dir=Path(r"/mnt/data1/gitlab/sat4ec/results"),
+            start_date="2020-11-01",
+            end_date="2022-11-30",
+            ascending=True,
+        )
 
-    indicator.get_request()
-    indicator.get_data()
-    indicator.stats_to_df()
-    indicator.save()
+        # indicator.get_request_grd()
+        indicator.get_request_slc()
+        indicator.get_data()
+        indicator.stats_to_df()
+        indicator.save()
