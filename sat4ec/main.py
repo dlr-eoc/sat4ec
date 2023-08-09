@@ -4,6 +4,7 @@ import pandas as pd
 import shutil
 import traceback
 from aoi_check import AOI
+from anomaly_detection import Anomaly
 from pathlib import Path
 from datetime import datetime
 from system import get_logger
@@ -320,6 +321,10 @@ def main(aoi_data=None, start_date=None, end_date=None, save_plot=False):
         indicator.stats_to_df()
         indicator.save()
 
+        anomaly = Anomaly(df=indicator.dataframe, column="B0_max", out_dir=OUT_DIR, out_name="test")
+        anomaly.apply_anomaly_detection(normalize=False)
+        anomaly.plot_anomaly()
+
 
 def run():
     args = parse_commandline_args()
@@ -338,7 +343,7 @@ def run():
 
     # check if dates are in format YYYY-MM-DD
     for _date in [args.start_date, args.end_date]:
-        _date = datetime.strptime(_date, "%y-%m-%d")
+        _date = datetime.strptime(_date, "%Y-%m-%d")
 
     main(
         aoi_data=args.aoi_data,
@@ -365,8 +370,8 @@ def parse_commandline_args():
 
 
 if __name__ == "__main__":
-    try:
-        run()
-
-    except:
-        logger.error(traceback.format_exc())
+    # try:
+    run()
+    #
+    # except:
+    #     logger.error(traceback.format_exc())
