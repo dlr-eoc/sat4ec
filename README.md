@@ -1,8 +1,40 @@
 # Sat4Ec
 
+## Usage
 
+Build the docker image.
 
-## Installation
+```
+docker build -f sat4ec.Dockerfile -t sat4ec .
+```
+
+Execute the docker container.
+
+```
+docker run
+-v /PATH/TO/INPUT/DIR/:/scratch/in/
+-v /PATH/TO/OUTDIR/:/scratch/out/
+--rm sat4ec
+--aoi_data <Path to AOI file or AOI as POLYGON or AOI as WKT>
+--start_date <Begin of the time series, as YYYY-MM-DD>
+--end_date <End of the time series, as YYYY-MM-DD>
+--save_plot <Wether or not to save the results as a plot, boolean>
+```
+
+An exemplarily docker call looks like this:
+
+```
+docker run
+-v /PATH/TO/INPUT/DIR/:/scratch/in/
+-v /PATH/TO/OUTDIR/:/scratch/out/
+--rm sat4ec
+--aoi_data /path/to/aoi.geojson
+--start_date 2020-01-01
+--end_date 2020-12-31
+--save_plot False
+```
+
+## Development
 
 ```
 conda create -n sat4ec Python=3.11

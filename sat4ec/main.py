@@ -1,9 +1,12 @@
+import argparse
 import os
 import pandas as pd
+import shutil
+import traceback
 from aoi_check import AOI
 from pathlib import Path
 from datetime import datetime
-from shapely.geometry.polygon import Polygon
+from system import get_logger
 from sentinelhub import (
     Geometry,
     CRS,
@@ -13,6 +16,24 @@ from sentinelhub import (
     SHConfig,
     parse_time,
 )
+
+
+# container-specific paths
+# IN_DIR = Path("/scratch/in")
+# OUT_DIR = Path("/scratch/out")
+OUT_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/results")
+
+
+# clean output directory
+for item in Path(OUT_DIR).glob("*"):
+    if item.is_file():
+        item.unlink()
+
+    else:
+        shutil.rmtree(item, ignore_errors=True)
+
+# set up logging
+logger = get_logger(__name__, out_dir=OUT_DIR)
 
 
 class Config:
@@ -69,7 +90,6 @@ class Indicator(Config):
         self._get_collection()
 
     def _get_geometry(self):
-        print(type(self.aoi))
         self.geometry = Geometry(self.aoi, crs=self.crs)  # shapely polygon with CRS
 
     def _get_dimensions(self):
@@ -282,15 +302,15 @@ class Bands:
         return any([band.valid for band in self.bands])
 
 
-if __name__ == "__main__":
-    with AOI(data=Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/munich_airport_1.geojson")) as aoi:
+def main(aoi_data=None, start_date=None, end_date=None, save_plot=False):
+    with AOI(data=aoi_data) as aoi:
         aoi.get_features()
 
         indicator = Indicator(
             aoi=aoi.geometry,
-            out_dir=Path(r"/mnt/data1/gitlab/sat4ec/results"),
-            start_date="2020-11-01",
-            end_date="2022-11-30",
+            out_dir=OUT_DIR,
+            start_date=start_date,
+            end_date=end_date,
             ascending=True,
         )
 
@@ -299,3 +319,54 @@ if __name__ == "__main__":
         indicator.get_data()
         indicator.stats_to_df()
         indicator.save()
+
+
+def run():
+    args = parse_commandline_args()
+
+    if args.save_plot.lower() == "false":
+        save_plot = False
+
+    elif args.save_plot.lower() == "true":
+        save_plot = True
+
+    else:
+        raise ValueError(f"The requested value {args.save_plot} is invalid for the argument --save_plot.")
+
+    if not args.start_date and not args.end_date:
+        raise ValueError(f"You must provide a start and an end date.")
+
+    # check if dates are in format YYYY-MM-DD
+    for _date in [args.start_date, args.end_date]:
+        _date = datetime.strptime(_date, "%y-%m-%d")
+
+    main(
+        aoi_data=args.aoi_data,
+        start_date=args.start_date,
+        end_date=args.end_date,
+        save_plot=save_plot,
+    )
+
+
+def create_parser():
+    parser = argparse.ArgumentParser(description="Compute aggregated statistics on Sentinel-1 data")
+    parser.add_argument("--aoi_data", default="dummy", help="Path to AOI.[GEOJSON, SHP, GPKG], AOI geometry as WKT, "
+                                                            "Polygon or Multipolygon.")
+    parser.add_argument("--start_date", help="Begin of the time series, as YYYY-MM-DD, like 2020-11-01")
+    parser.add_argument("--end_date", help="End of the time series, as YYYY-MM-DD, like 2020-11-01")
+    parser.add_argument("--save_plot", type=str, help="Save plot, boolean, default is False",
+                        default="false")
+
+    return parser
+
+
+def parse_commandline_args():
+    return create_parser().parse_args()
+
+
+if __name__ == "__main__":
+    try:
+        run()
+
+    except:
+        logger.error(traceback.format_exc())
