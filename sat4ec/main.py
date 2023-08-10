@@ -111,69 +111,7 @@ class Indicator(Config):
         float64_cols = list(self.dataframe.select_dtypes(include="float64"))
         self.dataframe[float64_cols] = self.dataframe[float64_cols].astype("float32")
 
-    def get_request_grd(self):
-        # evalscript (unit: dB)
-        self.eval_script = """
-        //VERSION=3
-        function setup() {
-          return {
-            input: [{
-              bands: ["VH", "dataMask"]
-            }],
-            output: [
-              {
-                id: "default",
-                bands: 1
-              },
-              {
-                id: "dataMask",
-                bands: 1
-              }]
-          };
-        }
-
-        function evaluatePixel(samples) {
-            return {
-                default: [toDb(samples.VH)],
-                dataMask: [samples.dataMask],
-            };
-        }
-
-        function toDb(sigma_linear) {
-           if(sigma_linear === 0) return 0;
-           return (10 * Math.log10(sigma_linear))  //equation from GEE Sentinel-1 Prepocessing
-        }
-        """
-
-        # statistical API request (unit: dB)
-        self.request = SentinelHubStatistical(
-            aggregation=SentinelHubStatistical.aggregation(
-                evalscript=self.eval_script,
-                time_interval=self.interval,
-                aggregation_interval="P1D",  # interval set to 1 day increment
-                size=self.size,
-            ),
-            input_data=[
-                SentinelHubStatistical.input_data(
-                    self.collection,
-                    other_args={
-                        "dataFilter": {
-                            "mosaickingOrder": "mostRecent",
-                            "resolution": "HIGH",
-                        },
-                        "processing": {
-                            "orthorectify": "True",
-                            "backCoeff": "SIGMA0_ELLIPSOID",
-                            "demInstance": "COPERNICUS",
-                        },
-                    },
-                )
-            ],
-            geometry=self.geometry,
-            config=self.config,
-        )
-
-    def get_request_slc(self):
+    def get_request_grd(self, pol="VV"):
         # evalscript (unit: dB)
         self.eval_script = """
         //VERSION=3
@@ -270,6 +208,7 @@ class Indicator(Config):
 
         self.dataframe = pd.DataFrame(target)
         self._correct_datatypes()
+        self.dataframe = self.dataframe.set_index("interval_from")
 
     def save(self):
         orbit = "asc" if self.ascending else "des"
@@ -303,7 +242,8 @@ class Bands:
         return any([band.valid for band in self.bands])
 
 
-def main(aoi_data=None, start_date=None, end_date=None, save_plot=False):
+def main(aoi_data=None, start_date=None, end_date=None, save_plot=False, anomaly_options=None):
+    print(anomaly_options)
     with AOI(data=aoi_data) as aoi:
         aoi.get_features()
 
@@ -315,14 +255,13 @@ def main(aoi_data=None, start_date=None, end_date=None, save_plot=False):
             ascending=True,
         )
 
-        # indicator.get_request_grd()
-        indicator.get_request_slc()
+        indicator.get_request_grd()
         indicator.get_data()
         indicator.stats_to_df()
         indicator.save()
 
         anomaly = Anomaly(df=indicator.dataframe, column="B0_max", out_dir=OUT_DIR, out_name="test")
-        anomaly.apply_anomaly_detection(normalize=False)
+        anomaly.apply_anomaly_detection(normalize=True)
         anomaly.plot_anomaly()
 
 
@@ -345,11 +284,20 @@ def run():
     for _date in [args.start_date, args.end_date]:
         _date = datetime.strptime(_date, "%Y-%m-%d")
 
+    if args.anomalies:
+        anomaly_options = {
+            "invert": False
+        }
+
+    else:
+        anomaly_options = None
+
     main(
         aoi_data=args.aoi_data,
         start_date=args.start_date,
         end_date=args.end_date,
         save_plot=save_plot,
+        anomaly_options=anomaly_options
     )
 
 
@@ -359,7 +307,8 @@ def create_parser():
                                                             "Polygon or Multipolygon.")
     parser.add_argument("--start_date", help="Begin of the time series, as YYYY-MM-DD, like 2020-11-01")
     parser.add_argument("--end_date", help="End of the time series, as YYYY-MM-DD, like 2020-11-01")
-    parser.add_argument("--save_plot", type=str, help="Save plot, boolean, default is False",
+    parser.add_argument("-a", "--anomalies", help="Use anomaly detection to list scenes of high or low backscatter")
+    parser.add_argument("-s", "--save_plot", type=str, help="Save plot, boolean, default is False",
                         default="false")
 
     return parser

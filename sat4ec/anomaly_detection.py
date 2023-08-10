@@ -52,7 +52,7 @@ class Anomaly:
 
         if normalize:
             self._normalize_df()
-        print(self.df.loc[:, [self.column]])
+
         self.ad.fit(self.df.loc[:, [self.column]])
         self.anomalies = self.ad.detect(self.df.loc[:, [self.column]])  # predict if a flood is present
 
