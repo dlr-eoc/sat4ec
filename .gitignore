@@ -1,0 +1,6 @@
+*.jpg
+.idea/
+sat4ec/__pycache__
+results
+credentials
+obsolete

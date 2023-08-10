@@ -267,6 +267,7 @@ def main(aoi_data=None, start_date=None, end_date=None, save_plot=False, anomaly
 
 def run():
     args = parse_commandline_args()
+    print(args)
 
     if args.save_plot.lower() == "false":
         save_plot = False
@@ -284,10 +285,13 @@ def run():
     for _date in [args.start_date, args.end_date]:
         _date = datetime.strptime(_date, "%Y-%m-%d")
 
-    if args.anomalies:
+    if isinstance(args.anomalies, list):
         anomaly_options = {
             "invert": False
         }
+
+        if "invert" in args.anomalies:
+            anomaly_options["invert"] = True
 
     else:
         anomaly_options = None
@@ -304,12 +308,24 @@ def run():
 def create_parser():
     parser = argparse.ArgumentParser(description="Compute aggregated statistics on Sentinel-1 data")
     parser.add_argument("--aoi_data", default="dummy", help="Path to AOI.[GEOJSON, SHP, GPKG], AOI geometry as WKT, "
-                                                            "Polygon or Multipolygon.")
-    parser.add_argument("--start_date", help="Begin of the time series, as YYYY-MM-DD, like 2020-11-01")
-    parser.add_argument("--end_date", help="End of the time series, as YYYY-MM-DD, like 2020-11-01")
-    parser.add_argument("-a", "--anomalies", help="Use anomaly detection to list scenes of high or low backscatter")
-    parser.add_argument("-s", "--save_plot", type=str, help="Save plot, boolean, default is False",
-                        default="false")
+                                                            "Polygon or Multipolygon.",
+                        metavar="AOI"
+                        )
+    parser.add_argument("--start_date", help="Begin of the time series, as YYYY-MM-DD, like 2020-11-01", metavar="YYYY-MM-DD")
+    parser.add_argument("--end_date", help="End of the time series, as YYYY-MM-DD, like 2020-11-01", metavar="YYYY-MM-DD")
+    parser.add_argument("--anomalies",
+                        nargs="*",
+                        choices=["invert"],
+                        help="Use anomaly detection to list scenes of high or low backscatter. Call without choices "
+                             "to apply default parameters. Consult the README for more info.")
+
+    parser.add_argument("--save_plot",
+                        nargs="?",
+                        type=str,
+                        const="false",
+                        help="Save plot, boolean, (default: false)",
+                        default=["false"],
+                        choices=["true", "false"])
 
     return parser
 
