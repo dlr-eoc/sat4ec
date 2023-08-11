@@ -111,39 +111,43 @@ class Indicator(Config):
         float64_cols = list(self.dataframe.select_dtypes(include="float64"))
         self.dataframe[float64_cols] = self.dataframe[float64_cols].astype("float32")
 
-    def get_request_grd(self, pol="VV"):
+    def get_request_grd(self, polarization="VV"):
         # evalscript (unit: dB)
         self.eval_script = """
         //VERSION=3
-        function setup() {
-          return {
-            input: [{
-              bands: ["VH", "dataMask"]
-            }],
+        function setup() {{
+          return {{
+            input: [{{
+              bands: ["{polarization}", "dataMask"]
+            }}],
             output: [
-              {
+              {{
                 id: "default",
                 bands: 1
-              },
-              {
+              }},
+              {{
                 id: "dataMask",
                 bands: 1
-              }]
-          };
-        }
+              }}]
+          }};
+        }}
 
-        function evaluatePixel(samples) {
-            return {
-                default: [toDb(samples.VH)],
+        function evaluatePixel(samples) {{
+            return {{
+                default: [toDb(samples.{polarization})],
                 dataMask: [samples.dataMask],
-            };
-        }
+            }};
+        }}
 
-        function toDb(sigma_linear) {
+        function toDb(sigma_linear) {{
            if(sigma_linear === 0) return 0;
            return (10 * Math.log10(sigma_linear))  //equation from GEE Sentinel-1 Prepocessing
-        }
+        }}
         """
+
+        self.eval_script = self.eval_script.format(
+            polarization="".join(polarization),
+        )
 
         # statistical API request (unit: dB)
         self.request = SentinelHubStatistical(
@@ -242,8 +246,7 @@ class Bands:
         return any([band.valid for band in self.bands])
 
 
-def main(aoi_data=None, start_date=None, end_date=None, save_plot=False, anomaly_options=None):
-    print(anomaly_options)
+def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None):
     with AOI(data=aoi_data) as aoi:
         aoi.get_features()
 
@@ -260,23 +263,22 @@ def main(aoi_data=None, start_date=None, end_date=None, save_plot=False, anomaly
         indicator.stats_to_df()
         indicator.save()
 
-        anomaly = Anomaly(df=indicator.dataframe, column="B0_max", out_dir=OUT_DIR, out_name="test")
-        anomaly.apply_anomaly_detection(normalize=True)
-        anomaly.plot_anomaly()
+        anomaly = Anomaly(
+            df=indicator.dataframe,
+            column="B0_max",
+            out_dir=OUT_DIR,
+            out_name="test",
+            options=anomaly_options
+        )
+
+        anomaly.apply_anomaly_detection()
+
+        if anomaly.save:
+            anomaly.plot_anomaly()
 
 
 def run():
     args = parse_commandline_args()
-    print(args)
-
-    if args.save_plot.lower() == "false":
-        save_plot = False
-
-    elif args.save_plot.lower() == "true":
-        save_plot = True
-
-    else:
-        raise ValueError(f"The requested value {args.save_plot} is invalid for the argument --save_plot.")
 
     if not args.start_date and not args.end_date:
         raise ValueError(f"You must provide a start and an end date.")
@@ -285,22 +287,26 @@ def run():
     for _date in [args.start_date, args.end_date]:
         _date = datetime.strptime(_date, "%Y-%m-%d")
 
-    if isinstance(args.anomalies, list):
-        anomaly_options = {
-            "invert": False
-        }
+    anomaly_options = {
+        "invert": False,
+        "normalize": False,
+        "save": True,
+    }
 
-        if "invert" in args.anomalies:
+    if isinstance(args.anomaly_options, list):
+        if "invert" in args.anomaly_options:
             anomaly_options["invert"] = True
 
-    else:
-        anomaly_options = None
+        if "normalize" in args.anomaly_options:
+            anomaly_options["normalize"] = True
+
+        if "save" in args.anomaly_options:
+            anomaly_options["save"] = True
 
     main(
         aoi_data=args.aoi_data,
         start_date=args.start_date,
         end_date=args.end_date,
-        save_plot=save_plot,
         anomaly_options=anomaly_options
     )
 
@@ -313,19 +319,11 @@ def create_parser():
                         )
     parser.add_argument("--start_date", help="Begin of the time series, as YYYY-MM-DD, like 2020-11-01", metavar="YYYY-MM-DD")
     parser.add_argument("--end_date", help="End of the time series, as YYYY-MM-DD, like 2020-11-01", metavar="YYYY-MM-DD")
-    parser.add_argument("--anomalies",
+    parser.add_argument("--anomaly_options",
                         nargs="*",
-                        choices=["invert"],
-                        help="Use anomaly detection to list scenes of high or low backscatter. Call without choices "
+                        choices=["invert", "normalize", "save"],
+                        help="Use anomaly detection to list scenes of high or low backscatter. Do not call "
                              "to apply default parameters. Consult the README for more info.")
-
-    parser.add_argument("--save_plot",
-                        nargs="?",
-                        type=str,
-                        const="false",
-                        help="Save plot, boolean, (default: false)",
-                        default=["false"],
-                        choices=["true", "false"])
 
     return parser
 

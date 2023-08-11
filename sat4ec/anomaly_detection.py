@@ -5,7 +5,7 @@ from adtk.detector import InterQuartileRangeAD
 
 
 class Anomaly:
-    def __init__(self, df=None, parameters=(10, 1.5), column=None, out_dir=None, out_name=None):
+    def __init__(self, df=None, parameters=(10, 1.5), column=None, out_dir=None, out_name=None, options=None):
         self.parameters = parameters
         self.df = df
         self.column = column  # dataframe column containing the anomaly data
@@ -13,15 +13,12 @@ class Anomaly:
         self.anomalies = None
         self.out_dir = out_dir
         self.out_name = out_name
+        self.normalize = options["normalize"]
+        self.invert = options["invert"]
+        self.save = options["save"]
 
     def _prepare_df(self):
         self.df = self.df.set_index("start_date")
-
-    def plot_df(self):
-        # plot timeseries
-        plot(self.df, ts_linewidth=1, ts_markersize=3)
-        plt.show()
-        plt.close()
 
     def plot_anomaly(self):
         fig, ax = plt.subplots()
@@ -42,7 +39,7 @@ class Anomaly:
         # plt.show()
         plt.close()
 
-    def apply_anomaly_detection(self, normalize=True):
+    def apply_anomaly_detection(self):
         # fit anomaly detection criterion on historic timeseries
         # compare time series values with 1st and 3rd quartiles of historic data and identify time points as anomalous
         # when differences are beyond the inter-quartile range (IQR) times factor c (lower, upper).
@@ -50,7 +47,7 @@ class Anomaly:
         self.ad = InterQuartileRangeAD(c=self.parameters)
         self.df = self.df.sort_index()
 
-        if normalize:
+        if self.normalize:
             self._normalize_df()
 
         self.ad.fit(self.df.loc[:, [self.column]])
