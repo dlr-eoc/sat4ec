@@ -18,12 +18,10 @@ from sentinelhub import (
     parse_time,
 )
 
-
 # container-specific paths
 # IN_DIR = Path("/scratch/in")
 # OUT_DIR = Path("/scratch/out")
 OUT_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/results")
-
 
 # clean output directory
 for item in Path(OUT_DIR).glob("*"):
@@ -62,14 +60,14 @@ class Config:
 
 class Indicator(Config):
     def __init__(
-        self,
-        aoi=None,
-        out_dir=None,
-        start_date=None,
-        end_date=None,
-        crs=CRS.WGS84,
-        resolution=5,
-        ascending=True,
+            self,
+            aoi=None,
+            out_dir=None,
+            start_date=None,
+            end_date=None,
+            crs=CRS.WGS84,
+            resolution=5,
+            ascending=True,
     ):
         super().__init__()
         self.aoi = aoi
@@ -318,9 +316,12 @@ def create_parser():
                                                             "Polygon or Multipolygon.",
                         metavar="AOI"
                         )
-    parser.add_argument("--start_date", help="Begin of the time series, as YYYY-MM-DD, like 2020-11-01", metavar="YYYY-MM-DD")
-    parser.add_argument("--end_date", help="End of the time series, as YYYY-MM-DD, like 2020-11-01", metavar="YYYY-MM-DD")
-    parser.add_argument("--polarization", help="Polarization of Sentinel-1 data, default: VH", choices=["VH, VV"], nargs=1, default="VH")
+    parser.add_argument("--start_date", help="Begin of the time series, as YYYY-MM-DD, like 2020-11-01",
+                        metavar="YYYY-MM-DD")
+    parser.add_argument("--end_date", help="End of the time series, as YYYY-MM-DD, like 2020-11-01",
+                        metavar="YYYY-MM-DD")
+    parser.add_argument("--polarization", help="Polarization of Sentinel-1 data, default: VH", choices=["VH, VV"],
+                        nargs=1, default="VH")
     parser.add_argument("--anomaly_options",
                         nargs="*",
                         choices=["invert", "normalize", "save"],

@@ -56,6 +56,10 @@ class Anomaly:
         self.ad.fit(self.df.loc[:, [self.column]])
         self.anomalies = self.ad.detect(self.df.loc[:, [self.column]])  # predict if a flood is present
 
+        if self.invert:
+            mask = self.anomalies[self.column].to_numpy()
+            self.anomalies[self.column] = ~mask
+
     def _normalize_df(self):
         self.df.loc[:, self.column] = (self.df.loc[:, [self.column]] - self.df.loc[:,
                                                                        [self.column]].mean()) \
