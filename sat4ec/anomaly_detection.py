@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from adtk.visualization import plot
-from adtk.detector import InterQuartileRangeAD
+from adtk.detector import InterQuartileRangeAD, PersistAD, QuantileAD, SeasonalAD
 
 
 class Anomaly:
@@ -20,7 +20,7 @@ class Anomaly:
     def _prepare_df(self):
         self.df = self.df.set_index("start_date")
 
-    def plot_anomaly(self):
+    def plot_anomaly(self, pol="VH"):
         fig, ax = plt.subplots()
         # plot timeseries and detected anomalies
         plot(
@@ -34,7 +34,7 @@ class Anomaly:
             anomaly_tag="marker",
         )
 
-        plt.title("InterQuartileRangeAD")
+        plt.title(f"InterQuartileRangeAD {pol} polarization")
         fig.savefig(self.out_dir.joinpath(f"aoi_anomalies_{self.out_name}.png"))
         # plt.show()
         plt.close()
@@ -45,6 +45,9 @@ class Anomaly:
         # when differences are beyond the inter-quartile range (IQR) times factor c (lower, upper).
         # setting c1 to a large value basically ignores lower bound anomalies (here would be droughts)
         self.ad = InterQuartileRangeAD(c=self.parameters)
+        # self.ad = PersistAD()
+        # self.ad = QuantileAD(low=1)
+        # self.ad = SeasonalAD()
         self.df = self.df.sort_index()
 
         if self.normalize:

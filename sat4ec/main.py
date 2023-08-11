@@ -246,7 +246,7 @@ class Bands:
         return any([band.valid for band in self.bands])
 
 
-def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None):
+def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, pol="VH"):
     with AOI(data=aoi_data) as aoi:
         aoi.get_features()
 
@@ -258,7 +258,7 @@ def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None):
             ascending=True,
         )
 
-        indicator.get_request_grd()
+        indicator.get_request_grd(polarization=pol)
         indicator.get_data()
         indicator.stats_to_df()
         indicator.save()
@@ -274,7 +274,7 @@ def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None):
         anomaly.apply_anomaly_detection()
 
         if anomaly.save:
-            anomaly.plot_anomaly()
+            anomaly.plot_anomaly(pol=pol)
 
 
 def run():
@@ -289,7 +289,7 @@ def run():
 
     anomaly_options = {
         "invert": False,
-        "normalize": False,
+        "normalize": True,
         "save": True,
     }
 
@@ -307,7 +307,8 @@ def run():
         aoi_data=args.aoi_data,
         start_date=args.start_date,
         end_date=args.end_date,
-        anomaly_options=anomaly_options
+        anomaly_options=anomaly_options,
+        pol=args.polarization
     )
 
 
@@ -319,6 +320,7 @@ def create_parser():
                         )
     parser.add_argument("--start_date", help="Begin of the time series, as YYYY-MM-DD, like 2020-11-01", metavar="YYYY-MM-DD")
     parser.add_argument("--end_date", help="End of the time series, as YYYY-MM-DD, like 2020-11-01", metavar="YYYY-MM-DD")
+    parser.add_argument("--polarization", help="Polarization of Sentinel-1 data, default: VH", choices=["VH, VV"], nargs=1, default="VH")
     parser.add_argument("--anomaly_options",
                         nargs="*",
                         choices=["invert", "normalize", "save"],

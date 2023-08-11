@@ -72,7 +72,7 @@ class Plot:
 
 
 if __name__ == "__main__":
-    plotter = Plot(data=Path(r"/mnt/data1/gitlab/sat4ec/results/2023_08_09/indicator_1_asc_2023_08_09_10_07_47.csv"))
+    plotter = Plot(data=Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/results/2023_08_11/indicator_1_asc_2023_08_11_10_54_26.csv"))
     plotter.plot_dataframe()
     plotter.save_plot()
     # plotter.plot_monthly_aggregated()
