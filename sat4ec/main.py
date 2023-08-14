@@ -16,6 +16,8 @@ from sentinelhub import (
     SentinelHubStatistical,
     SHConfig,
     parse_time,
+    SentinelHubCatalog,
+    BBox,
 )
 
 # container-specific paths
@@ -244,6 +246,50 @@ class Bands:
         return any([band.valid for band in self.bands])
 
 
+class StacItems(Config):
+    def __init__(self, geometry=None, df=None, column=None):
+        super().__init__()
+
+        self.catalog = None
+        self.geometry = geometry
+        self.df = df
+        self.column = column
+
+        self._get_catalog()
+        self._get_collection()
+
+    def _get_catalog(self):
+        self.catalog = SentinelHubCatalog(config=self.config)
+
+    def _get_collection(self):
+        self.catalog.get_collection(DataCollection.SENTINEL1)
+
+    def get_anomaly_scenes(self):
+        # mask = self.df[self.column].to_numpy()
+
+        self.df["scenes"] = [""] * len(self.df)
+
+        for i in range(len(self.df)):
+            if self.df.iloc[i][self.column]:
+                # print(self.df.iloc[i])
+                date = self.df.index[i]
+
+                results = self.search_catalog(
+                    start_date=f"{date.year}-{date.month}-{date.day}",
+                    end_date=f"{date.year}-{date.month}-{date.day}",
+                )
+
+    def search_catalog(self, start_date=None, end_date=None):
+        search_iterator = self.catalog.search(
+            DataCollection.SENTINEL1,
+            geometry=self.geometry,
+            time=(start_date, end_date),
+            fields={"include": ["id", "properties.datetime"], "exclude": []},
+        )
+
+        return list(search_iterator)
+
+
 def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, pol="VH"):
     with AOI(data=aoi_data) as aoi:
         aoi.get_features()
@@ -270,6 +316,11 @@ def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, po
         )
 
         anomaly.apply_anomaly_detection()
+        # print(anomaly.anomalies)
+
+        stac = StacItems(geometry=indicator.geometry, df=anomaly.anomalies, column=anomaly.column)
+        stac.get_anomaly_scenes()
+        stac.search_catalog(start_date="2020-01-12", end_date="2020-01-12")
 
         if anomaly.save:
             anomaly.plot_anomaly(pol=pol)
