@@ -2,10 +2,10 @@ import subprocess
 from pathlib import Path
 
 
-def main(orbits=None, pols=None, aois=None):
-    for orbit in orbits:
-        for pol in pols:
-            for key in aois.keys():
+def main(orbits=None, pols=None, aois=None, aoi_dir=None):
+    for key in aois.keys():
+        for orbit in orbits:
+            for pol in pols:
                 response = subprocess.run([
                     "python3", 
                     "../sat4ec/main.py",
@@ -23,9 +23,11 @@ def main(orbits=None, pols=None, aois=None):
                     pol,
                 ], capture_output=False)
 
+        aoi_dir.joinpath("results").rename(aoi_dir.joinpath(key))
+
 
 if __name__ == "__main__":
-    aoi_dir = Path(r"/tests/testdata")
+    aoi_dir = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
     orbits = [
         "asc",
         "des"
@@ -42,5 +44,5 @@ if __name__ == "__main__":
         "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson")
     }
 
-    main(orbits, pols, aois)
+    main(orbits, pols, aois, aoi_dir)
     
