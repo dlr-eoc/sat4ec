@@ -16,6 +16,8 @@ from sentinelhub import (
     SentinelHubStatistical,
     SHConfig,
     parse_time,
+    SentinelHubCatalog,
+    BBox,
 )
 
 # container-specific paths
@@ -67,13 +69,14 @@ class Indicator(Config):
             end_date=None,
             crs=CRS.WGS84,
             resolution=5,
-            ascending=True,
+            orbit="asc",
+            pol="VH",
     ):
         super().__init__()
         self.aoi = aoi
         self.crs = crs
         self.geometry = None
-        self.ascending = ascending
+        self.orbit = orbit
         self.interval = (f"{start_date}T00:00:00Z", f"{end_date}T23:59:59Z")
         self.size = None
         self.resolution = resolution
@@ -82,7 +85,9 @@ class Indicator(Config):
         self.request = None
         self.stats = None
         self.dataframe = None
+        self.pol = pol
         self.out_dir = out_dir
+        self.timestamp = datetime.now()
 
         self._get_geometry()
         self._get_dimensions()
@@ -98,7 +103,7 @@ class Indicator(Config):
         self.size = bbox_to_dimensions(self.geometry.bbox, self.resolution)
 
     def _get_collection(self):
-        if self.ascending:
+        if self.orbit == "asc":
             self.collection = DataCollection.SENTINEL1_IW_ASC
 
         else:
@@ -109,7 +114,7 @@ class Indicator(Config):
         float64_cols = list(self.dataframe.select_dtypes(include="float64"))
         self.dataframe[float64_cols] = self.dataframe[float64_cols].astype("float32")
 
-    def get_request_grd(self, polarization="VV"):
+    def get_request_grd(self):
         # evalscript (unit: dB)
         self.eval_script = """
         //VERSION=3
@@ -144,7 +149,7 @@ class Indicator(Config):
         """
 
         self.eval_script = self.eval_script.format(
-            polarization="".join(polarization),
+            polarization="".join(self.pol),
         )
 
         # statistical API request (unit: dB)
@@ -213,10 +218,9 @@ class Indicator(Config):
         self.dataframe = self.dataframe.set_index("interval_from")
 
     def save(self):
-        orbit = "asc" if self.ascending else "des"
         out_file = self.out_dir.joinpath(
-            datetime.now().strftime("%Y_%m_%d"),
-            f"indicator_1_{orbit}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.csv",
+            self.timestamp.strftime("%Y_%m_%d"),
+            f"indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.csv",
         )
 
         if not out_file.parent.exists():
@@ -244,7 +248,74 @@ class Bands:
         return any([band.valid for band in self.bands])
 
 
-def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, pol="VH"):
+class StacItems(Config):
+    def __init__(self, geometry=None, df=None, column=None, orbit="asc", pol="VH", timestamp=None, out_dir=None):
+        super().__init__()
+
+        self.catalog = None
+        self.geometry = geometry
+        self.anomalies_df = df  # input
+        self.dataframe = None  # output
+        self.column = column
+        self.orbit = orbit
+        self.timestamp = timestamp
+        self.pol = pol
+        self.out_dir = out_dir
+
+        self._get_catalog()
+        self._get_collection()
+
+    def _get_catalog(self):
+        self.catalog = SentinelHubCatalog(config=self.config)
+
+    def _get_collection(self):
+        self.catalog.get_collection(DataCollection.SENTINEL1)
+
+    def get_scenes(self):
+        return self.anomalies_df.apply(lambda row: self.search_catalog(row), axis=1)
+
+    def scenes_to_df(self):
+        scenes_df = self.get_scenes()
+
+        self.dataframe = pd.DataFrame({
+            "interval_from": [
+                pd.to_datetime(_item["properties"]["datetime"]).normalize()
+                for values in scenes_df.values for _item in values
+            ],
+            "scene": [_item["id"] for values in scenes_df.values for _item in values],
+        })
+
+    def join_with_anomalies(self):
+        self.dataframe = self.dataframe.set_index("interval_from")
+
+        self.dataframe["scene"] = self.dataframe.set_index(self.dataframe.index)["scene"]
+        self.dataframe["anomaly"] = self.anomalies_df.set_index(self.anomalies_df.index)["anomaly"]
+
+    def save(self):
+        out_file = self.out_dir.joinpath(
+            self.timestamp.strftime("%Y_%m_%d"),
+            f"scenes_indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.csv",
+        )
+
+        if not out_file.parent.exists():
+            out_file.parent.mkdir(parents=True, exist_ok=True)
+
+        self.dataframe.to_csv(out_file)
+
+    def search_catalog(self, row):
+        date = row.name
+
+        search_iterator = self.catalog.search(
+            DataCollection.SENTINEL1,
+            geometry=self.geometry,
+            time=(f"{date.year}-{date.month}-{date.day}", f"{date.year}-{date.month}-{date.day}"),
+            fields={"include": ["id", "properties.datetime"], "exclude": []},
+        )
+
+        return list(search_iterator)
+
+
+def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, pol="VH", orbit="asc"):
     with AOI(data=aoi_data) as aoi:
         aoi.get_features()
 
@@ -253,26 +324,42 @@ def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, po
             out_dir=OUT_DIR,
             start_date=start_date,
             end_date=end_date,
-            ascending=True,
+            orbit=orbit,
+            pol=pol,
         )
 
-        indicator.get_request_grd(polarization=pol)
+        indicator.get_request_grd()
         indicator.get_data()
         indicator.stats_to_df()
-        indicator.save()
+        # indicator.save()
 
         anomaly = Anomaly(
             df=indicator.dataframe,
             column="B0_max",
             out_dir=OUT_DIR,
-            out_name="test",
+            orbit=indicator.orbit,
+            timestamp=indicator.timestamp,
+            pol=pol,
             options=anomaly_options
         )
 
         anomaly.apply_anomaly_detection()
+        anomaly.join_with_indicator(indicator_df=indicator.dataframe)
+        anomaly.save()
 
-        if anomaly.save:
-            anomaly.plot_anomaly(pol=pol)
+        stac = StacItems(
+            geometry=indicator.geometry,
+            df=anomaly.dataframe,
+            column="B0_max",
+            orbit=indicator.orbit,
+            timestamp=indicator.timestamp,
+            pol=pol,
+            out_dir=OUT_DIR
+        )
+
+        stac.scenes_to_df()
+        stac.join_with_anomalies()
+        stac.save()
 
 
 def run():
@@ -288,7 +375,7 @@ def run():
     anomaly_options = {
         "invert": False,
         "normalize": True,
-        "save": True,
+        "plot": True,
     }
 
     if isinstance(args.anomaly_options, list):
@@ -298,15 +385,16 @@ def run():
         if "normalize" in args.anomaly_options:
             anomaly_options["normalize"] = True
 
-        if "save" in args.anomaly_options:
-            anomaly_options["save"] = True
+        if "plot" in args.anomaly_options:
+            anomaly_options["plot"] = True
 
     main(
         aoi_data=args.aoi_data,
         start_date=args.start_date,
         end_date=args.end_date,
         anomaly_options=anomaly_options,
-        pol=args.polarization
+        pol=args.polarization,
+        orbit=args.orbit,
     )
 
 
@@ -322,9 +410,11 @@ def create_parser():
                         metavar="YYYY-MM-DD")
     parser.add_argument("--polarization", help="Polarization of Sentinel-1 data, default: VH", choices=["VH, VV"],
                         nargs=1, default="VH")
+    parser.add_argument("--orbit", help="Orbit of Sentinel-1 data, default: ascending", choices=["asc", "des"],
+                        nargs=1, default="asc")
     parser.add_argument("--anomaly_options",
                         nargs="*",
-                        choices=["invert", "normalize", "save"],
+                        choices=["invert", "normalize", "plot"],
                         help="Use anomaly detection to list scenes of high or low backscatter. Do not call "
                              "to apply default parameters. Consult the README for more info.")
 
