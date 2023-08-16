@@ -1,5 +1,4 @@
 import argparse
-import os
 import pandas as pd
 import shutil
 import traceback
@@ -7,7 +6,7 @@ from aoi_check import AOI
 from anomaly_detection import Anomaly
 from pathlib import Path
 from datetime import datetime
-from system import get_logger
+from system import get_logger, load_yaml
 from sentinelhub import (
     Geometry,
     CRS,
@@ -46,11 +45,13 @@ class Config:
         self._get_config()
 
     def _get_credentials(self):
+        credentials = load_yaml(Path.cwd().joinpath("credentials.yaml"))
+
         if not self.id:
-            self.id = os.environ["SH_CLIENT_ID"]
+            self.id = credentials["SH_CLIENT_ID"]
 
         if not self.secret:
-            self.secret = os.environ["SH_CLIENT_SECRET"]
+            self.secret = credentials["SH_CLIENT_SECRET"]
 
     def _get_config(self):
         self.config = SHConfig()
