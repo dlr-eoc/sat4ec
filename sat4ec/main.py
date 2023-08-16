@@ -70,6 +70,7 @@ class Indicator(Config):
             crs=CRS.WGS84,
             resolution=5,
             orbit="asc",
+            pol="VH",
     ):
         super().__init__()
         self.aoi = aoi
@@ -84,7 +85,9 @@ class Indicator(Config):
         self.request = None
         self.stats = None
         self.dataframe = None
+        self.pol = pol
         self.out_dir = out_dir
+        self.timestamp = datetime.now()
 
         self._get_geometry()
         self._get_dimensions()
@@ -111,7 +114,7 @@ class Indicator(Config):
         float64_cols = list(self.dataframe.select_dtypes(include="float64"))
         self.dataframe[float64_cols] = self.dataframe[float64_cols].astype("float32")
 
-    def get_request_grd(self, polarization="VV"):
+    def get_request_grd(self):
         # evalscript (unit: dB)
         self.eval_script = """
         //VERSION=3
@@ -146,7 +149,7 @@ class Indicator(Config):
         """
 
         self.eval_script = self.eval_script.format(
-            polarization="".join(polarization),
+            polarization="".join(self.pol),
         )
 
         # statistical API request (unit: dB)
@@ -216,8 +219,8 @@ class Indicator(Config):
 
     def save(self):
         out_file = self.out_dir.joinpath(
-            datetime.now().strftime("%Y_%m_%d"),
-            f"indicator_1_{self.orbit}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.csv",
+            self.timestamp.strftime("%Y_%m_%d"),
+            f"indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.csv",
         )
 
         if not out_file.parent.exists():
@@ -246,7 +249,7 @@ class Bands:
 
 
 class StacItems(Config):
-    def __init__(self, geometry=None, df=None, column=None, orbit="asc", out_dir=None):
+    def __init__(self, geometry=None, df=None, column=None, orbit="asc", pol="VH", timestamp=None, out_dir=None):
         super().__init__()
 
         self.catalog = None
@@ -255,6 +258,8 @@ class StacItems(Config):
         self.dataframe = None  # output
         self.column = column
         self.orbit = orbit
+        self.timestamp = timestamp
+        self.pol = pol
         self.out_dir = out_dir
 
         self._get_catalog()
@@ -288,8 +293,8 @@ class StacItems(Config):
 
     def save(self):
         out_file = self.out_dir.joinpath(
-            datetime.now().strftime("%Y_%m_%d"),
-            f"scenes_indicator_1{self.orbit}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.csv",
+            self.timestamp.strftime("%Y_%m_%d"),
+            f"scenes_indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.csv",
         )
 
         if not out_file.parent.exists():
@@ -320,9 +325,10 @@ def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, po
             start_date=start_date,
             end_date=end_date,
             orbit=orbit,
+            pol=pol,
         )
 
-        indicator.get_request_grd(polarization=pol)
+        indicator.get_request_grd()
         indicator.get_data()
         indicator.stats_to_df()
         # indicator.save()
@@ -331,20 +337,23 @@ def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, po
             df=indicator.dataframe,
             column="B0_max",
             out_dir=OUT_DIR,
-            out_name="test",
             orbit=indicator.orbit,
+            timestamp=indicator.timestamp,
+            pol=pol,
             options=anomaly_options
         )
 
         anomaly.apply_anomaly_detection()
         anomaly.join_with_indicator(indicator_df=indicator.dataframe)
-        anomaly.save(pol=pol)
+        anomaly.save()
 
         stac = StacItems(
             geometry=indicator.geometry,
             df=anomaly.dataframe,
             column="B0_max",
             orbit=indicator.orbit,
+            timestamp=indicator.timestamp,
+            pol=pol,
             out_dir=OUT_DIR
         )
 

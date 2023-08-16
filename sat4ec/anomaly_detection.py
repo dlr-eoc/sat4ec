@@ -2,27 +2,27 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from adtk.visualization import plot
 from adtk.detector import InterQuartileRangeAD, PersistAD, QuantileAD, SeasonalAD
-from datetime import datetime
 
 
 class Anomaly:
-    def __init__(self, df=None, parameters=(10, 1.5), column=None, out_dir=None, out_name=None, options=None, orbit="asc"):
+    def __init__(self, df=None, parameters=(10, 1.5), column=None, out_dir=None, pol="VH", timestamp=None, options=None, orbit="asc"):
         self.parameters = parameters
         self.df = df
         self.column = column  # dataframe column containing the anomaly data
         self.ad = None
         self.dataframe = None
         self.out_dir = out_dir
-        self.out_name = out_name
         self.orbit = orbit
+        self.timestamp = timestamp
+        self.pol = pol
         self.normalize = options["normalize"]
         self.invert = options["invert"]
         self.plot = options["plot"]
 
-    def save(self, pol="VH"):
+    def save(self):
         out_file = self.out_dir.joinpath(
-            datetime.now().strftime("%Y_%m_%d"),
-            f"indicator_1{self.orbit}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.csv",
+            self.timestamp.strftime("%Y_%m_%d"),
+            f"indicator_1{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.csv",
         )
 
         if not out_file.parent.exists():
@@ -31,9 +31,9 @@ class Anomaly:
         self.dataframe.to_csv(out_file)
 
         if self.plot:
-            self.plot_anomaly(pol=pol)
+            self.plot_anomaly()
 
-    def plot_anomaly(self, pol="VH"):
+    def plot_anomaly(self):
         fig, ax = plt.subplots()
         # plot timeseries and detected anomalies
         plot(
@@ -47,8 +47,8 @@ class Anomaly:
             anomaly_tag="marker",
         )
 
-        plt.title(f"InterQuartileRangeAD {pol} polarization")
-        fig.savefig(self.out_dir.joinpath(f"aoi_anomalies_{self.out_name}.png"))
+        plt.title(f"InterQuartileRangeAD {self.pol} polarization")
+        fig.savefig(self.out_dir.joinpath(f"anomalies_indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.png"))
         # plt.show()
         plt.close()
 
@@ -86,15 +86,3 @@ class Anomaly:
         self.df.loc[:, self.column] = (self.df.loc[:, [self.column]] - self.df.loc[:,
                                                                        [self.column]].mean()) \
                                       / self.df.loc[:, [self.column]].std()  # standardize timeseries
-
-    @staticmethod
-    def _parse_date(filename=None):
-        return pd.to_datetime(filename.split("_")[4])
-
-    # def get_s1_flood_status(self):
-    #     # get status if significatly flooded of current S1 scene
-    #     self.flooded = self.anomalies.loc[self._parse_date(filename=self.s1), self.column]
-    #     result = {
-    #         "s1_scene": self.s1,
-    #         "flood_anomaly": bool(self.flooded)
-    #     }
