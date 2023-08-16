@@ -69,13 +69,13 @@ class Indicator(Config):
             end_date=None,
             crs=CRS.WGS84,
             resolution=5,
-            ascending=True,
+            orbit="asc",
     ):
         super().__init__()
         self.aoi = aoi
         self.crs = crs
         self.geometry = None
-        self.ascending = ascending
+        self.orbit = orbit
         self.interval = (f"{start_date}T00:00:00Z", f"{end_date}T23:59:59Z")
         self.size = None
         self.resolution = resolution
@@ -100,7 +100,7 @@ class Indicator(Config):
         self.size = bbox_to_dimensions(self.geometry.bbox, self.resolution)
 
     def _get_collection(self):
-        if self.ascending:
+        if self.orbit == "asc":
             self.collection = DataCollection.SENTINEL1_IW_ASC
 
         else:
@@ -215,10 +215,9 @@ class Indicator(Config):
         self.dataframe = self.dataframe.set_index("interval_from")
 
     def save(self):
-        orbit = "asc" if self.ascending else "des"
         out_file = self.out_dir.joinpath(
             datetime.now().strftime("%Y_%m_%d"),
-            f"indicator_1_{orbit}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.csv",
+            f"indicator_1_{self.orbit}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.csv",
         )
 
         if not out_file.parent.exists():
@@ -247,7 +246,7 @@ class Bands:
 
 
 class StacItems(Config):
-    def __init__(self, geometry=None, df=None, column=None, ascending=True, out_dir=None):
+    def __init__(self, geometry=None, df=None, column=None, orbit="asc", out_dir=None):
         super().__init__()
 
         self.catalog = None
@@ -255,7 +254,7 @@ class StacItems(Config):
         self.indicator_df = df  # input
         self.dataframe = None  # output
         self.column = column
-        self.ascending = ascending
+        self.orbit = orbit
         self.out_dir = out_dir
 
         self._get_catalog()
@@ -282,10 +281,9 @@ class StacItems(Config):
         })
 
     def save(self):
-        orbit = "asc" if self.ascending else "des"
         out_file = self.out_dir.joinpath(
             datetime.now().strftime("%Y_%m_%d"),
-            f"scenes_indicator_1{orbit}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.csv",
+            f"scenes_indicator_1{self.orbit}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.csv",
         )
 
         if not out_file.parent.exists():
@@ -306,7 +304,7 @@ class StacItems(Config):
         return list(search_iterator)
 
 
-def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, pol="VH"):
+def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, pol="VH", orbit="asc"):
     with AOI(data=aoi_data) as aoi:
         aoi.get_features()
 
@@ -315,7 +313,7 @@ def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, po
             out_dir=OUT_DIR,
             start_date=start_date,
             end_date=end_date,
-            ascending=True,
+            orbit=orbit,
         )
 
         indicator.get_request_grd(polarization=pol)
@@ -327,7 +325,7 @@ def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, po
             geometry=indicator.geometry,
             df=indicator.dataframe,
             column="B0_max",
-            ascending=indicator.ascending,
+            orbit=indicator.orbit,
             out_dir=OUT_DIR
         )
 
@@ -383,7 +381,8 @@ def run():
         start_date=args.start_date,
         end_date=args.end_date,
         anomaly_options=anomaly_options,
-        pol=args.polarization
+        pol=args.polarization,
+        orbit=args.orbit,
     )
 
 
@@ -399,6 +398,8 @@ def create_parser():
                         metavar="YYYY-MM-DD")
     parser.add_argument("--polarization", help="Polarization of Sentinel-1 data, default: VH", choices=["VH, VV"],
                         nargs=1, default="VH")
+    parser.add_argument("--orbit", help="Orbit of Sentinel-1 data, default: ascending", choices=["asc", "des"],
+                        nargs=1, default="asc")
     parser.add_argument("--anomaly_options",
                         nargs="*",
                         choices=["invert", "normalize", "save"],
