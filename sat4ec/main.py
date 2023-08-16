@@ -319,7 +319,7 @@ def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, po
         indicator.get_request_grd(polarization=pol)
         indicator.get_data()
         indicator.stats_to_df()
-        indicator.save()
+        # indicator.save()
 
         stac = StacItems(
             geometry=indicator.geometry,
@@ -332,22 +332,22 @@ def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, po
         stac.scenes_to_df()
         stac.save()
 
-        # anomaly = Anomaly(
-        #     df=indicator.dataframe,
-        #     column="B0_max",
-        #     out_dir=OUT_DIR,
-        #     out_name="test",
-        #     options=anomaly_options
-        # )
-        #
-        # anomaly.apply_anomaly_detection()
+        anomaly = Anomaly(
+            df=indicator.dataframe,
+            column="B0_max",
+            out_dir=OUT_DIR,
+            out_name="test",
+            orbit=indicator.orbit,
+            options=anomaly_options
+        )
+
+        anomaly.apply_anomaly_detection()
+        anomaly.join_with_indicator(indicator_df=indicator.dataframe)
+        anomaly.save(pol=pol)
 
         # stac = StacItems(geometry=indicator.geometry, df=anomaly.anomalies, column=anomaly.column)
         # stac.get_anomaly_scenes()
         # stac.search_catalog(start_date="2020-01-12", end_date="2020-01-12")
-
-        # if anomaly.save:
-        #     anomaly.plot_anomaly(pol=pol)
 
 
 def run():
@@ -363,7 +363,7 @@ def run():
     anomaly_options = {
         "invert": False,
         "normalize": True,
-        "save": True,
+        "plot": True,
     }
 
     if isinstance(args.anomaly_options, list):
@@ -373,8 +373,8 @@ def run():
         if "normalize" in args.anomaly_options:
             anomaly_options["normalize"] = True
 
-        if "save" in args.anomaly_options:
-            anomaly_options["save"] = True
+        if "plot" in args.anomaly_options:
+            anomaly_options["plot"] = True
 
     main(
         aoi_data=args.aoi_data,
@@ -402,7 +402,7 @@ def create_parser():
                         nargs=1, default="asc")
     parser.add_argument("--anomaly_options",
                         nargs="*",
-                        choices=["invert", "normalize", "save"],
+                        choices=["invert", "normalize", "plot"],
                         help="Use anomaly detection to list scenes of high or low backscatter. Do not call "
                              "to apply default parameters. Consult the README for more info.")
 
