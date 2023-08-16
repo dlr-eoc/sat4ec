@@ -1,6 +1,8 @@
 *.jpg
 .idea/
 sat4ec/__pycache__
+sat4ec/credentials.yaml
 results
 credentials
 obsolete
+tests/testdata

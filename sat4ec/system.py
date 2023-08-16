@@ -1,8 +1,14 @@
 import logging
 import sys
+import yaml
 
 from jsonformatter import JsonFormatter
 from pathlib import Path
+
+
+def load_yaml(yaml_path):
+    with open(yaml_path, "r") as f:
+        return yaml.safe_load(f)
 
 
 def get_logger(
