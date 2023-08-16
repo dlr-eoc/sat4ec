@@ -372,10 +372,22 @@ def run():
     for _date in [args.start_date, args.end_date]:
         _date = datetime.strptime(_date, "%Y-%m-%d")
 
+    if isinstance(args.orbit, list):
+        orbit = args.orbit[0].lower()
+
+    else:
+        orbit = args.orbit.lower()
+
+    if isinstance(args.polarization, list):
+        pol = args.polarization[0].upper()
+
+    else:
+        pol = args.polarization.upper()
+
     anomaly_options = {
         "invert": False,
-        "normalize": True,
-        "plot": True,
+        "normalize": False,
+        "plot": False,
     }
 
     if isinstance(args.anomaly_options, list):
@@ -393,8 +405,8 @@ def run():
         start_date=args.start_date,
         end_date=args.end_date,
         anomaly_options=anomaly_options,
-        pol=args.polarization,
-        orbit=args.orbit,
+        pol=pol,
+        orbit=orbit,
     )
 
 
@@ -408,7 +420,7 @@ def create_parser():
                         metavar="YYYY-MM-DD")
     parser.add_argument("--end_date", help="End of the time series, as YYYY-MM-DD, like 2020-11-01",
                         metavar="YYYY-MM-DD")
-    parser.add_argument("--polarization", help="Polarization of Sentinel-1 data, default: VH", choices=["VH, VV"],
+    parser.add_argument("--polarization", help="Polarization of Sentinel-1 data, default: VH", choices=["VH", "VV"],
                         nargs=1, default="VH")
     parser.add_argument("--orbit", help="Orbit of Sentinel-1 data, default: ascending", choices=["asc", "des"],
                         nargs=1, default="asc")

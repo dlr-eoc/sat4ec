@@ -7,10 +7,10 @@ from adtk.detector import InterQuartileRangeAD, PersistAD, QuantileAD, SeasonalA
 class Anomaly:
     def __init__(self, df=None, parameters=(10, 1.5), column=None, out_dir=None, pol="VH", timestamp=None, options=None, orbit="asc"):
         self.parameters = parameters
-        self.df = df
+        self.df = df  # input
         self.column = column  # dataframe column containing the anomaly data
         self.ad = None
-        self.dataframe = None
+        self.dataframe = None  # output
         self.out_dir = out_dir
         self.orbit = orbit
         self.timestamp = timestamp
@@ -34,10 +34,12 @@ class Anomaly:
             self.plot_anomaly()
 
     def plot_anomaly(self):
+        orbit = "ascending" if self.orbit == "asc" else "descending"
         fig, ax = plt.subplots()
+
         # plot timeseries and detected anomalies
         plot(
-            self.dataframe.loc[:, [self.column]],
+            self.df.loc[:, [self.column]],
             anomaly=self.dataframe.loc[:, [self.column]],
             ts_linewidth=1,
             ts_markersize=3,
@@ -45,11 +47,13 @@ class Anomaly:
             anomaly_markersize=5,
             anomaly_color="red",
             anomaly_tag="marker",
+            legend=False
         )
 
-        plt.title(f"InterQuartileRangeAD {self.pol} polarization")
+        plt.title(f"Anomalies {self.pol} polarization, {orbit} orbit")
+        plt.ylabel("Sentinel-1 backscatter [dB]")
+        fig.legend(loc="outside lower center", ncols=2)
         fig.savefig(self.out_dir.joinpath(f"anomalies_indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.png"))
-        # plt.show()
         plt.close()
 
     def apply_anomaly_detection(self):
@@ -75,7 +79,7 @@ class Anomaly:
 
     def rename_column(self):
         self.dataframe.rename(columns={self.column: "anomaly"}, inplace=True)
-        self.column = "anomaly"
+        # self.column = "anomaly"
 
     def join_with_indicator(self, indicator_df):
         self.rename_column()
