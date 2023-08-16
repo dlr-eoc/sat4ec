@@ -251,7 +251,7 @@ class StacItems(Config):
 
         self.catalog = None
         self.geometry = geometry
-        self.indicator_df = df  # input
+        self.anomalies_df = df  # input
         self.dataframe = None  # output
         self.column = column
         self.orbit = orbit
@@ -267,18 +267,24 @@ class StacItems(Config):
         self.catalog.get_collection(DataCollection.SENTINEL1)
 
     def get_scenes(self):
-        self.indicator_df = self.indicator_df.apply(lambda row: self.search_catalog(row), axis=1)
+        return self.anomalies_df.apply(lambda row: self.search_catalog(row), axis=1)
 
     def scenes_to_df(self):
-        self.get_scenes()
+        scenes_df = self.get_scenes()
+
         self.dataframe = pd.DataFrame({
             "interval_from": [
                 pd.to_datetime(_item["properties"]["datetime"]).normalize()
-                for values in self.indicator_df.values for _item in values
+                for values in scenes_df.values for _item in values
             ],
-            "scene": [_item["id"] for values in self.indicator_df.values for _item in values],
-            # "anomaly": None
+            "scene": [_item["id"] for values in scenes_df.values for _item in values],
         })
+
+    def join_with_anomalies(self):
+        self.dataframe = self.dataframe.set_index("interval_from")
+
+        self.dataframe["scene"] = self.dataframe.set_index(self.dataframe.index)["scene"]
+        self.dataframe["anomaly"] = self.anomalies_df.set_index(self.anomalies_df.index)["anomaly"]
 
     def save(self):
         out_file = self.out_dir.joinpath(
@@ -321,17 +327,6 @@ def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, po
         indicator.stats_to_df()
         # indicator.save()
 
-        stac = StacItems(
-            geometry=indicator.geometry,
-            df=indicator.dataframe,
-            column="B0_max",
-            orbit=indicator.orbit,
-            out_dir=OUT_DIR
-        )
-
-        stac.scenes_to_df()
-        stac.save()
-
         anomaly = Anomaly(
             df=indicator.dataframe,
             column="B0_max",
@@ -345,9 +340,17 @@ def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, po
         anomaly.join_with_indicator(indicator_df=indicator.dataframe)
         anomaly.save(pol=pol)
 
-        # stac = StacItems(geometry=indicator.geometry, df=anomaly.anomalies, column=anomaly.column)
-        # stac.get_anomaly_scenes()
-        # stac.search_catalog(start_date="2020-01-12", end_date="2020-01-12")
+        stac = StacItems(
+            geometry=indicator.geometry,
+            df=anomaly.dataframe,
+            column="B0_max",
+            orbit=indicator.orbit,
+            out_dir=OUT_DIR
+        )
+
+        stac.scenes_to_df()
+        stac.join_with_anomalies()
+        stac.save()
 
 
 def run():

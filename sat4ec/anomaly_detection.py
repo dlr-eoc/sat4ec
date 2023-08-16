@@ -11,16 +11,13 @@ class Anomaly:
         self.df = df
         self.column = column  # dataframe column containing the anomaly data
         self.ad = None
-        self.anomalies_df = None
+        self.dataframe = None
         self.out_dir = out_dir
         self.out_name = out_name
         self.orbit = orbit
         self.normalize = options["normalize"]
         self.invert = options["invert"]
         self.plot = options["plot"]
-
-    def _prepare_df(self):
-        self.df = self.df.set_index("start_date")
 
     def save(self, pol="VH"):
         out_file = self.out_dir.joinpath(
@@ -31,7 +28,7 @@ class Anomaly:
         if not out_file.parent.exists():
             out_file.parent.mkdir(parents=True, exist_ok=True)
 
-        self.anomalies_df.to_csv(out_file)
+        self.dataframe.to_csv(out_file)
 
         if self.plot:
             self.plot_anomaly(pol=pol)
@@ -40,8 +37,8 @@ class Anomaly:
         fig, ax = plt.subplots()
         # plot timeseries and detected anomalies
         plot(
-            self.anomalies_df.loc[:, [self.column]],
-            anomaly=self.anomalies_df.loc[:, [self.column]],
+            self.dataframe.loc[:, [self.column]],
+            anomaly=self.dataframe.loc[:, [self.column]],
             ts_linewidth=1,
             ts_markersize=3,
             axes=ax,
@@ -70,20 +67,20 @@ class Anomaly:
             self._normalize_df()
 
         self.ad.fit(self.df.loc[:, [self.column]])
-        self.anomalies_df = self.ad.detect(self.df.loc[:, [self.column]])  # predict if an anomaly is present
+        self.dataframe = self.ad.detect(self.df.loc[:, [self.column]])  # predict if an anomaly is present
 
         if self.invert:
-            mask = self.anomalies_df[self.column].to_numpy()
-            self.anomalies_df[self.column] = ~mask
+            mask = self.dataframe[self.column].to_numpy()
+            self.dataframe[self.column] = ~mask
 
     def rename_column(self):
-        self.anomalies_df.rename(columns={self.column: "anomaly"}, inplace=True)
+        self.dataframe.rename(columns={self.column: "anomaly"}, inplace=True)
         self.column = "anomaly"
 
     def join_with_indicator(self, indicator_df):
         self.rename_column()
-        self.anomalies_df = pd.concat([self.anomalies_df, indicator_df], axis=1)
-        self.anomalies_df.insert(0, "interval_to", self.anomalies_df.pop("interval_to"))
+        self.dataframe = pd.concat([self.dataframe, indicator_df], axis=1)
+        self.dataframe.insert(0, "interval_to", self.dataframe.pop("interval_to"))
 
     def _normalize_df(self):
         self.df.loc[:, self.column] = (self.df.loc[:, [self.column]] - self.df.loc[:,
