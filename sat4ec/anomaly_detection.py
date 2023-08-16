@@ -5,7 +5,17 @@ from adtk.detector import InterQuartileRangeAD, PersistAD, QuantileAD, SeasonalA
 
 
 class Anomaly:
-    def __init__(self, df=None, parameters=(10, 1.5), column=None, out_dir=None, pol="VH", timestamp=None, options=None, orbit="asc"):
+    def __init__(
+        self,
+        df=None,
+        parameters=(10, 1.5),
+        column=None,
+        out_dir=None,
+        pol="VH",
+        timestamp=None,
+        options=None,
+        orbit="asc",
+    ):
         self.parameters = parameters
         self.df = df  # input
         self.column = column  # dataframe column containing the anomaly data
@@ -21,12 +31,8 @@ class Anomaly:
 
     def save(self):
         out_file = self.out_dir.joinpath(
-            self.timestamp.strftime("%Y_%m_%d"),
             f"indicator_1{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.csv",
         )
-
-        if not out_file.parent.exists():
-            out_file.parent.mkdir(parents=True, exist_ok=True)
 
         self.dataframe.to_csv(out_file)
 
@@ -47,13 +53,17 @@ class Anomaly:
             anomaly_markersize=5,
             anomaly_color="red",
             anomaly_tag="marker",
-            legend=False
+            legend=False,
         )
 
         plt.title(f"Anomalies {self.pol} polarization, {orbit} orbit")
         plt.ylabel("Sentinel-1 backscatter [dB]")
         fig.legend(loc="outside lower center", ncols=2)
-        fig.savefig(self.out_dir.joinpath(f"anomalies_indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.png"))
+        fig.savefig(
+            self.out_dir.joinpath(
+                f"anomalies_indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.png",
+            )
+        )
         plt.close()
 
     def apply_anomaly_detection(self):
@@ -71,7 +81,9 @@ class Anomaly:
             self._normalize_df()
 
         self.ad.fit(self.df.loc[:, [self.column]])
-        self.dataframe = self.ad.detect(self.df.loc[:, [self.column]])  # predict if an anomaly is present
+        self.dataframe = self.ad.detect(
+            self.df.loc[:, [self.column]]
+        )  # predict if an anomaly is present
 
         if self.invert:
             mask = self.dataframe[self.column].to_numpy()
@@ -87,6 +99,8 @@ class Anomaly:
         self.dataframe.insert(0, "interval_to", self.dataframe.pop("interval_to"))
 
     def _normalize_df(self):
-        self.df.loc[:, self.column] = (self.df.loc[:, [self.column]] - self.df.loc[:,
-                                                                       [self.column]].mean()) \
-                                      / self.df.loc[:, [self.column]].std()  # standardize timeseries
+        self.df.loc[:, self.column] = (
+            self.df.loc[:, [self.column]] - self.df.loc[:, [self.column]].mean()
+        ) / self.df.loc[
+            :, [self.column]
+        ].std()  # standardize timeseries

@@ -17,7 +17,6 @@ from sentinelhub import (
     SHConfig,
     parse_time,
     SentinelHubCatalog,
-    BBox,
 )
 
 # container-specific paths
@@ -26,12 +25,12 @@ from sentinelhub import (
 OUT_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/results")
 
 # clean output directory
-for item in Path(OUT_DIR).glob("*"):
-    if item.is_file():
-        item.unlink()
-
-    else:
-        shutil.rmtree(item, ignore_errors=True)
+# for item in Path(OUT_DIR).glob("*"):
+#     if item.is_file():
+#         item.unlink()
+#
+#     else:
+#         shutil.rmtree(item, ignore_errors=True)
 
 # set up logging
 logger = get_logger(__name__, out_dir=OUT_DIR)
@@ -62,15 +61,15 @@ class Config:
 
 class Indicator(Config):
     def __init__(
-            self,
-            aoi=None,
-            out_dir=None,
-            start_date=None,
-            end_date=None,
-            crs=CRS.WGS84,
-            resolution=5,
-            orbit="asc",
-            pol="VH",
+        self,
+        aoi=None,
+        out_dir=None,
+        start_date=None,
+        end_date=None,
+        crs=CRS.WGS84,
+        resolution=5,
+        orbit="asc",
+        pol="VH",
     ):
         super().__init__()
         self.aoi = aoi
@@ -92,6 +91,15 @@ class Indicator(Config):
         self._get_geometry()
         self._get_dimensions()
         self._get_collection()
+        self._get_out_dir()
+
+    def _get_out_dir(self):
+        self.out_dir = self.out_dir.joinpath(
+            f"{self.timestamp.strftime('%Y_%m_%d')}_{self.orbit}_{self.pol}"
+        )
+
+        if not self.out_dir.exists():
+            self.out_dir.mkdir(parents=True, exist_ok=True)
 
     def _get_geometry(self):
         self.geometry = Geometry(self.aoi, crs=self.crs)  # shapely polygon with CRS
@@ -193,15 +201,15 @@ class Indicator(Config):
     def stats_to_df(self):
         target = []
 
-        for item in self.stats["data"]:
+        for _item in self.stats["data"]:
             df_entry = {
-                "interval_from": pd.to_datetime(parse_time(item["interval"]["from"])),
-                "interval_to": pd.to_datetime(parse_time(item["interval"]["to"])),
+                "interval_from": pd.to_datetime(parse_time(_item["interval"]["from"])),
+                "interval_to": pd.to_datetime(parse_time(_item["interval"]["to"])),
             }
 
             bands = Bands()
 
-            for band in self.get_band_stats(item["outputs"]["default"]["bands"]):
+            for band in self.get_band_stats(_item["outputs"]["default"]["bands"]):
                 if not band.valid:
                     continue
 
@@ -219,12 +227,8 @@ class Indicator(Config):
 
     def save(self):
         out_file = self.out_dir.joinpath(
-            self.timestamp.strftime("%Y_%m_%d"),
             f"indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.csv",
         )
-
-        if not out_file.parent.exists():
-            out_file.parent.mkdir(parents=True, exist_ok=True)
 
         self.dataframe.to_csv(out_file)
 
@@ -249,7 +253,16 @@ class Bands:
 
 
 class StacItems(Config):
-    def __init__(self, geometry=None, df=None, column=None, orbit="asc", pol="VH", timestamp=None, out_dir=None):
+    def __init__(
+        self,
+        geometry=None,
+        df=None,
+        column=None,
+        orbit="asc",
+        pol="VH",
+        timestamp=None,
+        out_dir=None,
+    ):
         super().__init__()
 
         self.catalog = None
@@ -277,28 +290,33 @@ class StacItems(Config):
     def scenes_to_df(self):
         scenes_df = self.get_scenes()
 
-        self.dataframe = pd.DataFrame({
-            "interval_from": [
-                pd.to_datetime(_item["properties"]["datetime"]).normalize()
-                for values in scenes_df.values for _item in values
-            ],
-            "scene": [_item["id"] for values in scenes_df.values for _item in values],
-        })
+        self.dataframe = pd.DataFrame(
+            {
+                "interval_from": [
+                    pd.to_datetime(_item["properties"]["datetime"]).normalize()
+                    for values in scenes_df.values
+                    for _item in values
+                ],
+                "scene": [
+                    _item["id"] for values in scenes_df.values for _item in values
+                ],
+            }
+        )
 
     def join_with_anomalies(self):
         self.dataframe = self.dataframe.set_index("interval_from")
 
-        self.dataframe["scene"] = self.dataframe.set_index(self.dataframe.index)["scene"]
-        self.dataframe["anomaly"] = self.anomalies_df.set_index(self.anomalies_df.index)["anomaly"]
+        self.dataframe["scene"] = self.dataframe.set_index(self.dataframe.index)[
+            "scene"
+        ]
+        self.dataframe["anomaly"] = self.anomalies_df.set_index(
+            self.anomalies_df.index
+        )["anomaly"]
 
     def save(self):
         out_file = self.out_dir.joinpath(
-            self.timestamp.strftime("%Y_%m_%d"),
             f"scenes_indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.csv",
         )
-
-        if not out_file.parent.exists():
-            out_file.parent.mkdir(parents=True, exist_ok=True)
 
         self.dataframe.to_csv(out_file)
 
@@ -308,14 +326,24 @@ class StacItems(Config):
         search_iterator = self.catalog.search(
             DataCollection.SENTINEL1,
             geometry=self.geometry,
-            time=(f"{date.year}-{date.month}-{date.day}", f"{date.year}-{date.month}-{date.day}"),
+            time=(
+                f"{date.year}-{date.month}-{date.day}",
+                f"{date.year}-{date.month}-{date.day}",
+            ),
             fields={"include": ["id", "properties.datetime"], "exclude": []},
         )
 
         return list(search_iterator)
 
 
-def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, pol="VH", orbit="asc"):
+def main(
+    aoi_data=None,
+    start_date=None,
+    end_date=None,
+    anomaly_options=None,
+    pol="VH",
+    orbit="asc",
+):
     with AOI(data=aoi_data) as aoi:
         aoi.get_features()
 
@@ -336,11 +364,11 @@ def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, po
         anomaly = Anomaly(
             df=indicator.dataframe,
             column="B0_max",
-            out_dir=OUT_DIR,
+            out_dir=indicator.out_dir,
             orbit=indicator.orbit,
             timestamp=indicator.timestamp,
             pol=pol,
-            options=anomaly_options
+            options=anomaly_options,
         )
 
         anomaly.apply_anomaly_detection()
@@ -354,12 +382,19 @@ def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, po
             orbit=indicator.orbit,
             timestamp=indicator.timestamp,
             pol=pol,
-            out_dir=OUT_DIR
+            out_dir=indicator.out_dir,
         )
 
         stac.scenes_to_df()
         stac.join_with_anomalies()
         stac.save()
+
+        shutil.move(
+            Path(OUT_DIR).joinpath("log_sat4ec.json"),
+            indicator.out_dir.joinpath(
+                f"LOG_{indicator.orbit}_{indicator.pol}_{indicator.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.json"
+            ),
+        )
 
 
 def run():
@@ -411,24 +446,47 @@ def run():
 
 
 def create_parser():
-    parser = argparse.ArgumentParser(description="Compute aggregated statistics on Sentinel-1 data")
-    parser.add_argument("--aoi_data", default="dummy", help="Path to AOI.[GEOJSON, SHP, GPKG], AOI geometry as WKT, "
-                                                            "Polygon or Multipolygon.",
-                        metavar="AOI"
-                        )
-    parser.add_argument("--start_date", help="Begin of the time series, as YYYY-MM-DD, like 2020-11-01",
-                        metavar="YYYY-MM-DD")
-    parser.add_argument("--end_date", help="End of the time series, as YYYY-MM-DD, like 2020-11-01",
-                        metavar="YYYY-MM-DD")
-    parser.add_argument("--polarization", help="Polarization of Sentinel-1 data, default: VH", choices=["VH", "VV"],
-                        nargs=1, default="VH")
-    parser.add_argument("--orbit", help="Orbit of Sentinel-1 data, default: ascending", choices=["asc", "des"],
-                        nargs=1, default="asc")
-    parser.add_argument("--anomaly_options",
-                        nargs="*",
-                        choices=["invert", "normalize", "plot"],
-                        help="Use anomaly detection to list scenes of high or low backscatter. Do not call "
-                             "to apply default parameters. Consult the README for more info.")
+    parser = argparse.ArgumentParser(
+        description="Compute aggregated statistics on Sentinel-1 data"
+    )
+    parser.add_argument(
+        "--aoi_data",
+        default="dummy",
+        help="Path to AOI.[GEOJSON, SHP, GPKG], AOI geometry as WKT, "
+        "Polygon or Multipolygon.",
+        metavar="AOI",
+    )
+    parser.add_argument(
+        "--start_date",
+        help="Begin of the time series, as YYYY-MM-DD, like 2020-11-01",
+        metavar="YYYY-MM-DD",
+    )
+    parser.add_argument(
+        "--end_date",
+        help="End of the time series, as YYYY-MM-DD, like 2020-11-01",
+        metavar="YYYY-MM-DD",
+    )
+    parser.add_argument(
+        "--polarization",
+        help="Polarization of Sentinel-1 data, default: VH",
+        choices=["VH", "VV"],
+        nargs=1,
+        default="VH",
+    )
+    parser.add_argument(
+        "--orbit",
+        help="Orbit of Sentinel-1 data, default: ascending",
+        choices=["asc", "des"],
+        nargs=1,
+        default="asc",
+    )
+    parser.add_argument(
+        "--anomaly_options",
+        nargs="*",
+        choices=["invert", "normalize", "plot"],
+        help="Use anomaly detection to list scenes of high or low backscatter. Do not call "
+        "to apply default parameters. Consult the README for more info.",
+    )
 
     return parser
 
