@@ -26,6 +26,9 @@ def get_logger(
     formatter = JsonFormatter(string_format)
 
     # create a file handler
+    if not Path(out_dir).exists():
+        Path(out_dir).mkdir(parents=True, exist_ok=True)
+
     handler = logging.FileHandler(log_file)
     handler.setLevel(level)
 

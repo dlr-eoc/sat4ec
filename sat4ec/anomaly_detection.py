@@ -46,7 +46,7 @@ class Anomaly:
         # plot timeseries and detected anomalies
         plot(
             self.df.loc[:, [self.column]],
-            anomaly=self.dataframe.loc[:, [self.column]],
+            anomaly=self.dataframe.loc[:, ["anomaly"]],
             ts_linewidth=1,
             ts_markersize=3,
             axes=ax,
@@ -91,7 +91,6 @@ class Anomaly:
 
     def rename_column(self):
         self.dataframe.rename(columns={self.column: "anomaly"}, inplace=True)
-        # self.column = "anomaly"
 
     def join_with_indicator(self, indicator_df):
         self.rename_column()
