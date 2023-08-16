@@ -247,13 +247,16 @@ class Bands:
 
 
 class StacItems(Config):
-    def __init__(self, geometry=None, df=None, column=None):
+    def __init__(self, geometry=None, df=None, column=None, ascending=True, out_dir=None):
         super().__init__()
 
         self.catalog = None
         self.geometry = geometry
-        self.df = df
+        self.indicator_df = df  # input
+        self.dataframe = None  # output
         self.column = column
+        self.ascending = ascending
+        self.out_dir = out_dir
 
         self._get_catalog()
         self._get_collection()
@@ -264,26 +267,39 @@ class StacItems(Config):
     def _get_collection(self):
         self.catalog.get_collection(DataCollection.SENTINEL1)
 
-    def get_anomaly_scenes(self):
-        # mask = self.df[self.column].to_numpy()
+    def get_scenes(self):
+        self.indicator_df = self.indicator_df.apply(lambda row: self.search_catalog(row), axis=1)
 
-        self.df["scenes"] = [""] * len(self.df)
+    def scenes_to_df(self):
+        self.get_scenes()
+        self.dataframe = pd.DataFrame({
+            "interval_from": [
+                pd.to_datetime(_item["properties"]["datetime"]).normalize()
+                for values in self.indicator_df.values for _item in values
+            ],
+            "scene": [_item["id"] for values in self.indicator_df.values for _item in values],
+            # "anomaly": None
+        })
 
-        for i in range(len(self.df)):
-            if self.df.iloc[i][self.column]:
-                # print(self.df.iloc[i])
-                date = self.df.index[i]
+    def save(self):
+        orbit = "asc" if self.ascending else "des"
+        out_file = self.out_dir.joinpath(
+            datetime.now().strftime("%Y_%m_%d"),
+            f"scenes_indicator_1{orbit}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.csv",
+        )
 
-                results = self.search_catalog(
-                    start_date=f"{date.year}-{date.month}-{date.day}",
-                    end_date=f"{date.year}-{date.month}-{date.day}",
-                )
+        if not out_file.parent.exists():
+            out_file.parent.mkdir(parents=True, exist_ok=True)
 
-    def search_catalog(self, start_date=None, end_date=None):
+        self.dataframe.to_csv(out_file)
+
+    def search_catalog(self, row):
+        date = row.name
+
         search_iterator = self.catalog.search(
             DataCollection.SENTINEL1,
             geometry=self.geometry,
-            time=(start_date, end_date),
+            time=(f"{date.year}-{date.month}-{date.day}", f"{date.year}-{date.month}-{date.day}"),
             fields={"include": ["id", "properties.datetime"], "exclude": []},
         )
 
@@ -307,23 +323,33 @@ def main(aoi_data=None, start_date=None, end_date=None, anomaly_options=None, po
         indicator.stats_to_df()
         indicator.save()
 
-        anomaly = Anomaly(
+        stac = StacItems(
+            geometry=indicator.geometry,
             df=indicator.dataframe,
             column="B0_max",
-            out_dir=OUT_DIR,
-            out_name="test",
-            options=anomaly_options
+            ascending=indicator.ascending,
+            out_dir=OUT_DIR
         )
 
-        anomaly.apply_anomaly_detection()
-        # print(anomaly.anomalies)
+        stac.scenes_to_df()
+        stac.save()
 
-        stac = StacItems(geometry=indicator.geometry, df=anomaly.anomalies, column=anomaly.column)
-        stac.get_anomaly_scenes()
-        stac.search_catalog(start_date="2020-01-12", end_date="2020-01-12")
+        # anomaly = Anomaly(
+        #     df=indicator.dataframe,
+        #     column="B0_max",
+        #     out_dir=OUT_DIR,
+        #     out_name="test",
+        #     options=anomaly_options
+        # )
+        #
+        # anomaly.apply_anomaly_detection()
 
-        if anomaly.save:
-            anomaly.plot_anomaly(pol=pol)
+        # stac = StacItems(geometry=indicator.geometry, df=anomaly.anomalies, column=anomaly.column)
+        # stac.get_anomaly_scenes()
+        # stac.search_catalog(start_date="2020-01-12", end_date="2020-01-12")
+
+        # if anomaly.save:
+        #     anomaly.plot_anomaly(pol=pol)
 
 
 def run():
