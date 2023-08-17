@@ -9,7 +9,8 @@ class Anomaly:
         self,
         df=None,
         parameters=(10, 1.5),
-        column=None,
+        anomaly_column=None,
+        df_columns=None,
         out_dir=None,
         pol="VH",
         timestamp=None,
@@ -18,7 +19,8 @@ class Anomaly:
     ):
         self.parameters = parameters
         self.df = df  # input
-        self.column = column  # dataframe column containing the anomaly data
+        self.column = anomaly_column  # dataframe column containing the anomaly data
+        self.df_columns = df_columns  # dataframe columns that should be plotted
         self.ad = None
         self.dataframe = None  # output
         self.out_dir = out_dir
@@ -31,7 +33,7 @@ class Anomaly:
 
     def save(self):
         out_file = self.out_dir.joinpath(
-            f"indicator_1{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.csv",
+            f"indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.csv",
         )
 
         self.dataframe.to_csv(out_file)
@@ -42,23 +44,32 @@ class Anomaly:
     def plot_anomaly(self):
         orbit = "ascending" if self.orbit == "asc" else "descending"
         fig, ax = plt.subplots()
+        cmap = plt.cm.get_cmap("tab20")
 
         # plot timeseries and detected anomalies
-        plot(
-            self.df.loc[:, [self.column]],
-            anomaly=self.dataframe.loc[:, ["anomaly"]],
-            ts_linewidth=1,
-            ts_markersize=3,
-            axes=ax,
-            anomaly_markersize=5,
-            anomaly_color="red",
-            anomaly_tag="marker",
-            legend=False,
-        )
+        for i, col in enumerate(self.df_columns):
+            if col == self.column:
+                anomaly = self.dataframe.loc[:, ["anomaly"]]
+
+            else:
+                anomaly = None
+
+            plot(
+                self.df.loc[:, [col]],
+                anomaly=anomaly,
+                ts_linewidth=1,
+                ts_markersize=2,
+                ts_color=cmap(i*2),
+                axes=ax,
+                anomaly_markersize=5,
+                anomaly_color="red",
+                anomaly_tag="marker",
+                legend=False,
+            )
 
         plt.title(f"Anomalies {self.pol} polarization, {orbit} orbit")
         plt.ylabel("Sentinel-1 backscatter [dB]")
-        fig.legend(loc="outside lower center", ncols=2)
+        fig.legend(loc="outside lower center", ncols=len(self.df_columns)+1)
         fig.savefig(
             self.out_dir.joinpath(
                 f"anomalies_indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.png",

@@ -39,9 +39,10 @@ if __name__ == "__main__":
     ]
     
     aois = {
-        "gent": aoi_dir.joinpath("gent_parking_lot.geojson"),
-        "munich_airport": aoi_dir.joinpath("munich_airport_1.geojson"),
-        "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson")
+        # "gent": aoi_dir.joinpath("gent_parking_lot.geojson"),
+        # "munich_airport": aoi_dir.joinpath("munich_airport_1.geojson"),
+        # "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson"),
+        "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson")
     }
 
     main(orbits, pols, aois, aoi_dir)

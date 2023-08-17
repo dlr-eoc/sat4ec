@@ -93,6 +93,15 @@ class Indicator(Config):
         self._get_dimensions()
         self._get_collection()
         self._get_out_dir()
+        self._get_column_rename_map()
+
+    def _get_column_rename_map(self):
+        self.columns_map = {
+            "B0_max": "max",
+            "B0_min": "min",
+            "B0_mean": "mean",
+            "B0_stDev": "std"
+        }
 
     def _get_out_dir(self):
         self.out_dir = self.out_dir.joinpath(
@@ -226,6 +235,12 @@ class Indicator(Config):
         self._correct_datatypes()
         self.dataframe = self.dataframe.set_index("interval_from")
 
+        for col in self.columns_map:
+            self.rename_column(src=col, dst=self.columns_map[col])
+
+    def rename_column(self, src=None, dst=None):
+        self.dataframe.rename(columns={f"{src}": f"{dst}"}, inplace=True)
+
     def save(self):
         out_file = self.out_dir.joinpath(
             f"indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.csv",
@@ -258,7 +273,6 @@ class StacItems(Config):
         self,
         geometry=None,
         df=None,
-        column=None,
         orbit="asc",
         pol="VH",
         timestamp=None,
@@ -270,7 +284,6 @@ class StacItems(Config):
         self.geometry = geometry
         self.anomalies_df = df  # input
         self.dataframe = None  # output
-        self.column = column
         self.orbit = orbit
         self.timestamp = timestamp
         self.pol = pol
@@ -364,7 +377,8 @@ def main(
 
         anomaly = Anomaly(
             df=indicator.dataframe,
-            column="B0_max",
+            df_columns=indicator.columns_map.values(),
+            anomaly_column="max",
             out_dir=indicator.out_dir,
             orbit=indicator.orbit,
             timestamp=indicator.timestamp,
@@ -379,7 +393,6 @@ def main(
         stac = StacItems(
             geometry=indicator.geometry,
             df=anomaly.dataframe,
-            column="B0_max",
             orbit=indicator.orbit,
             timestamp=indicator.timestamp,
             pol=pol,
