@@ -2,7 +2,7 @@ import subprocess
 from pathlib import Path
 
 
-def main(orbits=None, pols=None, aois=None, aoi_dir=None):
+def main(orbits=None, pols=None, aois=None, aoi_dir=None, start="2020-01-01", end="2020-12-31"):
     for key in aois.keys():
         for orbit in orbits:
             for pol in pols:
@@ -12,9 +12,9 @@ def main(orbits=None, pols=None, aois=None, aoi_dir=None):
                     "--aoi_data",
                     str(aois[key]),
                     "--start_date",
-                    "2020-01-01",
+                    f"{start}",
                     "--end_date",
-                    "2020-12-31",
+                    f"{end}",
                     "--anomaly_options",
                     "plot",
                     "--orbit",
@@ -34,16 +34,16 @@ if __name__ == "__main__":
     ]
     
     pols = [
-        "VV",
+        # "VV",
         "VH"
     ]
     
     aois = {
-        # "gent": aoi_dir.joinpath("gent_parking_lot.geojson"),
-        # "munich_airport": aoi_dir.joinpath("munich_airport_1.geojson"),
-        # "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson"),
+        "gent": aoi_dir.joinpath("gent_parking_lot.geojson"),
+        "munich_airport": aoi_dir.joinpath("munich_airport_1.geojson"),
+        "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson"),
         "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson")
     }
 
-    main(orbits, pols, aois, aoi_dir)
+    main(orbits, pols, aois, aoi_dir, start="2016-01-01", end="2022-12-31")
     
