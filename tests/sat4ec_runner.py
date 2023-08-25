@@ -25,11 +25,15 @@ def main(orbits=None, pols=None, aois=None, aoi_dir=None, start="2020-01-01", en
                 ], capture_output=False)
 
         if aoi_dir.joinpath(key).exists():
-            for orbit_dir in aoi_dir.joinpath(key).glob("*"):
-                for item in orbit_dir.glob("*"):  # delete files per orbit directory
-                    item.unlink()
+            for item in aoi_dir.joinpath(key).glob("*"):
+                for _file in item.glob("*"):  # delete files per orbit directory
+                    _file.unlink()
 
-                shutil.rmtree(orbit_dir)  # delete orbit directory
+                if item.is_dir():
+                    shutil.rmtree(item)  # delete orbit directory
+
+                if item.is_file:
+                    item.unlink()
 
             shutil.rmtree(aoi_dir.joinpath(key))  # delete obsolete directory
 
