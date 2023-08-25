@@ -1,3 +1,4 @@
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -23,6 +24,15 @@ def main(orbits=None, pols=None, aois=None, aoi_dir=None, start="2020-01-01", en
                     pol,
                 ], capture_output=False)
 
+        if aoi_dir.joinpath(key).exists():
+            for orbit_dir in aoi_dir.joinpath(key).glob("*"):
+                for item in orbit_dir.glob("*"):  # delete files per orbit directory
+                    item.unlink()
+
+                shutil.rmtree(orbit_dir)  # delete orbit directory
+
+            shutil.rmtree(aoi_dir.joinpath(key))  # delete obsolete directory
+
         aoi_dir.joinpath("results").rename(aoi_dir.joinpath(key))
 
 
@@ -40,9 +50,9 @@ if __name__ == "__main__":
     
     aois = {
         "gent": aoi_dir.joinpath("gent_parking_lot.geojson"),
-        "munich_airport": aoi_dir.joinpath("munich_airport_1.geojson"),
-        "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson"),
-        "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson")
+        # "munich_airport": aoi_dir.joinpath("munich_airport_1.geojson"),
+        # "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson"),
+        # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson")
     }
 
     main(orbits, pols, aois, aoi_dir, start="2016-01-01", end="2022-12-31")
