@@ -188,8 +188,14 @@ class Indicator(Config):
                         },
                         "processing": {
                             "orthorectify": "True",
-                            "backCoeff": "SIGMA0_ELLIPSOID",
                             "demInstance": "COPERNICUS",
+                            # "radiometricTerrainOversampling": 2,  # terrain correction
+                            "backCoeff": "SIGMA0_ELLIPSOID",
+                            "speckleFilter": {
+                                "type": "LEE",  # possibleValues:["NONE","LEE"]
+                                "windowSizeX": 3,
+                                "windowSizeY": 3
+                            },
                         },
                     },
                 )
