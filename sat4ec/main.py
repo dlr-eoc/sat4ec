@@ -1,5 +1,6 @@
 import argparse
 import pandas as pd
+import numpy as np
 import shutil
 import traceback
 from aoi_check import AOI
@@ -88,6 +89,8 @@ class Indicator(Config):
         self.pol = pol
         self.out_dir = out_dir
         self.timestamp = datetime.now()
+        self.thresholds = {"min": None, "max": None}
+        self.outliers = None
 
         self._get_geometry()
         self._get_dimensions()
@@ -97,10 +100,10 @@ class Indicator(Config):
 
     def _get_column_rename_map(self):
         self.columns_map = {
-            "B0_max": "max",
-            "B0_min": "min",
+            # "B0_max": "max",
+            # "B0_min": "min",
             "B0_mean": "mean",
-            "B0_stDev": "std"
+            # "B0_stDev": "std"
         }
 
     def _get_out_dir(self):
@@ -194,7 +197,7 @@ class Indicator(Config):
                             "speckleFilter": {
                                 "type": "LEE",  # possibleValues:["NONE","LEE"]
                                 "windowSizeX": 3,
-                                "windowSizeY": 3
+                                "windowSizeY": 3,
                             },
                         },
                     },
@@ -243,6 +246,24 @@ class Indicator(Config):
 
         for col in self.columns_map:
             self.rename_column(src=col, dst=self.columns_map[col])
+
+    def get_outliers_id(self):
+        # create thresholds
+        self.thresholds["min"], self.thresholds["max"] = self.dataframe[
+            "mean"
+        ].quantile([0.01, 0.99])
+
+        self.outliers = self.dataframe[
+            (self.dataframe["mean"] >= self.thresholds["max"])
+            | (self.dataframe["mean"] <= self.thresholds["min"])
+        ].index
+
+    def remove_outliers(self):
+        self.get_outliers_id()
+        self.dataframe.loc[self.outliers, ["mean"]] = np.nan  # fill with nans
+        self.dataframe["mean"] = self.dataframe["mean"].interpolate(
+            method="nearest"
+        )  # interpolate nans
 
     def rename_column(self, src=None, dst=None):
         self.dataframe.rename(columns={f"{src}": f"{dst}"}, inplace=True)
@@ -379,17 +400,20 @@ def main(
         indicator.get_request_grd()
         indicator.get_data()
         indicator.stats_to_df()
+        indicator.remove_outliers()
         # indicator.save()
 
         anomaly = Anomaly(
             df=indicator.dataframe,
             df_columns=indicator.columns_map.values(),
-            anomaly_column="max",
+            anomaly_column="mean",
             out_dir=indicator.out_dir,
             orbit=indicator.orbit,
             timestamp=indicator.timestamp,
             pol=pol,
             options=anomaly_options,
+            outlier_thresholds=indicator.thresholds,
+            outliers=indicator.outliers,
         )
 
         anomaly.apply_anomaly_detection()
@@ -443,6 +467,8 @@ def run():
         "invert": False,
         "normalize": False,
         "plot": False,
+        "minmax": False,
+        "outliers": False,
     }
 
     if isinstance(args.anomaly_options, list):
@@ -454,6 +480,13 @@ def run():
 
         if "plot" in args.anomaly_options:
             anomaly_options["plot"] = True
+
+    if isinstance(args.plot_options, list):
+        if "minmax" in args.plot_options:
+            anomaly_options["minmax"] = True
+
+        if "outliers" in args.plot_options:
+            anomaly_options["outliers"] = True
 
     main(
         aoi_data=args.aoi_data,
@@ -506,6 +539,12 @@ def create_parser():
         choices=["invert", "normalize", "plot"],
         help="Use anomaly detection to list scenes of high or low backscatter. Do not call "
         "to apply default parameters. Consult the README for more info.",
+    )
+    parser.add_argument(
+        "--plot_options",
+        nargs="*",
+        choices=["minmax", "outliers"],
+        help="Plot global minimum and maximum or outliers.",
     )
 
     return parser

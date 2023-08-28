@@ -1,6 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from adtk.visualization import plot
+from adtk.visualization import plot as ad_plot
 from adtk.detector import InterQuartileRangeAD, PersistAD, QuantileAD, SeasonalAD
 
 
@@ -15,6 +15,8 @@ class Anomaly:
         pol="VH",
         timestamp=None,
         options=None,
+        outlier_thresholds=None,
+        outliers=None,
         orbit="asc",
     ):
         self.parameters = parameters
@@ -31,6 +33,15 @@ class Anomaly:
         self.invert = options["invert"]
         self.plot = options["plot"]
 
+        self._get_outliers(options=options, outlier_thresholds=outlier_thresholds, outliers=outliers)
+
+    def _get_outliers(self, options, outlier_thresholds, outliers):
+        if options["minmax"]:
+            self.minmax = outlier_thresholds
+
+        if options["outliers"]:
+            self.outliers = outliers
+
     def save(self):
         out_file = self.out_dir.joinpath(
             f"indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.csv",
@@ -43,29 +54,25 @@ class Anomaly:
 
     def plot_anomaly(self):
         orbit = "ascending" if self.orbit == "asc" else "descending"
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(1, 1, figsize=(20, 10))
         cmap = plt.cm.get_cmap("tab20")
 
         # plot timeseries and detected anomalies
-        for i, col in enumerate(self.df_columns):
-            if col == self.column:
-                anomaly = self.dataframe.loc[:, ["anomaly"]]
-
-            else:
-                anomaly = None
-
-            plot(
-                self.df.loc[:, [col]],
-                anomaly=anomaly,
-                ts_linewidth=1,
-                ts_markersize=2,
-                ts_color=cmap(i*2),
-                axes=ax,
-                anomaly_markersize=5,
-                anomaly_color="red",
-                anomaly_tag="marker",
-                legend=False,
+        axis = ad_plot(
+            self.df.loc[:, ["mean"]],
+            anomaly=self.dataframe.loc[:, ["anomaly"]],
+            ts_linewidth=1,
+            ts_markersize=2,
+            ts_color=cmap(0),
+            axes=ax,
+            anomaly_markersize=5,
+            anomaly_color="red",
+            anomaly_tag="marker",
+            legend=False,
             )
+
+        plt.fill_between(self.df.index, self.df["mean"].min(), self.minmax["min"], color="grey", alpha=0.25)
+        plt.fill_between(self.df.index, self.df["mean"].max(), self.minmax["max"], color="grey", alpha=0.25)
 
         plt.title(f"Anomalies {self.pol} polarization, {orbit} orbit")
         plt.ylabel("Sentinel-1 backscatter [dB]")

@@ -18,6 +18,9 @@ def main(orbits=None, pols=None, aois=None, aoi_dir=None, start="2020-01-01", en
                     f"{end}",
                     "--anomaly_options",
                     "plot",
+                    "--plot_options",
+                    "minmax",
+                    "outliers",
                     "--orbit",
                     orbit,
                     "--polarization",
@@ -32,7 +35,7 @@ def main(orbits=None, pols=None, aois=None, aoi_dir=None, start="2020-01-01", en
                 if item.is_dir():
                     shutil.rmtree(item)  # delete orbit directory
 
-                if item.is_file:
+                if item.is_file():
                     item.unlink()
 
             shutil.rmtree(aoi_dir.joinpath(key))  # delete obsolete directory
@@ -53,10 +56,11 @@ if __name__ == "__main__":
     ]
     
     aois = {
-        "gent": aoi_dir.joinpath("gent_parking_lot.geojson"),
+        # "gent": aoi_dir.joinpath("gent_parking_lot.geojson"),
         # "munich_airport": aoi_dir.joinpath("munich_airport_1.geojson"),
         # "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson"),
         # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson")
+        "bmw_leipzig_breakup": aoi_dir.joinpath("bmw_leipzig_breakup.geojson")
     }
 
     main(orbits, pols, aois, aoi_dir, start="2016-01-01", end="2022-12-31")
