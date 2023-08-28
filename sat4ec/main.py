@@ -400,8 +400,8 @@ def main(
         indicator.get_request_grd()
         indicator.get_data()
         indicator.stats_to_df()
-        indicator.remove_outliers()
-        # indicator.save()
+        # indicator.remove_outliers()
+        indicator.save()
 
         anomaly = Anomaly(
             df=indicator.dataframe,

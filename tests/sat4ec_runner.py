@@ -18,9 +18,9 @@ def main(orbits=None, pols=None, aois=None, aoi_dir=None, start="2020-01-01", en
                     f"{end}",
                     "--anomaly_options",
                     "plot",
-                    "--plot_options",
-                    "minmax",
-                    "outliers",
+                    # "--plot_options",
+                    # "minmax",
+                    # "outliers",
                     "--orbit",
                     orbit,
                     "--polarization",
@@ -59,9 +59,11 @@ if __name__ == "__main__":
         # "gent": aoi_dir.joinpath("gent_parking_lot.geojson"),
         # "munich_airport": aoi_dir.joinpath("munich_airport_1.geojson"),
         # "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson"),
-        # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson")
-        "bmw_leipzig_breakup": aoi_dir.joinpath("bmw_leipzig_breakup.geojson")
+        # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson"),
+        # "vw_emden": aoi_dir.joinpath("vw_emden.geojson")
+        "bmw_regensburg": aoi_dir.joinpath("bmw_regensburg.geojson")
+        # "bmw_leipzig_breakup": aoi_dir.joinpath("bmw_leipzig_breakup.geojson")
     }
 
-    main(orbits, pols, aois, aoi_dir, start="2016-01-01", end="2022-12-31")
+    main(orbits, pols, aois, aoi_dir, start="2020-01-01", end="2022-12-31")
     

@@ -71,8 +71,8 @@ class Anomaly:
             legend=False,
             )
 
-        plt.fill_between(self.df.index, self.df["mean"].min(), self.minmax["min"], color="grey", alpha=0.25)
-        plt.fill_between(self.df.index, self.df["mean"].max(), self.minmax["max"], color="grey", alpha=0.25)
+        # plt.fill_between(self.df.index, self.df["mean"].min(), self.minmax["min"], color="grey", alpha=0.25)
+        # plt.fill_between(self.df.index, self.df["mean"].max(), self.minmax["max"], color="grey", alpha=0.25)
 
         plt.title(f"Anomalies {self.pol} polarization, {orbit} orbit")
         plt.ylabel("Sentinel-1 backscatter [dB]")
