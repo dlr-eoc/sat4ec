@@ -2,31 +2,47 @@ import pandas as pd
 
 from system.authentication import Config
 from sentinelhub import DataCollection, SentinelHubCatalog
+from pathlib import Path
 
 
 class StacItems(Config):
     def __init__(
         self,
+        data=None,
         geometry=None,
-        df=None,
         orbit="asc",
         pol="VH",
-        timestamp=None,
         out_dir=None,
     ):
         super().__init__()
 
         self.catalog = None
         self.geometry = geometry
-        self.anomalies_df = df  # input
         self.dataframe = None  # output
         self.orbit = orbit
-        self.timestamp = timestamp
         self.pol = pol
         self.out_dir = out_dir
 
+        if isinstance(data, Path):
+            self.filename = data
+            self._load_df()
+
+        elif isinstance(data, str):
+            if Path(data).exists():
+                self.filename = Path(data)
+                self._load_df()
+
+        elif isinstance(data, pd.DataFrame):
+            self.filename = None
+            self.anomalies_df = data
+
         self._get_catalog()
         self._get_collection()
+
+    def _load_df(self):
+        self.anomalies_df = pd.read_csv(self.filename)
+        self.anomalies_df["interval_from"] = pd.to_datetime(self.anomalies_df["interval_from"])
+        self.anomalies_df = self.anomalies_df.set_index("interval_from")
 
     def _get_catalog(self):
         self.catalog = SentinelHubCatalog(config=self.config)
@@ -55,7 +71,6 @@ class StacItems(Config):
 
     def join_with_anomalies(self):
         self.dataframe = self.dataframe.set_index("interval_from")
-
         self.dataframe["scene"] = self.dataframe.set_index(self.dataframe.index)[
             "scene"
         ]
@@ -65,7 +80,7 @@ class StacItems(Config):
 
     def save(self):
         out_file = self.out_dir.joinpath(
-            f"scenes_indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.csv",
+            f"indicator_1_scenes_{self.orbit}_{self.pol}.csv",
         )
 
         self.dataframe.to_csv(out_file)

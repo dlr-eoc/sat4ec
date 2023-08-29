@@ -68,10 +68,9 @@ def main(
         anomaly.save()
 
         stac = StacItems(
+            data=anomaly.dataframe,
             geometry=indicator.geometry,
-            df=anomaly.dataframe,
             orbit=indicator.orbit,
-            timestamp=indicator.timestamp,
             pol=pol,
             out_dir=indicator.out_dir,
         )
