@@ -55,7 +55,7 @@ def main(
 
         anomaly = Anomaly(
             data=indicator.dataframe,
-            df_columns=indicator.columns_map.values(),
+            df_columns=list(indicator.columns_map.values())[:4],  # ignore sample count and data count
             anomaly_column="mean",
             out_dir=indicator.out_dir,
             orbit=indicator.orbit,

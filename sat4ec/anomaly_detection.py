@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 from adtk.visualization import plot as ad_plot
 from adtk.detector import InterQuartileRangeAD, PersistAD, QuantileAD, SeasonalAD
 from pathlib import Path
@@ -60,33 +61,40 @@ class Anomaly:
     def plot_anomaly(self):
         orbit = "ascending" if self.orbit == "asc" else "descending"
         fig, ax = plt.subplots(1, 1, figsize=(20, 10))
-        cmap = plt.cm.get_cmap("tab20")
 
-        # plot timeseries and detected anomalies
-        axis = ad_plot(
-            self.indicator_df.loc[:, ["mean"]],
-            anomaly=self.dataframe.loc[:, ["anomaly"]],
-            ts_linewidth=1,
-            ts_markersize=2,
-            ts_color=cmap(0),
-            axes=ax,
-            anomaly_markersize=5,
-            anomaly_color="red",
-            anomaly_tag="marker",
-            legend=False,
+        for col in self.df_columns:
+            sns.lineplot(
+                data=self.dataframe,
+                x=self.dataframe.index,
+                y=self.dataframe[col],
+                marker="o",
+                markersize=5,
+                label=col,
+                legend=False,
+                zorder=1,
             )
 
-        # plt.fill_between(self.df.index, self.df["mean"].min(), self.minmax["min"], color="grey", alpha=0.25)
-        # plt.fill_between(self.df.index, self.df["mean"].max(), self.minmax["max"], color="grey", alpha=0.25)
+        sns.scatterplot(
+            data=self.dataframe.loc[self.dataframe["anomaly"]],
+            x=self.dataframe.loc[self.dataframe["anomaly"]].index,
+            y=self.dataframe.loc[self.dataframe["anomaly"]]["mean"],
+            marker="o",
+            s=25,
+            zorder=2,
+            color="red",
+            label="anomaly"
+        )
 
         plt.title(f"Anomalies {self.pol} polarization, {orbit} orbit")
         plt.ylabel("Sentinel-1 backscatter [dB]")
+        plt.xlabel("Timestamp")
         fig.legend(loc="outside lower center", ncols=len(self.df_columns)+1)
         fig.savefig(
             self.out_dir.joinpath(
                 f"indicator_1_anomalies_{self.orbit}_{self.pol}.png",
             )
         )
+
         plt.close()
 
     def apply_anomaly_detection(self):

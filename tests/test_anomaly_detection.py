@@ -122,3 +122,25 @@ class TestAD(unittest.TestCase):
                 f"indicator_1_anomalies_{self.orbit}_{self.pol}.csv"
             ).exists()
         )
+
+    def test_plot(self):
+        anomaly = Anomaly(
+            data=self.indicator_df_file,
+            df_columns=list(self.indicator.columns_map.values())[:4],
+            anomaly_column="mean",
+            out_dir=self.indicator.out_dir,
+            orbit=self.orbit,
+            pol=self.pol,
+            options=self.anomaly_options,
+        )
+        anomaly.plot = True
+        anomaly.apply_anomaly_detection()
+        anomaly.join_with_indicator()
+        anomaly.dataframe["anomaly"][-1] = True
+        anomaly.save()
+
+        self.assertTrue(
+            anomaly.out_dir.joinpath(
+                f"indicator_1_anomalies_{self.orbit}_{self.pol}.png"
+            ).exists()
+        )
