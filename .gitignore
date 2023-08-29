@@ -1,9 +1,12 @@
 *.jpg
 .idea/
+*.qmd
 sat4ec/__pycache__
-sat4ec/credentials.yaml
+sat4ec/system/credentials.yaml
 results
 credentials
 obsolete
 tests/testdata
 data
+
+!tests/testdata/AOIs/*.geojson
