@@ -7,5 +7,6 @@ results
 credentials
 obsolete
 tests/testdata
-!tests/testdata/AOIs
 data
+
+!tests/testdata/AOIs/*.geojson
