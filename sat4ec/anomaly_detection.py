@@ -2,49 +2,54 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from adtk.visualization import plot as ad_plot
 from adtk.detector import InterQuartileRangeAD, PersistAD, QuantileAD, SeasonalAD
+from pathlib import Path
 
 
 class Anomaly:
     def __init__(
         self,
-        df=None,
+        data=None,
         parameters=(10, 1.5),
         anomaly_column=None,
         df_columns=None,
         out_dir=None,
         pol="VH",
-        timestamp=None,
         options=None,
-        outlier_thresholds=None,
-        outliers=None,
         orbit="asc",
     ):
         self.parameters = parameters
-        self.df = df  # input
         self.column = anomaly_column  # dataframe column containing the anomaly data
         self.df_columns = df_columns  # dataframe columns that should be plotted
         self.ad = None
         self.dataframe = None  # output
         self.out_dir = out_dir
         self.orbit = orbit
-        self.timestamp = timestamp
         self.pol = pol
         self.normalize = options["normalize"]
         self.invert = options["invert"]
         self.plot = options["plot"]
 
-        self._get_outliers(options=options, outlier_thresholds=outlier_thresholds, outliers=outliers)
+        if isinstance(data, Path):
+            self.filename = data
+            self._load_df()
 
-    def _get_outliers(self, options, outlier_thresholds, outliers):
-        if options["minmax"]:
-            self.minmax = outlier_thresholds
+        elif isinstance(data, str):
+            if Path(data).exists():
+                self.filename = Path(data)
+                self._load_df()
 
-        if options["outliers"]:
-            self.outliers = outliers
+        elif isinstance(data, pd.DataFrame):
+            self.filename = None
+            self.indicator_df = data
+
+    def _load_df(self):
+        self.indicator_df = pd.read_csv(self.filename)
+        self.indicator_df["interval_from"] = pd.to_datetime(self.indicator_df["interval_from"])
+        self.indicator_df = self.indicator_df.set_index("interval_from")
 
     def save(self):
         out_file = self.out_dir.joinpath(
-            f"indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.csv",
+            f"indicator_1_anomalies_{self.orbit}_{self.pol}.csv",
         )
 
         self.dataframe.to_csv(out_file)
@@ -59,7 +64,7 @@ class Anomaly:
 
         # plot timeseries and detected anomalies
         axis = ad_plot(
-            self.df.loc[:, ["mean"]],
+            self.indicator_df.loc[:, ["mean"]],
             anomaly=self.dataframe.loc[:, ["anomaly"]],
             ts_linewidth=1,
             ts_markersize=2,
@@ -79,7 +84,7 @@ class Anomaly:
         fig.legend(loc="outside lower center", ncols=len(self.df_columns)+1)
         fig.savefig(
             self.out_dir.joinpath(
-                f"anomalies_indicator_1_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.png",
+                f"indicator_1_anomalies_{self.orbit}_{self.pol}.png",
             )
         )
         plt.close()
@@ -93,14 +98,14 @@ class Anomaly:
         # self.ad = PersistAD()
         # self.ad = QuantileAD(low=1)
         # self.ad = SeasonalAD()
-        self.df = self.df.sort_index()
+        self.indicator_df = self.indicator_df.sort_index()
 
         if self.normalize:
             self._normalize_df()
 
-        self.ad.fit(self.df.loc[:, [self.column]])
+        self.ad.fit(self.indicator_df.loc[:, [self.column]])
         self.dataframe = self.ad.detect(
-            self.df.loc[:, [self.column]]
+            self.indicator_df.loc[:, [self.column]]
         )  # predict if an anomaly is present
 
         if self.invert:
@@ -110,14 +115,14 @@ class Anomaly:
     def rename_column(self):
         self.dataframe.rename(columns={self.column: "anomaly"}, inplace=True)
 
-    def join_with_indicator(self, indicator_df):
+    def join_with_indicator(self):
         self.rename_column()
-        self.dataframe = pd.concat([self.dataframe, indicator_df], axis=1)
+        self.dataframe = pd.concat([self.dataframe, self.indicator_df], axis=1)
         self.dataframe.insert(0, "interval_to", self.dataframe.pop("interval_to"))
 
     def _normalize_df(self):
-        self.df.loc[:, self.column] = (
-            self.df.loc[:, [self.column]] - self.df.loc[:, [self.column]].mean()
-        ) / self.df.loc[
+        self.indicator_df.loc[:, self.column] = (
+            self.indicator_df.loc[:, [self.column]] - self.indicator_df.loc[:, [self.column]].mean()
+        ) / self.indicator_df.loc[
             :, [self.column]
         ].std()  # standardize timeseries

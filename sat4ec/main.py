@@ -54,20 +54,17 @@ def main(
         indicator.save()
 
         anomaly = Anomaly(
-            df=indicator.dataframe,
+            data=indicator.dataframe,
             df_columns=indicator.columns_map.values(),
             anomaly_column="mean",
             out_dir=indicator.out_dir,
             orbit=indicator.orbit,
-            timestamp=indicator.timestamp,
             pol=pol,
             options=anomaly_options,
-            outlier_thresholds=indicator.thresholds,
-            outliers=indicator.outliers,
         )
 
         anomaly.apply_anomaly_detection()
-        anomaly.join_with_indicator(indicator_df=indicator.dataframe)
+        anomaly.join_with_indicator()
         anomaly.save()
 
         stac = StacItems(
@@ -117,8 +114,6 @@ def run():
         "invert": False,
         "normalize": False,
         "plot": False,
-        "minmax": False,
-        "outliers": False,
     }
 
     if isinstance(args.anomaly_options, list):
