@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 from datetime import datetime
 from system.authentication import Config
@@ -51,10 +50,12 @@ class IndicatorData(Config):
 
     def _get_column_rename_map(self):
         self.columns_map = {
-            # "B0_max": "max",
-            # "B0_min": "min",
+            "B0_min": "min",
+            "B0_max": "max",
             "B0_mean": "mean",
-            # "B0_stDev": "std"
+            "B0_stDev": "std",
+            "B0_sampleCount": "sample_count",
+            "B0_noDataCount": "nodata_count",
         }
 
     def _get_out_dir(self):
@@ -203,7 +204,7 @@ class IndicatorData(Config):
 
     def save(self):
         out_file = self.out_dir.joinpath(
-            f"indicator_1_rawdata_{self.orbit}_{self.pol}_{self.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.csv",
+            f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv",
         )
 
         self.dataframe.to_csv(out_file)

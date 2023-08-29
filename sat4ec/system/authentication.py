@@ -13,7 +13,7 @@ class Config:
         self._get_config()
 
     def _get_credentials(self):
-        credentials = load_yaml(Path.cwd().joinpath("credentials.yaml"))
+        credentials = load_yaml(Path(__file__).parent.joinpath("credentials.yaml"))
 
         if not self.id:
             self.id = credentials["SH_CLIENT_ID"]

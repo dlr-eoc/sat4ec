@@ -193,7 +193,8 @@ def create_parser():
     parser.add_argument(
         "--plot_options",
         nargs="*",
-        choices=["minmax", "outliers"],
+        choices=["min", "max", "mean", "std"],
+        default=["mean"],
         help="Plot global minimum and maximum or outliers.",
     )
 
