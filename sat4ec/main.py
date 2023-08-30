@@ -3,6 +3,7 @@ import shutil
 import traceback
 from aoi_check import AOI
 from anomaly_detection import Anomaly
+from plot_data import PlotData
 from pathlib import Path
 from datetime import datetime
 
@@ -93,6 +94,16 @@ def main(
         raw_anomalies = compute_anomaly(
             df=indicator.dataframe,
             df_columns=get_anomaly_columns(indicator.columns_map),
+            out_dir=indicator.out_dir,
+            orbit=orbit,
+            pol=pol,
+            spline=False,
+            anomaly_options=anomaly_options,
+        )
+
+        spline_anomalies = compute_anomaly(
+            df=indicator.dataframe,
+            df_columns=get_anomaly_columns(indicator.columns_map, spline=True),
             out_dir=indicator.out_dir,
             orbit=orbit,
             pol=pol,

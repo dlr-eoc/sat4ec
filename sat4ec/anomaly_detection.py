@@ -69,45 +69,6 @@ class Anomaly:
         if self.plot:
             self.plot_anomaly()
 
-    def plot_anomaly(self):
-        orbit = "ascending" if self.orbit == "asc" else "descending"
-        fig, ax = plt.subplots(1, 1, figsize=(20, 10))
-
-        for col in self.df_columns:
-            sns.lineplot(
-                data=self.dataframe,
-                x=self.dataframe.index,
-                y=self.dataframe[col],
-                marker="o",
-                markersize=5,
-                label=col,
-                legend=False,
-                zorder=1,
-            )
-
-        sns.scatterplot(
-            data=self.dataframe.loc[self.dataframe["anomaly"]],
-            x=self.dataframe.loc[self.dataframe["anomaly"]].index,
-            y=self.dataframe.loc[self.dataframe["anomaly"]]["mean"],
-            marker="o",
-            s=25,
-            zorder=2,
-            color="red",
-            label="anomaly"
-        )
-
-        plt.title(f"Anomalies {self.pol} polarization, {orbit} orbit")
-        plt.ylabel("Sentinel-1 backscatter [dB]")
-        plt.xlabel("Timestamp")
-        fig.legend(loc="outside lower center", ncols=len(self.df_columns)+1)
-        fig.savefig(
-            self.out_dir.joinpath(
-                "plot", f"indicator_1_anomalies_{self.orbit}_{self.pol}.png",
-            )
-        )
-
-        plt.close()
-
     def apply_anomaly_detection(self):
         # fit anomaly detection criterion on historic timeseries
         # compare time series values with 1st and 3rd quartiles of historic data and identify time points as anomalous
