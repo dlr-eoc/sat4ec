@@ -80,7 +80,7 @@ class StacItems(Config):
 
     def save(self):
         out_file = self.out_dir.joinpath(
-            f"indicator_1_scenes_{self.orbit}_{self.pol}.csv",
+            "scenes", f"indicator_1_scenes_{self.orbit}_{self.pol}.csv",
         )
 
         self.dataframe.to_csv(out_file)

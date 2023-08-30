@@ -51,7 +51,8 @@ def main(
         indicator.get_request_grd()
         indicator.get_data()
         indicator.stats_to_df()
-        indicator.save()
+        indicator.apply_spline()
+        indicator.save_raw()
 
         anomaly = Anomaly(
             data=indicator.dataframe,
@@ -82,7 +83,7 @@ def main(
         shutil.move(
             Path(OUT_DIR).joinpath("log_sat4ec.json"),
             indicator.out_dir.joinpath(
-                f"LOG_{indicator.orbit}_{indicator.pol}_{indicator.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.json"
+                f"LOG_{indicator.orbit}_{indicator.pol}.json"
             ),
         )
 

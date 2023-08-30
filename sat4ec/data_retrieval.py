@@ -1,4 +1,6 @@
 import pandas as pd
+import numpy as np
+from scipy.interpolate import splrep, BSpline
 from datetime import datetime
 from system.authentication import Config
 from sentinelhub import (
@@ -36,16 +38,16 @@ class IndicatorData(Config):
         self.request = None
         self.stats = None
         self.dataframe = None
+        self.spline_dataframe = None
         self.pol = pol
         self.out_dir = out_dir
-        self.timestamp = datetime.now()
         self.thresholds = {"min": None, "max": None}
         self.outliers = None
 
         self._get_geometry()
         self._get_dimensions()
         self._get_collection()
-        self._get_out_dir()
+        self._create_out_dirs()
         self._get_column_rename_map()
 
     def _get_column_rename_map(self):
@@ -58,13 +60,10 @@ class IndicatorData(Config):
             "B0_noDataCount": "nodata_count",
         }
 
-    def _get_out_dir(self):
-        self.out_dir = self.out_dir.joinpath(
-            f"{self.timestamp.strftime('%Y_%m_%d')}_{self.orbit}_{self.pol}"
-        )
-
-        if not self.out_dir.exists():
-            self.out_dir.mkdir(parents=True, exist_ok=True)
+    def _create_out_dirs(self):
+        for out in ["plot", "raw", "scenes", "product", "spline"]:
+            if not self.out_dir.joinpath(out).exists():
+                self.out_dir.joinpath(out).mkdir(parents=True)
 
     def _get_geometry(self):
         self.geometry = Geometry(self.aoi, crs=self.crs)  # shapely polygon with CRS
@@ -202,12 +201,29 @@ class IndicatorData(Config):
     def rename_column(self, src=None, dst=None):
         self.dataframe.rename(columns={f"{src}": f"{dst}"}, inplace=True)
 
-    def save(self):
+    def apply_spline(self):
+        for col in self.columns_map.values():
+            spline = splrep(np.arange(len(self.dataframe)), self.dataframe[col], s=len(self.dataframe))
+            self.dataframe.iloc[spline[0]][f"{col}_spline"] = spline[1]
+            # print(self.dataframe.iloc[spline[0]].index)
+
+        # print(tck_s)
+        # plt.plot(self.indicator_df.index, BSpline(*tck_s)(range(len(self.indicator_df))))
+        # plt.show()
+
+    def save_raw(self):
         out_file = self.out_dir.joinpath(
-            f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv",
+            "raw", f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv",
         )
 
         self.dataframe.to_csv(out_file)
+
+    def save_spline(self):
+        out_file = self.out_dir.joinpath(
+            "spline", f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv",
+        )
+
+        self.spline_dataframe.to_csv(out_file)
 
 
 class Band:

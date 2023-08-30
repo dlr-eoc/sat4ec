@@ -42,7 +42,7 @@ class TestAD(unittest.TestCase):
             pol=self.pol,
         )
 
-        self.indicator_df_file = self.indicator.out_dir.joinpath(f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv")
+        self.indicator_df_file = self.indicator.out_dir.joinpath("raw", f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv")
 
     def test_dataframe_from_file(self):
         anomaly = Anomaly(
@@ -119,7 +119,7 @@ class TestAD(unittest.TestCase):
 
         self.assertTrue(
             anomaly.out_dir.joinpath(
-                f"indicator_1_anomalies_{self.orbit}_{self.pol}.csv"
+                "product", f"indicator_1_anomalies_{self.orbit}_{self.pol}.csv"
             ).exists()
         )
 
@@ -141,6 +141,6 @@ class TestAD(unittest.TestCase):
 
         self.assertTrue(
             anomaly.out_dir.joinpath(
-                f"indicator_1_anomalies_{self.orbit}_{self.pol}.png"
+                "plot", f"indicator_1_anomalies_{self.orbit}_{self.pol}.png"
             ).exists()
         )

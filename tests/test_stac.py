@@ -154,6 +154,6 @@ class TestGetData(unittest.TestCase):
 
         self.assertTrue(
             self.indicator.out_dir.joinpath(
-                f"indicator_1_scenes_{self.orbit}_{self.pol}.csv"
+                "scenes", f"indicator_1_scenes_{self.orbit}_{self.pol}.csv"
             ).exists()
         )

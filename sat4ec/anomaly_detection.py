@@ -1,7 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from adtk.visualization import plot as ad_plot
 from adtk.detector import InterQuartileRangeAD, PersistAD, QuantileAD, SeasonalAD
 from pathlib import Path
 
@@ -50,7 +49,7 @@ class Anomaly:
 
     def save(self):
         out_file = self.out_dir.joinpath(
-            f"indicator_1_anomalies_{self.orbit}_{self.pol}.csv",
+            "product", f"indicator_1_anomalies_{self.orbit}_{self.pol}.csv",
         )
 
         self.dataframe.to_csv(out_file)
@@ -91,7 +90,7 @@ class Anomaly:
         fig.legend(loc="outside lower center", ncols=len(self.df_columns)+1)
         fig.savefig(
             self.out_dir.joinpath(
-                f"indicator_1_anomalies_{self.orbit}_{self.pol}.png",
+                "plot", f"indicator_1_anomalies_{self.orbit}_{self.pol}.png",
             )
         )
 
