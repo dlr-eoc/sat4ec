@@ -29,28 +29,40 @@ class Anomaly:
         self.invert = options["invert"]
         self.plot = options["plot"]
 
+        self.indicator_df = self._get_data(data)
+
+    def _get_data(self, data):
         if isinstance(data, Path):
-            self.filename = data
-            self._load_df()
+            return self._load_df(data)
 
         elif isinstance(data, str):
             if Path(data).exists():
-                self.filename = Path(data)
-                self._load_df()
+                return self._load_df(Path(data))
 
         elif isinstance(data, pd.DataFrame):
-            self.filename = None
-            self.indicator_df = data
+            return data
 
-    def _load_df(self):
-        self.indicator_df = pd.read_csv(self.filename)
-        self.indicator_df["interval_from"] = pd.to_datetime(self.indicator_df["interval_from"])
-        self.indicator_df = self.indicator_df.set_index("interval_from")
+        else:
+            return None
 
-    def save(self):
-        out_file = self.out_dir.joinpath(
-            "product", f"indicator_1_anomalies_{self.orbit}_{self.pol}.csv",
-        )
+    @staticmethod
+    def _load_df(filename):
+        df = pd.read_csv(filename)
+        df["interval_from"] = pd.to_datetime(df["interval_from"])
+        df = df.set_index("interval_from")
+        
+        return df
+
+    def save(self, spline=False):
+        if spline:
+            out_file = self.out_dir.joinpath(
+                "product", f"indicator_1_anomalies_spline_{self.orbit}_{self.pol}.csv",
+            )
+
+        else:
+            out_file = self.out_dir.joinpath(
+                "product", f"indicator_1_anomalies_raw_{self.orbit}_{self.pol}.csv",
+            )
 
         self.dataframe.to_csv(out_file)
 

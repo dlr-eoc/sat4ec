@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from scipy.interpolate import splrep, BSpline
-from datetime import datetime
+from system.helper_functions import get_anomaly_columns
 from system.authentication import Config
 from sentinelhub import (
     Geometry,
@@ -202,14 +202,19 @@ class IndicatorData(Config):
         self.dataframe.rename(columns={f"{src}": f"{dst}"}, inplace=True)
 
     def apply_spline(self):
-        for col in self.columns_map.values():
-            spline = splrep(np.arange(len(self.dataframe)), self.dataframe[col], s=len(self.dataframe))
-            self.dataframe.iloc[spline[0]][f"{col}_spline"] = spline[1]
-            # print(self.dataframe.iloc[spline[0]].index)
-
-        # print(tck_s)
-        # plt.plot(self.indicator_df.index, BSpline(*tck_s)(range(len(self.indicator_df))))
-        # plt.show()
+        # for col in get_anomaly_columns(self.columns_map):
+        print(len(self.dataframe))
+        col = "mean"
+        spline = list(splrep(np.arange(len(self.dataframe)), self.dataframe[col], s=len(self.dataframe)))
+        spline[0] = spline[0].astype(np.int16)
+        dst_arr = np.full([len(self.dataframe)], np.nan)
+        dst_arr[spline[0]] = spline[1]
+        self.dataframe[f"{col}_spline"] = dst_arr
+        # self.dataframe[f"{col}_spline"] = self.dataframe[f"{col}_spline"].interpolate(method="cubic", axis=0)
+        print(self.dataframe[f"{col}_spline"])
+        # self.dataframe.at[spline[0], f"{col}_spline"] = spline[1]
+        # print(spline[1])
+        # print(self.dataframe.at[spline[0], f"{col}_spline"])
 
     def save_raw(self):
         out_file = self.out_dir.joinpath(
@@ -223,7 +228,7 @@ class IndicatorData(Config):
             "spline", f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv",
         )
 
-        self.spline_dataframe.to_csv(out_file)
+        self.dataframe.to_csv(out_file)
 
 
 class Band:

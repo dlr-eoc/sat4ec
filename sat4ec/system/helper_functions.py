@@ -11,6 +11,15 @@ def load_yaml(yaml_path):
         return yaml.safe_load(f)
 
 
+def get_anomaly_columns(columns_dict=None, spline=False):
+    if spline:
+        names = list(columns_dict.values())[:4]  # ignore sample count and data count
+        return [f"{col}_spline" for col in names]
+
+    else:
+        return list(columns_dict.values())[:4]  # ignore sample count and data count
+
+
 def get_logger(
         name,
         out_dir=None,
