@@ -123,6 +123,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.apply_find_peaks()
+        anomaly.save(spline=True)
         # self.assertEqual(list(anomaly.dataframe.columns), [anomaly.column])
         # self.assertEqual(anomaly.dataframe[anomaly.column].dtypes.name, "bool")
 
