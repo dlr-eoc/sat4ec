@@ -51,18 +51,20 @@ class Anomaly:
         df = pd.read_csv(filename)
         df["interval_from"] = pd.to_datetime(df["interval_from"])
         df = df.set_index("interval_from")
-        
+
         return df
 
     def save(self, spline=False):
         if spline:
             out_file = self.out_dir.joinpath(
-                "product", f"indicator_1_anomalies_spline_{self.orbit}_{self.pol}.csv",
+                "product",
+                f"indicator_1_anomalies_spline_{self.orbit}_{self.pol}.csv",
             )
 
         else:
             out_file = self.out_dir.joinpath(
-                "product", f"indicator_1_anomalies_raw_{self.orbit}_{self.pol}.csv",
+                "product",
+                f"indicator_1_anomalies_raw_{self.orbit}_{self.pol}.csv",
             )
 
         self.dataframe.to_csv(out_file)
@@ -90,9 +92,32 @@ class Anomaly:
             mask = self.dataframe[self.column].to_numpy()
             self.dataframe[self.column] = ~mask
 
-    def apply_find_peaks(self):
+    def find_extrema(self):
         self.dataframe = self.indicator_df.copy()
         self.dataframe["anomaly"] = False
+
+        # TODO: Is flip working?
+        self.find_maxima()
+        self.flip_data()
+        self.find_maxima()
+
+    def flip_data(self):
+        # print(self.dataframe["mean"])
+        global_mean = self.dataframe["mean"].mean()  # global mean
+        positive = self.dataframe.loc[
+            self.dataframe["mean"] > global_mean
+        ]  # positive part
+        negative = self.dataframe.loc[
+            self.dataframe["mean"] < global_mean
+        ]  # negative part
+        self.dataframe.loc[positive.index]["mean"] = (
+            positive["mean"].subtract(global_mean).abs().subtract(global_mean).abs()
+        )  # positive deviation
+        self.dataframe.loc[negative.index]["mean"] = (
+            negative["mean"].subtract(global_mean).abs().add(global_mean)
+        )  # negative deviation
+
+    def find_maxima(self):
         peaks, _ = find_peaks(self.dataframe[self.column].to_numpy(), distance=10)
         self.dataframe["anomaly"][peaks] = True
 
@@ -106,7 +131,8 @@ class Anomaly:
 
     def _normalize_df(self):
         self.indicator_df.loc[:, self.column] = (
-            self.indicator_df.loc[:, [self.column]] - self.indicator_df.loc[:, [self.column]].mean()
+            self.indicator_df.loc[:, [self.column]]
+            - self.indicator_df.loc[:, [self.column]].mean()
         ) / self.indicator_df.loc[
             :, [self.column]
         ].std()  # standardize timeseries
