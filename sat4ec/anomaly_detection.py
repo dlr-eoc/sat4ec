@@ -1,7 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from adtk.visualization import plot as ad_plot
 from adtk.detector import InterQuartileRangeAD, PersistAD, QuantileAD, SeasonalAD
 from pathlib import Path
 
@@ -28,74 +27,43 @@ class Anomaly:
         self.pol = pol
         self.normalize = options["normalize"]
         self.invert = options["invert"]
-        self.plot = options["plot"]
 
+        self.indicator_df = self._get_data(data)
+
+    def _get_data(self, data):
         if isinstance(data, Path):
-            self.filename = data
-            self._load_df()
+            return self._load_df(data)
 
         elif isinstance(data, str):
             if Path(data).exists():
-                self.filename = Path(data)
-                self._load_df()
+                return self._load_df(Path(data))
 
         elif isinstance(data, pd.DataFrame):
-            self.filename = None
-            self.indicator_df = data
+            return data
 
-    def _load_df(self):
-        self.indicator_df = pd.read_csv(self.filename)
-        self.indicator_df["interval_from"] = pd.to_datetime(self.indicator_df["interval_from"])
-        self.indicator_df = self.indicator_df.set_index("interval_from")
+        else:
+            return None
 
-    def save(self):
-        out_file = self.out_dir.joinpath(
-            f"indicator_1_anomalies_{self.orbit}_{self.pol}.csv",
-        )
+    @staticmethod
+    def _load_df(filename):
+        df = pd.read_csv(filename)
+        df["interval_from"] = pd.to_datetime(df["interval_from"])
+        df = df.set_index("interval_from")
+        
+        return df
+
+    def save(self, spline=False):
+        if spline:
+            out_file = self.out_dir.joinpath(
+                "product", f"indicator_1_anomalies_spline_{self.orbit}_{self.pol}.csv",
+            )
+
+        else:
+            out_file = self.out_dir.joinpath(
+                "product", f"indicator_1_anomalies_raw_{self.orbit}_{self.pol}.csv",
+            )
 
         self.dataframe.to_csv(out_file)
-
-        if self.plot:
-            self.plot_anomaly()
-
-    def plot_anomaly(self):
-        orbit = "ascending" if self.orbit == "asc" else "descending"
-        fig, ax = plt.subplots(1, 1, figsize=(20, 10))
-
-        for col in self.df_columns:
-            sns.lineplot(
-                data=self.dataframe,
-                x=self.dataframe.index,
-                y=self.dataframe[col],
-                marker="o",
-                markersize=5,
-                label=col,
-                legend=False,
-                zorder=1,
-            )
-
-        sns.scatterplot(
-            data=self.dataframe.loc[self.dataframe["anomaly"]],
-            x=self.dataframe.loc[self.dataframe["anomaly"]].index,
-            y=self.dataframe.loc[self.dataframe["anomaly"]]["mean"],
-            marker="o",
-            s=25,
-            zorder=2,
-            color="red",
-            label="anomaly"
-        )
-
-        plt.title(f"Anomalies {self.pol} polarization, {orbit} orbit")
-        plt.ylabel("Sentinel-1 backscatter [dB]")
-        plt.xlabel("Timestamp")
-        fig.legend(loc="outside lower center", ncols=len(self.df_columns)+1)
-        fig.savefig(
-            self.out_dir.joinpath(
-                f"indicator_1_anomalies_{self.orbit}_{self.pol}.png",
-            )
-        )
-
-        plt.close()
 
     def apply_anomaly_detection(self):
         # fit anomaly detection criterion on historic timeseries

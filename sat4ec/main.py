@@ -3,12 +3,13 @@ import shutil
 import traceback
 from aoi_check import AOI
 from anomaly_detection import Anomaly
+from plot_data import PlotData
 from pathlib import Path
 from datetime import datetime
 
 from data_retrieval import IndicatorData as IData
 from stac import StacItems
-from system.helper_functions import get_logger
+from system.helper_functions import get_logger, get_anomaly_columns
 
 
 # container-specific paths
@@ -28,6 +29,53 @@ OUT_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/results")
 logger = get_logger(__name__, out_dir=OUT_DIR)
 
 
+def compute_raw_data(aoi=None, start_date=None, end_date=None, orbit="asc", pol="VH"):
+    indicator = IData(
+        aoi=aoi.geometry,
+        out_dir=OUT_DIR,
+        start_date=start_date,
+        end_date=end_date,
+        orbit=orbit,
+        pol=pol,
+    )
+
+    indicator.get_request_grd()
+    indicator.get_data()
+    indicator.stats_to_df()
+    indicator.apply_regression()
+    indicator.save_raw()
+    indicator.save_spline()
+
+    return indicator
+
+
+def compute_anomaly(
+    df=None,
+    df_columns=None,
+    anomaly_column="mean",
+    out_dir=None,
+    orbit="asc",
+    pol="VH",
+    spline=False,
+    anomaly_options=None,
+):
+    anomaly = Anomaly(
+        data=df,
+        df_columns=df_columns,
+        anomaly_column=anomaly_column,
+        out_dir=out_dir,
+        orbit=orbit,
+        pol=pol,
+        options=anomaly_options,
+    )
+
+    anomaly.apply_anomaly_detection()
+    anomaly.join_with_indicator()
+    anomaly.save(spline=spline)
+
+    return anomaly
+
+
 def main(
     aoi_data=None,
     start_date=None,
@@ -39,36 +87,32 @@ def main(
     with AOI(data=aoi_data) as aoi:
         aoi.get_features()
 
-        indicator = IData(
-            aoi=aoi.geometry,
-            out_dir=OUT_DIR,
-            start_date=start_date,
-            end_date=end_date,
+        indicator = compute_raw_data(
+            aoi=aoi, start_date=start_date, end_date=end_date, orbit=orbit, pol=pol
+        )
+
+        raw_anomalies = compute_anomaly(
+            df=indicator.dataframe,
+            df_columns=get_anomaly_columns(indicator.columns_map),
+            out_dir=indicator.out_dir,
             orbit=orbit,
             pol=pol,
+            spline=False,
+            anomaly_options=anomaly_options,
         )
 
-        indicator.get_request_grd()
-        indicator.get_data()
-        indicator.stats_to_df()
-        indicator.save()
-
-        anomaly = Anomaly(
-            data=indicator.dataframe,
-            df_columns=list(indicator.columns_map.values())[:4],  # ignore sample count and data count
-            anomaly_column="mean",
+        spline_anomalies = compute_anomaly(
+            df=indicator.dataframe,
+            df_columns=get_anomaly_columns(indicator.columns_map, spline=True),
             out_dir=indicator.out_dir,
-            orbit=indicator.orbit,
+            orbit=orbit,
             pol=pol,
-            options=anomaly_options,
+            spline=False,
+            anomaly_options=anomaly_options,
         )
-
-        anomaly.apply_anomaly_detection()
-        anomaly.join_with_indicator()
-        anomaly.save()
 
         stac = StacItems(
-            data=anomaly.dataframe,
+            data=raw_anomalies.dataframe,
             geometry=indicator.geometry,
             orbit=indicator.orbit,
             pol=pol,
@@ -81,9 +125,7 @@ def main(
 
         shutil.move(
             Path(OUT_DIR).joinpath("log_sat4ec.json"),
-            indicator.out_dir.joinpath(
-                f"LOG_{indicator.orbit}_{indicator.pol}_{indicator.timestamp.strftime('%Y-%m-%d_%H-%M-%S')}.json"
-            ),
+            indicator.out_dir.joinpath(f"LOG_{indicator.orbit}_{indicator.pol}.json"),
         )
 
 
@@ -112,7 +154,6 @@ def run():
     anomaly_options = {
         "invert": False,
         "normalize": False,
-        "plot": False,
     }
 
     if isinstance(args.anomaly_options, list):
@@ -121,9 +162,6 @@ def run():
 
         if "normalize" in args.anomaly_options:
             anomaly_options["normalize"] = True
-
-        if "plot" in args.anomaly_options:
-            anomaly_options["plot"] = True
 
     if isinstance(args.plot_options, list):
         if "minmax" in args.plot_options:
@@ -180,7 +218,7 @@ def create_parser():
     parser.add_argument(
         "--anomaly_options",
         nargs="*",
-        choices=["invert", "normalize", "plot"],
+        choices=["invert", "normalize"],
         help="Use anomaly detection to list scenes of high or low backscatter. Do not call "
         "to apply default parameters. Consult the README for more info.",
     )

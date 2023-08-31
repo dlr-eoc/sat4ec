@@ -9,8 +9,8 @@ from shapely import errors
 from sat4ec.aoi_check import AOI
 from sat4ec.data_retrieval import IndicatorData as IData
 from sat4ec.anomaly_detection import Anomaly
+from sat4ec.system import helper_functions
 from pathlib import Path
-
 
 TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
 
@@ -42,11 +42,14 @@ class TestAD(unittest.TestCase):
             pol=self.pol,
         )
 
-        self.indicator_df_file = self.indicator.out_dir.joinpath(f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv")
+        self.indicator_raw_file = self.indicator.out_dir.joinpath("raw",
+                                                                  f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv")
+        self.indicator_spline_file = self.indicator.out_dir.joinpath("spline",
+                                                                     f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv")
 
     def test_dataframe_from_file(self):
         anomaly = Anomaly(
-            data=self.indicator_df_file,
+            data=self.indicator_raw_file,
             options=self.anomaly_options,
         )
 
@@ -55,7 +58,7 @@ class TestAD(unittest.TestCase):
 
     def test_dataframe_from_dataframe(self):
         anomaly = Anomaly(
-            data=pd.read_csv(self.indicator_df_file),
+            data=pd.read_csv(self.indicator_raw_file),
             options=self.anomaly_options,
         )
 
@@ -64,17 +67,39 @@ class TestAD(unittest.TestCase):
 
     def test_dataframe_from_filestring(self):
         anomaly = Anomaly(
-            data=str(self.indicator_df_file),
+            data=str(self.indicator_raw_file),
             options=self.anomaly_options,
         )
 
         self.assertTrue(isinstance(anomaly.indicator_df, pd.DataFrame))
         self.assertTrue(anomaly.indicator_df.index.inferred_type, pd.DatetimeIndex)
 
+    def test_anomaly_columns(self):
+        columns = helper_functions.get_anomaly_columns(self.indicator.columns_map, spline=True)
+        self.assertEqual(columns, ['min_spline', 'max_spline', 'mean_spline', 'std_spline'])
+
+        columns = helper_functions.get_anomaly_columns(self.indicator.columns_map, spline=False)
+        self.assertEqual(columns, ['min', 'max', 'mean', 'std'])
+
     def test_anomaly_detection(self):
         anomaly = Anomaly(
-            data=self.indicator_df_file,
-            df_columns=self.indicator.columns_map.values(),
+            data=self.indicator_raw_file,
+            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),
+            anomaly_column="mean",
+            out_dir=self.indicator.out_dir,
+            orbit=self.orbit,
+            pol=self.pol,
+            options=self.anomaly_options,
+        )
+
+        anomaly.apply_anomaly_detection()
+        self.assertEqual(list(anomaly.dataframe.columns), [anomaly.column])
+        self.assertEqual(anomaly.dataframe[anomaly.column].dtypes.name, "bool")
+
+    def test_anomaly_detection_spline(self):
+        anomaly = Anomaly(
+            data=self.indicator_spline_file,
+            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map, spline=True),
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -88,8 +113,24 @@ class TestAD(unittest.TestCase):
 
     def test_join_with_indicator(self):
         anomaly = Anomaly(
-            data=self.indicator_df_file,
-            df_columns=self.indicator.columns_map.values(),
+            data=self.indicator_raw_file,
+            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),
+            anomaly_column="mean",
+            out_dir=self.indicator.out_dir,
+            orbit=self.orbit,
+            pol=self.pol,
+            options=self.anomaly_options,
+        )
+
+        anomaly.apply_anomaly_detection()
+        anomaly.join_with_indicator()
+        self.assertEqual(list(anomaly.dataframe.columns)[:2], ["interval_to", "anomaly"])
+        self.assertEqual(anomaly.dataframe["anomaly"].dtypes.name, "bool")
+
+    def test_join_with_indicator_spline(self):
+        anomaly = Anomaly(
+            data=self.indicator_spline_file,
+            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map, spline=True),
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -104,8 +145,8 @@ class TestAD(unittest.TestCase):
 
     def test_anomaly_save(self):
         anomaly = Anomaly(
-            data=self.indicator_df_file,
-            df_columns=self.indicator.columns_map.values(),
+            data=self.indicator_raw_file,
+            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map, spline=False),
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -119,28 +160,27 @@ class TestAD(unittest.TestCase):
 
         self.assertTrue(
             anomaly.out_dir.joinpath(
-                f"indicator_1_anomalies_{self.orbit}_{self.pol}.csv"
+                "product", f"indicator_1_anomalies_raw_{self.orbit}_{self.pol}.csv"
             ).exists()
         )
 
-    def test_plot(self):
+    def test_anomaly_save_spline(self):
         anomaly = Anomaly(
-            data=self.indicator_df_file,
-            df_columns=list(self.indicator.columns_map.values())[:4],
+            data=self.indicator_spline_file,
+            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map, spline=True),
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
             pol=self.pol,
             options=self.anomaly_options,
         )
-        anomaly.plot = True
+
         anomaly.apply_anomaly_detection()
         anomaly.join_with_indicator()
-        anomaly.dataframe["anomaly"][-1] = True
-        anomaly.save()
+        anomaly.save(spline=True)
 
         self.assertTrue(
             anomaly.out_dir.joinpath(
-                f"indicator_1_anomalies_{self.orbit}_{self.pol}.png"
+                "product", f"indicator_1_anomalies_spline_{self.orbit}_{self.pol}.csv"
             ).exists()
         )

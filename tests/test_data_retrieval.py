@@ -23,7 +23,7 @@ class TestGetData(unittest.TestCase):
         aoi.get_features()
         self.aoi = aoi.geometry
         self.out_dir = TEST_DIR.joinpath("bmw_regensburg")
-        self.start_date = "2022-01-01"
+        self.start_date = "2016-01-01"
         self.end_date = "2022-12-31"
         self.orbit = "asc"
         self.pol = "VH"
@@ -96,6 +96,23 @@ class TestGetData(unittest.TestCase):
         self.assertTrue(indicator.dataframe.dtypes["std"], "float32")
         self.assertTrue(indicator.dataframe.index.inferred_type, pd.DatetimeIndex)
 
+    def test_spline(self):
+        indicator = IData(
+            aoi=self.aoi,
+            out_dir=self.out_dir,
+            start_date=self.start_date,
+            end_date=self.end_date,
+            orbit=self.orbit,
+            pol=self.pol,
+        )
+
+        indicator.dataframe = pd.read_csv(self.out_dir.joinpath("raw", "indicator_1_rawdata_asc_VH.csv"))
+        indicator.dataframe["interval_from"] = pd.to_datetime(indicator.dataframe["interval_from"])
+        indicator.dataframe = indicator.dataframe.set_index("interval_from")
+
+        indicator.apply_regression()
+        indicator.save_spline()
+
     def test_save_df(self):
         indicator = IData(
             aoi=self.aoi,
@@ -109,9 +126,9 @@ class TestGetData(unittest.TestCase):
         indicator.get_request_grd()
         indicator.get_data()
         indicator.stats_to_df()
-        indicator.save()
+        indicator.save_raw()
         self.assertTrue(
             indicator.out_dir.joinpath(
-                f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv"
+                "raw", f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv"
             ).exists()
         )
