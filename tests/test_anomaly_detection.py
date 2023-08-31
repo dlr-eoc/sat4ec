@@ -111,6 +111,21 @@ class TestAD(unittest.TestCase):
         self.assertEqual(list(anomaly.dataframe.columns), [anomaly.column])
         self.assertEqual(anomaly.dataframe[anomaly.column].dtypes.name, "bool")
 
+    def test_find_peaks_spline(self):
+        anomaly = Anomaly(
+            data=self.indicator_spline_file,
+            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map, spline=True),
+            anomaly_column="mean",
+            out_dir=self.indicator.out_dir,
+            orbit=self.orbit,
+            pol=self.pol,
+            options=self.anomaly_options,
+        )
+
+        anomaly.apply_find_peaks()
+        # self.assertEqual(list(anomaly.dataframe.columns), [anomaly.column])
+        # self.assertEqual(anomaly.dataframe[anomaly.column].dtypes.name, "bool")
+
     def test_join_with_indicator(self):
         anomaly = Anomaly(
             data=self.indicator_raw_file,

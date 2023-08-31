@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from adtk.detector import InterQuartileRangeAD, PersistAD, QuantileAD, SeasonalAD
+from scipy.signal import find_peaks
 from pathlib import Path
 
 
@@ -87,6 +88,12 @@ class Anomaly:
         if self.invert:
             mask = self.dataframe[self.column].to_numpy()
             self.dataframe[self.column] = ~mask
+
+    def apply_find_peaks(self):
+        peaks, _ = find_peaks(self.indicator_df[self.column].to_numpy(), distance=10)
+        plt.plot(self.indicator_df[self.column])
+        plt.plot(self.indicator_df.index[peaks], self.indicator_df[self.column][peaks], "x")
+        plt.show()
 
     def rename_column(self):
         self.dataframe.rename(columns={self.column: "anomaly"}, inplace=True)
