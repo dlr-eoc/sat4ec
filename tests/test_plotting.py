@@ -17,6 +17,7 @@ class TestPlotting(unittest.TestCase):
         aoi.get_features()
         self.aoi = aoi.geometry
         self.out_dir = TEST_DIR.joinpath("bmw_regensburg")
+        self.name = "BMW Regensburg"
         self.start_date = "2022-01-01"
         self.end_date = "2022-12-31"
         self.orbit = "asc"
@@ -61,7 +62,8 @@ class TestPlotting(unittest.TestCase):
             ),
             orbit="asc",
         ) as plotting:
-            plotting.plot_splinedata(show=True)
+            plotting.plot_splinedata(show=False)
+            plotting.plot_finalize()
 
     def test_raw_spline_overlay(self):
         with PlotData(
@@ -72,5 +74,22 @@ class TestPlotting(unittest.TestCase):
             spline_data=self.indicator_spline_file,
             orbit="asc",
         ) as plotting:
-            plotting.plot_rawdata(show=False)
-            plotting.plot_splinedata(show=True)
+            plotting.plot_rawdata(show=False, background=True)
+            plotting.plot_splinedata(show=False)
+            plotting.plot_finalize(show=True)
+
+    def test_save_plot(self):
+        with PlotData(
+            out_dir=self.out_dir,
+            name=self.name,
+            raw_data=self.indicator_raw_file,
+            raw_columns=helper_functions.get_anomaly_columns(
+                self.indicator.columns_map
+            ),
+            spline_data=self.indicator_spline_file,
+            orbit="asc",
+        ) as plotting:
+            plotting.plot_rawdata(show=False, background=True)
+            plotting.plot_splinedata(show=False)
+            plotting.plot_finalize(show=True)
+            plotting.save()

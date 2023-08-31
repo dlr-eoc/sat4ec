@@ -5,8 +5,21 @@ from pathlib import Path
 
 
 class PlotData:
-    def __init__(self, raw_data=None, spline_data=None, anomaly_data=None, raw_columns=None, orbit="asc"):
+    def __init__(
+        self,
+        name=None,
+        raw_data=None,
+        spline_data=None,
+        anomaly_data=None,
+        raw_columns=None,
+        out_dir=None,
+        orbit="asc",
+        pol="VH",
+    ):
+        self.name = name
+        self.out_dir = out_dir
         self.orbit = orbit
+        self.pol = pol
         self.raw_columns = raw_columns
 
         self.raw_dataframe = self._get_data(data=raw_data)
@@ -49,19 +62,37 @@ class PlotData:
     def __exit__(self, exc_type, exc_val, exc_tb):
         plt.close()
 
-    def plot_rawdata(self, show=False):
-        for col in self.raw_columns:
-            sns.lineplot(
-                data=self.raw_dataframe,
-                x=self.raw_dataframe.index,
-                y=self.raw_dataframe[col],
-                # marker="o",
-                # markersize=5,
-                label=col,
-                legend=False,
-                zorder=1,
-                ax=self.ax,
-            )
+    def plot_rawdata(self, show=False, background=False):
+        if (
+            background
+        ):  # determines the use of overlaid spline, raw data plotted grey then
+            for col in self.raw_columns:
+                sns.lineplot(
+                    data=self.raw_dataframe,
+                    x=self.raw_dataframe.index,
+                    y=self.raw_dataframe[col],
+                    # marker="o",
+                    # markersize=5,
+                    # label=col,
+                    legend=False,
+                    color="#d3d3d3",
+                    zorder=1,
+                    ax=self.ax,
+                )
+
+        else:
+            for col in self.raw_columns:
+                sns.lineplot(
+                    data=self.raw_dataframe,
+                    x=self.raw_dataframe.index,
+                    y=self.raw_dataframe[col],
+                    # marker="o",
+                    # markersize=5,
+                    label=col,
+                    legend=False,
+                    zorder=1,
+                    ax=self.ax,
+                )
 
         if show:  # for development
             plt.show()
@@ -76,7 +107,7 @@ class PlotData:
                 # markersize=5,
                 label=col,
                 legend=False,
-                zorder=1,
+                zorder=2,
                 ax=self.ax,
             )
 
@@ -90,18 +121,33 @@ class PlotData:
             y=self.anomaly_dataframe.loc[self.anomaly_dataframe["anomaly"]]["mean"],
             marker="o",
             s=25,
-            zorder=2,
+            zorder=3,
             color="red",
             label="anomaly",
-            ax=self.ax
+            ax=self.ax,
         )
 
-        # plt.title(f"Anomalies {self.pol} polarization, {orbit} orbit")
-        # plt.ylabel("Sentinel-1 backscatter [dB]")
-        # plt.xlabel("Timestamp")
-        # fig.legend(loc="outside lower center", ncols=len(self.df_columns) + 1)
-        # fig.savefig(
-        #     self.out_dir.joinpath(
-        #         "plot", f"indicator_1_anomalies_{self.orbit}_{self.pol}.png",
-        #     )
-        # )
+    def plot_finalize(self, show=False):
+        plt.title(f"{self.name} {self.pol} polarization, {self.orbit} orbit")
+        plt.ylabel("Sentinel-1 backscatter [dB]")
+        plt.xlabel("Timestamp")
+        self.fig.legend(loc="outside lower center", ncols=len(self.raw_columns) + 1)
+
+        if show:  # for development
+            plt.show()
+
+    def correct_name(self):
+        self.name = self.name.lower()
+
+        if " " in self.name:
+            self.name = "_".join(self.name.split(" "))
+
+    def save(self):
+        self.correct_name()
+
+        self.fig.savefig(
+            self.out_dir.joinpath(
+                "plot",
+                f"indicator_1_{self.name}_{self.orbit}_{self.pol}.png",
+            )
+        )
