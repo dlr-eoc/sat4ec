@@ -43,6 +43,9 @@ class TestPlotting(unittest.TestCase):
         self.indicator_spline_file = self.indicator.out_dir.joinpath(
             "spline", f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv"
         )
+        self.anomaly_spline_file = self.indicator.out_dir.joinpath(
+            "product", f"indicator_1_anomalies_spline_{self.orbit}_{self.pol}.csv"
+        )
 
     def test_raw_plot(self):
         with PlotData(
@@ -87,9 +90,11 @@ class TestPlotting(unittest.TestCase):
                 self.indicator.columns_map
             ),
             spline_data=self.indicator_spline_file,
+            anomaly_data=self.anomaly_spline_file,
             orbit="asc",
         ) as plotting:
             plotting.plot_rawdata(show=False, background=True)
             plotting.plot_splinedata(show=False)
+            plotting.plot_anomalies()
             plotting.plot_finalize(show=True)
             plotting.save()

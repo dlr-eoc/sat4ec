@@ -112,7 +112,7 @@ def main(
         )
 
         stac = StacItems(
-            data=anomaly.dataframe,
+            data=raw_anomalies.dataframe,
             geometry=indicator.geometry,
             orbit=indicator.orbit,
             pol=pol,
@@ -154,7 +154,6 @@ def run():
     anomaly_options = {
         "invert": False,
         "normalize": False,
-        "plot": False,
     }
 
     if isinstance(args.anomaly_options, list):
@@ -163,9 +162,6 @@ def run():
 
         if "normalize" in args.anomaly_options:
             anomaly_options["normalize"] = True
-
-        if "plot" in args.anomaly_options:
-            anomaly_options["plot"] = True
 
     if isinstance(args.plot_options, list):
         if "minmax" in args.plot_options:
@@ -222,7 +218,7 @@ def create_parser():
     parser.add_argument(
         "--anomaly_options",
         nargs="*",
-        choices=["invert", "normalize", "plot"],
+        choices=["invert", "normalize"],
         help="Use anomaly detection to list scenes of high or low backscatter. Do not call "
         "to apply default parameters. Consult the README for more info.",
     )

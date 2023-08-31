@@ -27,7 +27,6 @@ class Anomaly:
         self.pol = pol
         self.normalize = options["normalize"]
         self.invert = options["invert"]
-        self.plot = options["plot"]
 
         self.indicator_df = self._get_data(data)
 
@@ -65,9 +64,6 @@ class Anomaly:
             )
 
         self.dataframe.to_csv(out_file)
-
-        if self.plot:
-            self.plot_anomaly()
 
     def apply_anomaly_detection(self):
         # fit anomaly detection criterion on historic timeseries
