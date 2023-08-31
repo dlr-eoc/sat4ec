@@ -201,34 +201,37 @@ class IndicatorData(Config):
     def rename_column(self, src=None, dst=None):
         self.dataframe.rename(columns={f"{src}": f"{dst}"}, inplace=True)
 
-    def apply_spline(self):
-        # for col in get_anomaly_columns(self.columns_map):
-        print(len(self.dataframe))
-        col = "mean"
-        spline = list(splrep(np.arange(len(self.dataframe)), self.dataframe[col], s=len(self.dataframe)))
-        spline[0] = spline[0].astype(np.int16)
-        dst_arr = np.full([len(self.dataframe)], np.nan)
-        dst_arr[spline[0]] = spline[1]
-        self.dataframe[f"{col}_spline"] = dst_arr
-        # self.dataframe[f"{col}_spline"] = self.dataframe[f"{col}_spline"].interpolate(method="cubic", axis=0)
-        print(self.dataframe[f"{col}_spline"])
-        # self.dataframe.at[spline[0], f"{col}_spline"] = spline[1]
-        # print(spline[1])
-        # print(self.dataframe.at[spline[0], f"{col}_spline"])
+    def apply_regression(self):
+        # apply spline with weights: data point mean / global mean
+        # where datapoint mean == global mean, weight equals 1 which is the default method weight
+        # where datapoint mean < or > global mean, weight > 1 and indicates higher significance
+        self.spline_dataframe = self.dataframe.copy()
+
+        for col in get_anomaly_columns(self.columns_map):
+            tck = splrep(
+                np.arange(len(self.dataframe)),  # numerical index on dataframe.index
+                self.dataframe[col].to_numpy(),  # variable to interpolate
+                w=(self.dataframe[col] / self.dataframe[col].mean()).to_numpy(),  # weights
+                s=len(self.dataframe),
+            )
+
+            self.spline_dataframe[col] = BSpline(*tck)(np.arange(len(self.dataframe)))
 
     def save_raw(self):
         out_file = self.out_dir.joinpath(
-            "raw", f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv",
+            "raw",
+            f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv",
         )
 
         self.dataframe.to_csv(out_file)
 
     def save_spline(self):
         out_file = self.out_dir.joinpath(
-            "spline", f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv",
+            "spline",
+            f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv",
         )
 
-        self.dataframe.to_csv(out_file)
+        self.spline_dataframe.to_csv(out_file)
 
 
 class Band:

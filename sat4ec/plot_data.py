@@ -55,8 +55,8 @@ class PlotData:
                 data=self.raw_dataframe,
                 x=self.raw_dataframe.index,
                 y=self.raw_dataframe[col],
-                marker="o",
-                markersize=5,
+                # marker="o",
+                # markersize=5,
                 label=col,
                 legend=False,
                 zorder=1,
@@ -67,17 +67,18 @@ class PlotData:
             plt.show()
 
     def plot_splinedata(self, show=False):
-        sns.lineplot(
-            data=self.spline_dataframe,
-            x=self.spline_dataframe.index,
-            y=self.spline_dataframe["mean_spline"],
-            marker="o",
-            markersize=5,
-            label="mean_spline",
-            legend=False,
-            zorder=1,
-            ax=self.ax,
-        )
+        for col in self.raw_columns:
+            sns.lineplot(
+                data=self.spline_dataframe,
+                x=self.spline_dataframe.index,
+                y=self.spline_dataframe[col],
+                # marker="o",
+                # markersize=5,
+                label=col,
+                legend=False,
+                zorder=1,
+                ax=self.ax,
+            )
 
         if show:  # for development
             plt.show()

@@ -110,7 +110,7 @@ class TestGetData(unittest.TestCase):
         indicator.dataframe["interval_from"] = pd.to_datetime(indicator.dataframe["interval_from"])
         indicator.dataframe = indicator.dataframe.set_index("interval_from")
 
-        indicator.apply_spline()
+        indicator.apply_regression()
         indicator.save_spline()
 
     def test_save_df(self):

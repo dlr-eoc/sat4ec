@@ -2,7 +2,6 @@ import unittest
 
 from sat4ec.aoi_check import AOI
 from sat4ec.data_retrieval import IndicatorData as IData
-from sat4ec.anomaly_detection import Anomaly
 from sat4ec.plot_data import PlotData
 from sat4ec.system import helper_functions
 from pathlib import Path
@@ -57,6 +56,9 @@ class TestPlotting(unittest.TestCase):
     def test_spline_plot(self):
         with PlotData(
             spline_data=self.indicator_spline_file,
+            raw_columns=helper_functions.get_anomaly_columns(
+                self.indicator.columns_map
+            ),
             orbit="asc",
         ) as plotting:
             plotting.plot_splinedata(show=True)
