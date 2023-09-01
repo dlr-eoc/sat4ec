@@ -96,30 +96,43 @@ class Anomaly:
         self.dataframe = self.indicator_df.copy()
         self.dataframe["anomaly"] = False
 
-        # TODO: Is flip working?
         self.find_maxima()
         self.flip_data()
         self.find_maxima()
+        self.dataframe["mean"] = self.indicator_df["mean"]
 
     def flip_data(self):
-        # print(self.dataframe["mean"])
         global_mean = self.dataframe["mean"].mean()  # global mean
         positive = self.dataframe.loc[
-            self.dataframe["mean"] > global_mean
-        ]  # positive part
+            self.dataframe["mean"] > global_mean  # positive part
+        ]
         negative = self.dataframe.loc[
-            self.dataframe["mean"] < global_mean
-        ]  # negative part
-        self.dataframe.loc[positive.index]["mean"] = (
-            positive["mean"].subtract(global_mean).abs().subtract(global_mean).abs()
-        )  # positive deviation
-        self.dataframe.loc[negative.index]["mean"] = (
-            negative["mean"].subtract(global_mean).abs().add(global_mean)
-        )  # negative deviation
+            self.dataframe["mean"] < global_mean  # negative part
+        ]
+
+        # rows where column initially True
+        # flipping the dataframe overwrites the boolean values
+        # must be restored later
+        init_bloolean = self.dataframe.loc[self.dataframe["anomaly"]]
+
+        # self.dataframe.loc[positive.index, "mean"] = (
+        #     positive["mean"].subtract(global_mean).abs().subtract(global_mean).abs()  # positive deviation
+        # )
+        # self.dataframe.loc[negative.index, "mean"] = (
+        #     negative["mean"].subtract(global_mean).abs().add(global_mean)  # negative deviation
+        # )
+
+        self.dataframe.loc[positive.index, "mean"] = self.dataframe.loc[positive.index, "mean"].subtract(
+            positive["mean"].subtract(global_mean).abs().mul(2))
+        self.dataframe.loc[negative.index, "mean"] = self.dataframe.loc[negative.index, "mean"].add(
+            negative["mean"].subtract(global_mean).abs().mul(2))
+
+        self.dataframe["anomaly"] = False  # boolean values were overwritten before and must be reset
+        self.dataframe.loc[init_bloolean.index, "anomaly"] = True  # restore initial boolean valuesself.save(spline=True)
 
     def find_maxima(self):
         peaks, _ = find_peaks(self.dataframe[self.column].to_numpy(), distance=10)
-        self.dataframe["anomaly"][peaks] = True
+        self.dataframe.iloc[peaks, [-1]] = True  # index -1 equals anomaly column
 
     def rename_column(self):
         self.dataframe.rename(columns={self.column: "anomaly"}, inplace=True)
