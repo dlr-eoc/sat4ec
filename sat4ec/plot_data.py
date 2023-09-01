@@ -113,11 +113,12 @@ class PlotData:
             zorder=3,
             color="red",
             label="anomaly",
+            legend=False,
             ax=self.ax,
         )
 
     def plot_finalize(self, show=False):
-        plt.title(f"{self.name} {self.pol} polarization, {self.orbit} orbit")
+        plt.title(f"{self.name} {self.pol} polarization, {self.long_orbit} orbit")
         plt.ylabel("Sentinel-1 backscatter [dB]")
         plt.xlabel("Timestamp")
         self.fig.legend(loc="outside lower center", ncols=len(self.raw_columns) + 1)
