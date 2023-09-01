@@ -44,7 +44,7 @@ class TestPlotting(unittest.TestCase):
             "spline", f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv"
         )
         self.anomaly_spline_file = self.indicator.out_dir.joinpath(
-            "product", f"indicator_1_anomalies_spline_{self.orbit}_{self.pol}.csv"
+            "anomalies", f"indicator_1_anomalies_spline_{self.orbit}_{self.pol}.csv"
         )
 
     def test_raw_plot(self):

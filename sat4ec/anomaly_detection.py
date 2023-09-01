@@ -1,8 +1,4 @@
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from adtk.detector import InterQuartileRangeAD, PersistAD, QuantileAD, SeasonalAD
 from scipy.signal import find_peaks
 from pathlib import Path
 
@@ -16,7 +12,6 @@ class Anomaly:
         df_columns=None,
         out_dir=None,
         pol="VH",
-        options=None,
         orbit="asc",
     ):
         self.parameters = parameters
@@ -27,10 +22,13 @@ class Anomaly:
         self.out_dir = out_dir
         self.orbit = orbit
         self.pol = pol
-        self.normalize = options["normalize"]
-        self.invert = options["invert"]
 
         self.indicator_df = self._get_data(data)
+        self._prepare_dataframe()
+
+    def _prepare_dataframe(self):
+        self.dataframe = self.indicator_df.copy()  # create target dataframe
+        self.dataframe["anomaly"] = False  # create new column storing anomaly state [boolean]
 
     def _get_data(self, data):
         if isinstance(data, Path):
@@ -57,57 +55,29 @@ class Anomaly:
     def save(self, spline=False):
         if spline:
             out_file = self.out_dir.joinpath(
-                "product",
+                "anomalies",
                 f"indicator_1_anomalies_spline_{self.orbit}_{self.pol}.csv",
             )
 
         else:
             out_file = self.out_dir.joinpath(
-                "product",
+                "anomalies",
                 f"indicator_1_anomalies_raw_{self.orbit}_{self.pol}.csv",
             )
 
         self.dataframe.to_csv(out_file)
 
-    def apply_anomaly_detection(self):
-        # fit anomaly detection criterion on historic timeseries
-        # compare time series values with 1st and 3rd quartiles of historic data and identify time points as anomalous
-        # when differences are beyond the inter-quartile range (IQR) times factor c (lower, upper).
-        # setting c1 to a large value basically ignores lower bound anomalies (here would be droughts)
-        self.ad = InterQuartileRangeAD(c=self.parameters)
-        # self.ad = PersistAD()
-        # self.ad = QuantileAD(low=1)
-        # self.ad = SeasonalAD()
-        self.indicator_df = self.indicator_df.sort_index()
-
-        if self.normalize:
-            self._normalize_df()
-
-        self.ad.fit(self.indicator_df.loc[:, [self.column]])
-        self.dataframe = self.ad.detect(
-            self.indicator_df.loc[:, [self.column]]
-        )  # predict if an anomaly is present
-
-        if self.invert:
-            mask = self.dataframe[self.column].to_numpy()
-            self.dataframe[self.column] = ~mask
-
     def find_extrema(self):
-        self.dataframe = self.indicator_df.copy()
-        self.dataframe["anomaly"] = False
-
-        self.find_maxima()
-        self.flip_data()
-        self.find_maxima()
-        self.dataframe["mean"] = self.indicator_df["mean"]
+        self.find_maxima()  # find maxima on dataframe
+        self.find_minima()  # find minima on dataframe
 
     def flip_data(self):
-        global_mean = self.dataframe["mean"].mean()  # global mean
+        global_mean = self.dataframe[self.column].mean()  # global mean
         positive = self.dataframe.loc[
-            self.dataframe["mean"] > global_mean  # positive part
+            self.dataframe[self.column] > global_mean  # positive part
         ]
         negative = self.dataframe.loc[
-            self.dataframe["mean"] < global_mean  # negative part
+            self.dataframe[self.column] < global_mean  # negative part
         ]
 
         # rows where column initially True
@@ -115,37 +85,25 @@ class Anomaly:
         # must be restored later
         init_bloolean = self.dataframe.loc[self.dataframe["anomaly"]]
 
-        # self.dataframe.loc[positive.index, "mean"] = (
-        #     positive["mean"].subtract(global_mean).abs().subtract(global_mean).abs()  # positive deviation
-        # )
-        # self.dataframe.loc[negative.index, "mean"] = (
-        #     negative["mean"].subtract(global_mean).abs().add(global_mean)  # negative deviation
-        # )
+        self.dataframe.loc[positive.index, self.column] = self.dataframe.loc[
+            positive.index, self.column
+        ].subtract(positive[self.column].subtract(global_mean).abs().mul(2))
+        self.dataframe.loc[negative.index, self.column] = self.dataframe.loc[
+            negative.index, self.column
+        ].add(negative[self.column].subtract(global_mean).abs().mul(2))
 
-        self.dataframe.loc[positive.index, "mean"] = self.dataframe.loc[positive.index, "mean"].subtract(
-            positive["mean"].subtract(global_mean).abs().mul(2))
-        self.dataframe.loc[negative.index, "mean"] = self.dataframe.loc[negative.index, "mean"].add(
-            negative["mean"].subtract(global_mean).abs().mul(2))
-
-        self.dataframe["anomaly"] = False  # boolean values were overwritten before and must be reset
-        self.dataframe.loc[init_bloolean.index, "anomaly"] = True  # restore initial boolean valuesself.save(spline=True)
+        self.dataframe[
+            "anomaly"
+        ] = False  # boolean values were overwritten before and must be reset
+        self.dataframe.loc[
+            init_bloolean.index, "anomaly"
+        ] = True  # restore initial boolean valuesself.save(spline=True)
 
     def find_maxima(self):
         peaks, _ = find_peaks(self.dataframe[self.column].to_numpy(), distance=10)
         self.dataframe.iloc[peaks, [-1]] = True  # index -1 equals anomaly column
 
-    def rename_column(self):
-        self.dataframe.rename(columns={self.column: "anomaly"}, inplace=True)
-
-    def join_with_indicator(self):
-        self.rename_column()
-        self.dataframe = pd.concat([self.dataframe, self.indicator_df], axis=1)
-        self.dataframe.insert(0, "interval_to", self.dataframe.pop("interval_to"))
-
-    def _normalize_df(self):
-        self.indicator_df.loc[:, self.column] = (
-            self.indicator_df.loc[:, [self.column]]
-            - self.indicator_df.loc[:, [self.column]].mean()
-        ) / self.indicator_df.loc[
-            :, [self.column]
-        ].std()  # standardize timeseries
+    def find_minima(self):
+        self.flip_data()  # flip data to make original minima to maximas that can be detected
+        self.find_maxima()  # find maxima (originally minima) on dataframe
+        self.dataframe[self.column] = self.indicator_df[self.column]  # revert flipped data column to original state

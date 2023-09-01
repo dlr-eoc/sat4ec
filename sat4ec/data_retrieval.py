@@ -61,7 +61,7 @@ class IndicatorData(Config):
         }
 
     def _create_out_dirs(self):
-        for out in ["plot", "raw", "scenes", "product", "spline"]:
+        for out in ["plot", "raw", "scenes", "anomalies", "spline"]:
             if not self.out_dir.joinpath(out).exists():
                 self.out_dir.joinpath(out).mkdir(parents=True)
 
