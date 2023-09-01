@@ -43,8 +43,8 @@ def compute_raw_data(aoi=None, start_date=None, end_date=None, orbit="asc", pol=
     indicator.get_data()
     indicator.stats_to_df()
     indicator.apply_regression()
-    indicator.save_raw()
-    indicator.save_spline()
+    indicator.save(spline=False)  # save raw data
+    indicator.save(spline=True)  # save spline data
 
     return indicator
 
@@ -57,7 +57,6 @@ def compute_anomaly(
     orbit="asc",
     pol="VH",
     spline=False,
-    anomaly_options=None,
 ):
     anomaly = Anomaly(
         data=df,
@@ -66,11 +65,9 @@ def compute_anomaly(
         out_dir=out_dir,
         orbit=orbit,
         pol=pol,
-        options=anomaly_options,
     )
 
-    anomaly.apply_anomaly_detection()
-    anomaly.join_with_indicator()
+    anomaly.find_extrema()
     anomaly.save(spline=spline)
 
     return anomaly
@@ -80,7 +77,6 @@ def main(
     aoi_data=None,
     start_date=None,
     end_date=None,
-    anomaly_options=None,
     pol="VH",
     orbit="asc",
 ):
@@ -98,17 +94,15 @@ def main(
             orbit=orbit,
             pol=pol,
             spline=False,
-            anomaly_options=anomaly_options,
         )
 
         spline_anomalies = compute_anomaly(
             df=indicator.dataframe,
-            df_columns=get_anomaly_columns(indicator.columns_map, spline=True),
+            df_columns=get_anomaly_columns(indicator.columns_map),
             out_dir=indicator.out_dir,
             orbit=orbit,
             pol=pol,
-            spline=False,
-            anomaly_options=anomaly_options,
+            spline=True,
         )
 
         stac = StacItems(
@@ -151,30 +145,10 @@ def run():
     else:
         pol = args.polarization.upper()
 
-    anomaly_options = {
-        "invert": False,
-        "normalize": False,
-    }
-
-    if isinstance(args.anomaly_options, list):
-        if "invert" in args.anomaly_options:
-            anomaly_options["invert"] = True
-
-        if "normalize" in args.anomaly_options:
-            anomaly_options["normalize"] = True
-
-    if isinstance(args.plot_options, list):
-        if "minmax" in args.plot_options:
-            anomaly_options["minmax"] = True
-
-        if "outliers" in args.plot_options:
-            anomaly_options["outliers"] = True
-
     main(
         aoi_data=args.aoi_data,
         start_date=args.start_date,
         end_date=args.end_date,
-        anomaly_options=anomaly_options,
         pol=pol,
         orbit=orbit,
     )
@@ -214,20 +188,6 @@ def create_parser():
         choices=["asc", "des"],
         nargs=1,
         default="asc",
-    )
-    parser.add_argument(
-        "--anomaly_options",
-        nargs="*",
-        choices=["invert", "normalize"],
-        help="Use anomaly detection to list scenes of high or low backscatter. Do not call "
-        "to apply default parameters. Consult the README for more info.",
-    )
-    parser.add_argument(
-        "--plot_options",
-        nargs="*",
-        choices=["min", "max", "mean", "std"],
-        default=["mean"],
-        help="Plot global minimum and maximum or outliers.",
     )
 
     return parser

@@ -1,12 +1,12 @@
 import unittest
 from pathlib import Path
-
 import pandas as pd
 
 from sat4ec.data_retrieval import IndicatorData as IData
 from sat4ec.aoi_check import AOI
 from sat4ec.stac import StacItems
 from sat4ec.anomaly_detection import Anomaly
+from sat4ec.system import helper_functions
 
 from sentinelhub import SentinelHubCatalog
 from datetime import datetime
@@ -43,28 +43,32 @@ class TestGetData(unittest.TestCase):
         }
 
         self.anomaly = Anomaly(
-            data=self.indicator.out_dir.joinpath(f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv"),
-            df_columns=list(self.indicator.columns_map.values())[:4],
+            data=self.indicator.out_dir.joinpath(
+                "raw",
+                f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv"
+            ),
+            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
             pol=self.pol,
-            options=self.anomaly_options,
         )
 
-        self.anomaly_df_file = self.indicator.out_dir.joinpath(f"indicator_1_anomalies_{self.orbit}_{self.pol}.csv")
+        self.anomaly_spline_file = self.indicator.out_dir.joinpath(
+            "anomalies",
+            f"indicator_1_anomalies_spline_{self.orbit}_{self.pol}.csv"
+        )
 
     def test_dataframe_from_file(self):
         stac = StacItems(
-            data=self.anomaly_df_file,
+            data=self.anomaly_spline_file,
         )
 
         self.assertTrue(isinstance(stac.anomalies_df, pd.DataFrame))
         self.assertTrue(stac.anomalies_df.index.inferred_type, pd.DatetimeIndex)
 
     def test_dataframe_from_dataframe(self):
-        self.anomaly.apply_anomaly_detection()
-        self.anomaly.join_with_indicator()
+        self.anomaly.find_extrema()
 
         stac = StacItems(
             data=self.anomaly.dataframe,
@@ -75,7 +79,7 @@ class TestGetData(unittest.TestCase):
 
     def test_dataframe_from_filestring(self):
         stac = StacItems(
-            data=str(self.anomaly_df_file),
+            data=str(self.anomaly_spline_file),
         )
 
         self.assertTrue(isinstance(stac.anomalies_df, pd.DataFrame))
@@ -83,7 +87,7 @@ class TestGetData(unittest.TestCase):
 
     def test_class_init(self):
         stac = StacItems(
-            data=self.anomaly_df_file,
+            data=self.anomaly_spline_file,
             geometry=self.indicator.geometry,
             orbit=self.orbit,
             pol=self.pol,
@@ -94,7 +98,7 @@ class TestGetData(unittest.TestCase):
 
     def test_search_catalog(self):
         stac = StacItems(
-            data=self.anomaly_df_file,
+            data=self.anomaly_spline_file,
             geometry=self.indicator.geometry,
             orbit=self.orbit,
             pol=self.pol,
@@ -102,7 +106,9 @@ class TestGetData(unittest.TestCase):
         )
 
         search = stac.search_catalog(stac.anomalies_df.iloc[0])
-        timestamp = datetime.strptime(search[0]["properties"]["datetime"], "%Y-%m-%dT%H:%M:%SZ")
+        timestamp = datetime.strptime(
+            search[0]["properties"]["datetime"], "%Y-%m-%dT%H:%M:%SZ"
+        )
 
         self.assertTrue(isinstance(search[0]["id"], str))
         self.assertEqual(len(search[0]["id"]), 67)
@@ -111,7 +117,7 @@ class TestGetData(unittest.TestCase):
 
     def test_scenes_to_df(self):
         stac = StacItems(
-            data=self.anomaly_df_file,
+            data=self.anomaly_spline_file,
             geometry=self.indicator.geometry,
             orbit=self.orbit,
             pol=self.pol,
@@ -125,7 +131,7 @@ class TestGetData(unittest.TestCase):
 
     def test_join_with_anomalies(self):
         stac = StacItems(
-            data=self.anomaly_df_file,
+            data=self.anomaly_spline_file,
             geometry=self.indicator.geometry,
             orbit=self.orbit,
             pol=self.pol,
@@ -141,7 +147,7 @@ class TestGetData(unittest.TestCase):
 
     def test_save(self):
         stac = StacItems(
-            data=self.anomaly_df_file,
+            data=self.anomaly_spline_file,
             geometry=self.indicator.geometry,
             orbit=self.orbit,
             pol=self.pol,

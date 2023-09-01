@@ -61,7 +61,7 @@ class IndicatorData(Config):
         }
 
     def _create_out_dirs(self):
-        for out in ["plot", "raw", "scenes", "product", "spline"]:
+        for out in ["plot", "raw", "scenes", "anomalies", "spline"]:
             if not self.out_dir.joinpath(out).exists():
                 self.out_dir.joinpath(out).mkdir(parents=True)
 
@@ -217,21 +217,20 @@ class IndicatorData(Config):
 
             self.spline_dataframe[col] = BSpline(*tck)(np.arange(len(self.dataframe)))
 
-    def save_raw(self):
-        out_file = self.out_dir.joinpath(
-            "raw",
-            f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv",
-        )
+    def save(self, spline=True):
+        if spline:
+            out_file = self.out_dir.joinpath(
+                "spline",
+                f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv",
+            )
+
+        else:
+            out_file = self.out_dir.joinpath(
+                "raw",
+                f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv",
+            )
 
         self.dataframe.to_csv(out_file)
-
-    def save_spline(self):
-        out_file = self.out_dir.joinpath(
-            "spline",
-            f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv",
-        )
-
-        self.spline_dataframe.to_csv(out_file)
 
 
 class Band:
