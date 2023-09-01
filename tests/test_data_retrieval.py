@@ -111,7 +111,12 @@ class TestGetData(unittest.TestCase):
         indicator.dataframe = indicator.dataframe.set_index("interval_from")
 
         indicator.apply_regression()
-        indicator.save_spline()
+        indicator.save(spline=True)
+        self.assertTrue(
+            indicator.out_dir.joinpath(
+                "spline", f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv"
+            ).exists()
+        )
 
     def test_save_df(self):
         indicator = IData(
@@ -126,7 +131,7 @@ class TestGetData(unittest.TestCase):
         indicator.get_request_grd()
         indicator.get_data()
         indicator.stats_to_df()
-        indicator.save_raw()
+        indicator.save(spline=False)
         self.assertTrue(
             indicator.out_dir.joinpath(
                 "raw", f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv"

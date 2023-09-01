@@ -52,7 +52,7 @@ class Anomaly:
 
         return df
 
-    def save(self, spline=False):
+    def save(self, spline=True):
         if spline:
             out_file = self.out_dir.joinpath(
                 "anomalies",

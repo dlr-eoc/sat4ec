@@ -43,8 +43,8 @@ def compute_raw_data(aoi=None, start_date=None, end_date=None, orbit="asc", pol=
     indicator.get_data()
     indicator.stats_to_df()
     indicator.apply_regression()
-    indicator.save_raw()
-    indicator.save_spline()
+    indicator.save(spline=False)  # save raw data
+    indicator.save(spline=True)  # save spline data
 
     return indicator
 
@@ -102,7 +102,7 @@ def main(
             out_dir=indicator.out_dir,
             orbit=orbit,
             pol=pol,
-            spline=False,
+            spline=True,
         )
 
         stac = StacItems(

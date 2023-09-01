@@ -62,7 +62,7 @@ class PlotData:
     def __exit__(self, exc_type, exc_val, exc_tb):
         plt.close()
 
-    def plot_rawdata(self, show=False, background=False):
+    def plot_rawdata(self, background=False):
         if (
             background
         ):  # determines the use of overlaid spline, raw data plotted grey then
@@ -71,9 +71,6 @@ class PlotData:
                     data=self.raw_dataframe,
                     x=self.raw_dataframe.index,
                     y=self.raw_dataframe[col],
-                    # marker="o",
-                    # markersize=5,
-                    # label=col,
                     legend=False,
                     color="#d3d3d3",
                     zorder=1,
@@ -94,25 +91,17 @@ class PlotData:
                     ax=self.ax,
                 )
 
-        if show:  # for development
-            plt.show()
-
-    def plot_splinedata(self, show=False):
+    def plot_splinedata(self):
         for col in self.raw_columns:
             sns.lineplot(
                 data=self.spline_dataframe,
                 x=self.spline_dataframe.index,
                 y=self.spline_dataframe[col],
-                # marker="o",
-                # markersize=5,
                 label=col,
                 legend=False,
                 zorder=2,
                 ax=self.ax,
             )
-
-        if show:  # for development
-            plt.show()
 
     def plot_anomalies(self):
         sns.scatterplot(
@@ -142,12 +131,19 @@ class PlotData:
         if " " in self.name:
             self.name = "_".join(self.name.split(" "))
 
-    def save(self):
+    def save(self, spline=True):
         self.correct_name()
 
-        self.fig.savefig(
-            self.out_dir.joinpath(
+        if spline:
+            out_file = self.out_dir.joinpath(
                 "plot",
-                f"indicator_1_{self.name}_{self.orbit}_{self.pol}.png",
+                f"indicator_1_{self.name}_splinedata_{self.orbit}_{self.pol}.png",
             )
-        )
+
+        else:
+            out_file = self.out_dir.joinpath(
+                "plot",
+                f"indicator_1_{self.name}_rawdata_{self.orbit}_{self.pol}.png",
+            )
+
+        self.fig.savefig(out_file)

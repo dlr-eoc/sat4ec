@@ -136,7 +136,7 @@ class TestAD(unittest.TestCase):
         anomaly.find_extrema()
         self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 104)
 
-    def test_anomaly_save(self):
+    def test_anomaly_save_raw(self):
         anomaly = Anomaly(
             data=self.indicator_raw_file,
             df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),
@@ -147,7 +147,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_extrema()
-        anomaly.save()
+        anomaly.save(spline=False)
 
         self.assertTrue(
             anomaly.out_dir.joinpath(
@@ -157,7 +157,7 @@ class TestAD(unittest.TestCase):
 
     def test_anomaly_save_spline(self):
         anomaly = Anomaly(
-            data=self.indicator_raw_file,
+            data=self.indicator_spline_file,
             df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,

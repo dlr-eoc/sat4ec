@@ -23,26 +23,32 @@ class StacItems(Config):
         self.pol = pol
         self.out_dir = out_dir
 
+        self.anomalies_df = self._get_data(data)
+
+    def _get_data(self, data):
         if isinstance(data, Path):
-            self.filename = data
-            self._load_df()
+            return self._load_df(data)
 
         elif isinstance(data, str):
             if Path(data).exists():
-                self.filename = Path(data)
-                self._load_df()
+                return self._load_df(Path(data))
 
         elif isinstance(data, pd.DataFrame):
-            self.filename = None
-            self.anomalies_df = data
+            return data
+
+        else:
+            return None
 
         self._get_catalog()
         self._get_collection()
 
-    def _load_df(self):
-        self.anomalies_df = pd.read_csv(self.filename)
-        self.anomalies_df["interval_from"] = pd.to_datetime(self.anomalies_df["interval_from"])
-        self.anomalies_df = self.anomalies_df.set_index("interval_from")
+    @staticmethod
+    def _load_df(filename):
+        df = pd.read_csv(filename)
+        df["interval_from"] = pd.to_datetime(df["interval_from"])
+        df = df.set_index("interval_from")
+
+        return df
 
     def _get_catalog(self):
         self.catalog = SentinelHubCatalog(config=self.config)
