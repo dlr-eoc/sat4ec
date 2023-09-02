@@ -75,37 +75,37 @@ def compute_anomaly(
     return anomaly
 
 
-def plot_rawdata(out_dir=None, name=None, raw_data=None, raw_columns=None, spline_data=None, anomaly_data=None, orbit="asc"):
-    with PlotData(
-            out_dir=out_dir,
-            name=name,
-            raw_data=raw_data,
-            raw_columns=raw_columns,
-            spline_data=spline_data,
-            anomaly_data=anomaly_data,
-            orbit=orbit,
-    ) as plotting:
-        plotting.plot_rawdata(background=False)
-        plotting.plot_anomalies()
-        plotting.plot_finalize()
-        plotting.save(spline=False)
+def plot_data(spline=False, out_dir=None, name=None, raw_data=None, raw_columns=None, spline_data=None, anomaly_data=None, orbit="asc"):
+    if spline:
+        with PlotData(
+                out_dir=out_dir,
+                name=name,
+                raw_data=raw_data,
+                raw_columns=raw_columns,
+                spline_data=spline_data,
+                anomaly_data=anomaly_data,
+                orbit=orbit,
+        ) as plotting:
+            plotting.plot_rawdata(background=True)
+            plotting.plot_splinedata()
+            plotting.plot_anomalies()
+            plotting.plot_finalize()
+            plotting.save(spline=spline)
 
-
-def plot_splinedata(out_dir=None, name=None, raw_data=None, raw_columns=None, spline_data=None, anomaly_data=None, orbit="asc"):
-    with PlotData(
-            out_dir=out_dir,
-            name=name,
-            raw_data=raw_data,
-            raw_columns=raw_columns,
-            spline_data=spline_data,
-            anomaly_data=anomaly_data,
-            orbit=orbit,
-    ) as plotting:
-        plotting.plot_rawdata(background=True)
-        plotting.plot_splinedata()
-        plotting.plot_anomalies()
-        plotting.plot_finalize()
-        plotting.save(spline=True)
+    else:
+        with PlotData(
+                out_dir=out_dir,
+                name=name,
+                raw_data=raw_data,
+                raw_columns=raw_columns,
+                spline_data=spline_data,
+                anomaly_data=anomaly_data,
+                orbit=orbit,
+        ) as plotting:
+            plotting.plot_rawdata(background=False)
+            plotting.plot_anomalies()
+            plotting.plot_finalize()
+            plotting.save(spline=spline)
 
 
 def entire_workflow(
@@ -201,20 +201,20 @@ def from_raw_data(
                         spline=True,
                     )
 
-                    plot_rawdata(
+                    plot_data(
                         out_dir=indicator.out_dir,
                         name=get_name(key),
                         raw_data=indicator.dataframe,
-                        raw_columns=get_anomaly_columns(indicator.columns_map),
+                        raw_columns=get_anomaly_columns(indicator.columns_map, dst_cols=["mean", "std"]),
                         anomaly_data=raw_anomalies.dataframe,
                         orbit=orbit,
                     )
 
-                    plot_splinedata(
+                    plot_data(
                         out_dir=indicator.out_dir,
                         name=get_name(key),
                         raw_data=indicator.dataframe,
-                        raw_columns=get_anomaly_columns(indicator.columns_map),
+                        raw_columns=get_anomaly_columns(indicator.columns_map, dst_cols=["mean", "std"]),
                         spline_data=indicator.spline_dataframe,
                         anomaly_data=spline_anomalies.dataframe,
                         orbit=orbit,

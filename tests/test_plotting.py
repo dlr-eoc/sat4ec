@@ -54,7 +54,19 @@ class TestPlotting(unittest.TestCase):
         with PlotData(
             raw_data=self.indicator_raw_file,
             raw_columns=helper_functions.get_anomaly_columns(
-                self.indicator.columns_map
+                self.indicator.columns_map,
+            ),
+            orbit="asc",
+        ) as plotting:
+            plotting.plot_rawdata()
+            plotting.plot_finalize(show=True)
+
+    def test_raw_plot_column_select(self):
+        with PlotData(
+            raw_data=self.indicator_raw_file,
+            raw_columns=helper_functions.get_anomaly_columns(
+                self.indicator.columns_map,
+                dst_cols=["mean", "std"]
             ),
             orbit="asc",
         ) as plotting:
@@ -85,6 +97,20 @@ class TestPlotting(unittest.TestCase):
             plotting.plot_splinedata()
             plotting.plot_finalize(show=True)
 
+    def test_raw_spline_overlay_column_select(self):
+        with PlotData(
+            raw_data=self.indicator_raw_file,
+            raw_columns=helper_functions.get_anomaly_columns(
+                self.indicator.columns_map,
+                dst_cols=["mean", "std"]
+            ),
+            spline_data=self.indicator_spline_file,
+            orbit="asc",
+        ) as plotting:
+            plotting.plot_rawdata(background=True)
+            plotting.plot_splinedata()
+            plotting.plot_finalize(show=True)
+
     def test_plot_anomalies_spline(self):
         with PlotData(
             raw_data=self.indicator_spline_file,
@@ -95,7 +121,6 @@ class TestPlotting(unittest.TestCase):
             anomaly_data=self.anomaly_spline_file,
             orbit="asc",
         ) as plotting:
-            print(self.anomaly_spline_file)
             plotting.plot_rawdata(background=True)
             plotting.plot_splinedata()
             plotting.plot_anomalies()
