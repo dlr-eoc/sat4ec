@@ -11,12 +11,8 @@ def load_yaml(yaml_path):
         return yaml.safe_load(f)
 
 
-def get_anomaly_columns(columns_dict=None, dst_cols=None):
-    if dst_cols:
-        return [col for col in columns_dict.values() if col in dst_cols]
-
-    else:
-        return list(columns_dict.values())[:4]  # ignore sample count and data count
+def get_anomaly_columns(columns_dict=None, dst_cols=("mean", "std")):
+    return [col for col in columns_dict.values() if col in dst_cols]
 
 
 def get_logger(

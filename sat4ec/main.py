@@ -122,6 +122,7 @@ def main(
     pol="VH",
     orbit="asc",
     name="",
+    columns=("mean", "std"),
 ):
     with AOI(data=aoi_data) as aoi:
         aoi.get_features()
@@ -132,7 +133,7 @@ def main(
 
         raw_anomalies = compute_anomaly(
             df=indicator.dataframe,
-            df_columns=get_anomaly_columns(indicator.columns_map),
+            df_columns=get_anomaly_columns(indicator.columns_map, dst_cols=columns),
             out_dir=indicator.out_dir,
             orbit=orbit,
             pol=pol,
@@ -141,7 +142,7 @@ def main(
 
         spline_anomalies = compute_anomaly(
             df=indicator.dataframe,
-            df_columns=get_anomaly_columns(indicator.columns_map),
+            df_columns=get_anomaly_columns(indicator.columns_map, dst_cols=columns),
             out_dir=indicator.out_dir,
             orbit=orbit,
             pol=pol,
@@ -161,7 +162,7 @@ def main(
             name=name,
             raw_data=indicator.dataframe,
             raw_columns=get_anomaly_columns(
-                indicator.columns_map, dst_cols=["mean", "std"]
+                indicator.columns_map, dst_cols=columns
             ),
             anomaly_data=raw_anomalies.dataframe,
             orbit=orbit,
@@ -172,7 +173,7 @@ def main(
             name=name,
             raw_data=indicator.dataframe,
             raw_columns=get_anomaly_columns(
-                indicator.columns_map, dst_cols=["mean", "std"]
+                indicator.columns_map, dst_cols=columns
             ),
             spline_data=indicator.spline_dataframe,
             anomaly_data=spline_anomalies.dataframe,
@@ -218,6 +219,7 @@ def run():
         pol=pol,
         orbit=orbit,
         name=args.name,
+        columns=args.columns,
     )
 
 
@@ -258,7 +260,14 @@ def create_parser():
     )
     parser.add_argument(
         "--name",
-        help="Name of the location, e.g. BMW Regensburg",
+        help="Name of the location, e.g. BMW Regensburg. Appears in the plot title.",
+    )
+    parser.add_argument(
+        "--columns",
+        help="Parameters to plot.",
+        choices=["mean", "std", "min", "max"],
+        nargs=1,
+        default=["mean", "std"],
     )
 
     return parser
