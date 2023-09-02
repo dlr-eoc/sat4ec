@@ -103,6 +103,55 @@ class PlotData:
                 ax=self.ax,
             )
 
+    def plot_mean_range(self, columns=None, factor=0.25):
+        """
+        Plot a range of mean + std that defines an insensitive area where anomalies are less likely.
+        """
+
+        if not columns:
+            columns = self.raw_columns
+
+        for col in columns:
+            sns.lineplot(
+                data=self.spline_dataframe,
+                x=self.spline_dataframe.index,
+                y=self.spline_dataframe[col].mean(),
+                linestyle="--",
+                color="#d3d3d3",
+            )
+
+            upper_boundary = (
+                self.spline_dataframe[col].mean()
+                + factor * self.spline_dataframe["std"].mean()
+            )
+            lower_boundary = (
+                self.spline_dataframe[col].mean()
+                - factor * self.spline_dataframe["std"].mean()
+            )
+
+            sns.lineplot(
+                data=self.spline_dataframe,
+                x=self.spline_dataframe.index,
+                y=upper_boundary,
+                linestyle="--",
+                color="#d3d3d3",
+            )
+
+            sns.lineplot(
+                data=self.spline_dataframe,
+                x=self.spline_dataframe.index,
+                y=lower_boundary,
+                linestyle="--",
+                color="#d3d3d3",
+            )
+
+            self.ax.fill_between(
+                self.spline_dataframe.index,
+                lower_boundary,
+                upper_boundary,
+                color="#ebebeb",
+            )
+
     def plot_anomalies(self):
         sns.scatterplot(
             data=self.anomaly_dataframe.loc[self.anomaly_dataframe["anomaly"]],

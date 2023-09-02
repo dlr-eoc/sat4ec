@@ -126,6 +126,21 @@ class TestPlotting(unittest.TestCase):
             plotting.plot_anomalies()
             plotting.plot_finalize(show=True)
 
+    def test_plot_anomalies_spline_std(self):
+        with PlotData(
+            raw_data=self.indicator_spline_file,
+            raw_columns=helper_functions.get_anomaly_columns(
+                self.indicator.columns_map
+            ),
+            spline_data=self.indicator_spline_file,
+            anomaly_data=self.anomaly_spline_file,
+            orbit="asc",
+        ) as plotting:
+            plotting.plot_splinedata()
+            plotting.plot_anomalies()
+            plotting.plot_mean_range(columns=["mean"])
+            plotting.plot_finalize(show=True)
+
     def test_plot_anomalies_raw(self):
         with PlotData(
             raw_data=self.indicator_raw_file,
