@@ -29,6 +29,48 @@ OUT_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/results")
 logger = get_logger(__name__, out_dir=OUT_DIR)
 
 
+def plot_data(
+    spline=False,
+    out_dir=None,
+    name=None,
+    raw_data=None,
+    raw_columns=None,
+    spline_data=None,
+    anomaly_data=None,
+    orbit="asc",
+):
+    if spline:
+        with PlotData(
+            out_dir=out_dir,
+            name=name,
+            raw_data=raw_data,
+            raw_columns=raw_columns,
+            spline_data=spline_data,
+            anomaly_data=anomaly_data,
+            orbit=orbit,
+        ) as plotting:
+            plotting.plot_rawdata(background=True)
+            plotting.plot_splinedata()
+            plotting.plot_anomalies()
+            plotting.plot_finalize()
+            plotting.save(spline=spline)
+
+    else:
+        with PlotData(
+            out_dir=out_dir,
+            name=name,
+            raw_data=raw_data,
+            raw_columns=raw_columns,
+            spline_data=spline_data,
+            anomaly_data=anomaly_data,
+            orbit=orbit,
+        ) as plotting:
+            plotting.plot_rawdata(background=False)
+            plotting.plot_anomalies()
+            plotting.plot_finalize()
+            plotting.save(spline=spline)
+
+
 def compute_raw_data(aoi=None, start_date=None, end_date=None, orbit="asc", pol="VH"):
     indicator = IData(
         aoi=aoi.geometry,
@@ -79,6 +121,7 @@ def main(
     end_date=None,
     pol="VH",
     orbit="asc",
+    name="",
 ):
     with AOI(data=aoi_data) as aoi:
         aoi.get_features()
@@ -113,9 +156,32 @@ def main(
             out_dir=indicator.out_dir,
         )
 
-        stac.scenes_to_df()
-        stac.join_with_anomalies()
-        stac.save()
+        plot_data(
+            out_dir=indicator.out_dir,
+            name=name,
+            raw_data=indicator.dataframe,
+            raw_columns=get_anomaly_columns(
+                indicator.columns_map, dst_cols=["mean", "std"]
+            ),
+            anomaly_data=raw_anomalies.dataframe,
+            orbit=orbit,
+        )
+
+        plot_data(
+            out_dir=indicator.out_dir,
+            name=name,
+            raw_data=indicator.dataframe,
+            raw_columns=get_anomaly_columns(
+                indicator.columns_map, dst_cols=["mean", "std"]
+            ),
+            spline_data=indicator.spline_dataframe,
+            anomaly_data=spline_anomalies.dataframe,
+            orbit=orbit,
+        )
+
+        # stac.scenes_to_df()
+        # stac.join_with_anomalies()
+        # stac.save()
 
         shutil.move(
             Path(OUT_DIR).joinpath("log_sat4ec.json"),
@@ -151,6 +217,7 @@ def run():
         end_date=args.end_date,
         pol=pol,
         orbit=orbit,
+        name=args.name,
     )
 
 
@@ -188,6 +255,10 @@ def create_parser():
         choices=["asc", "des"],
         nargs=1,
         default="asc",
+    )
+    parser.add_argument(
+        "--name",
+        help="Name of the location, e.g. BMW Regensburg",
     )
 
     return parser

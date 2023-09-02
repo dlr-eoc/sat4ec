@@ -223,14 +223,14 @@ class IndicatorData(Config):
                 "spline",
                 f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv",
             )
+            self.spline_dataframe.to_csv(out_file)
 
         else:
             out_file = self.out_dir.joinpath(
                 "raw",
                 f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv",
             )
-
-        self.dataframe.to_csv(out_file)
+            self.dataframe.to_csv(out_file)
 
 
 class Band:
