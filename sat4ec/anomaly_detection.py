@@ -80,7 +80,7 @@ class Anomaly:
         self.correct_insensitive()  # drop indices not significantly deviating from the global mean
         self.delete_adjacent()  # drop indices of anomalies in close neighboorhood
 
-    def delete_adjacent(self, min_diff=40):
+    def delete_adjacent(self, min_diff=31):
         """
         Delete anomalies that are in close neighboorhood as these represent saddle points.
         Anomalies on saddle points were selected as the find extrema method is executed twice on minima and maxima.
@@ -93,16 +93,10 @@ class Anomaly:
             time_diff < f"{min_diff} days"
         ]  # difference in days must be less than min_diff
 
-        self.dataframe = self.dataframe.drop(  # delete 1st adjacent anomaly at index
-            cond_df.index
-        )
-        self.dataframe = self.dataframe.drop(
-            self.dataframe.loc[
-                self.dataframe.index[
-                    max(0, self.dataframe.index.searchsorted(cond_df.index) - 1)  # prev. index of 1st adjacent anomaly
-                ]
-            ].index
-        )
+        # print(2 * 0.25 * self.global_std)
+        adjacent_indices = list(self.dataframe.index.searchsorted(cond_df.index) - 1)  # adjacent anomalies in self.dataframe
+        adjacent_indices.insert(len(adjacent_indices), adjacent_indices[-1]+1)
+        self.dataframe = self.dataframe.drop(self.dataframe.iloc[adjacent_indices].index)
 
     def correct_insensitive(self, factor=0.25):
         # correct extrema if not significantly deviating from the global mean

@@ -137,6 +137,40 @@ class TestAD(unittest.TestCase):
         anomaly.find_minima()  # find minima on dataframe
         self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 35)
 
+    def test_delete_adjacent_anomalies(self):
+        aoi = AOI(TEST_DIR.joinpath("AOIs", "bmw_leipzig.geojson"))
+        aoi.get_features()
+        self.aoi = aoi.geometry
+        self.out_dir = TEST_DIR.joinpath("bmw_leipzig")
+
+        self.indicator = IData(
+            aoi=self.aoi,
+            out_dir=self.out_dir,
+            start_date=self.start_date,
+            end_date=self.end_date,
+            orbit=self.orbit,
+            pol=self.pol,
+        )
+
+        self.indicator_raw_file = self.indicator.out_dir.joinpath(
+            "raw", f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv"
+        )
+        self.indicator_spline_file = self.indicator.out_dir.joinpath(
+            "spline", f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv"
+        )
+
+        anomaly = Anomaly(
+            data=self.indicator_spline_file,
+            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),
+            anomaly_column="mean",
+            out_dir=self.indicator.out_dir,
+            orbit=self.orbit,
+            pol=self.pol,
+        )
+
+        anomaly.find_extrema()
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 21)
+
     def test_find_extrema_raw(self):
         anomaly = Anomaly(
             data=self.indicator_raw_file,

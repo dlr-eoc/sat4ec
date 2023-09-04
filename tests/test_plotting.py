@@ -13,10 +13,10 @@ class TestPlotting(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestPlotting, self).__init__(*args, **kwargs)
 
-        aoi = AOI(TEST_DIR.joinpath("AOIs", "bmw_regensburg.geojson"))
+        aoi = AOI(TEST_DIR.joinpath("AOIs", "bmw_leipzig.geojson"))
         aoi.get_features()
         self.aoi = aoi.geometry
-        self.out_dir = TEST_DIR.joinpath("bmw_regensburg")
+        self.out_dir = TEST_DIR.joinpath("bmw_leipzig")
         self.name = "BMW Regensburg"
         self.start_date = "2022-01-01"
         self.end_date = "2022-12-31"

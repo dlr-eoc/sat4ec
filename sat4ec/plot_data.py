@@ -118,6 +118,7 @@ class PlotData:
                 y=self.spline_dataframe[col].mean(),
                 linestyle="--",
                 color="#d3d3d3",
+                legend=False,
             )
 
             upper_boundary = (
@@ -135,6 +136,7 @@ class PlotData:
                 y=upper_boundary,
                 linestyle="--",
                 color="#d3d3d3",
+                legend=False,
             )
 
             sns.lineplot(
@@ -143,6 +145,7 @@ class PlotData:
                 y=lower_boundary,
                 linestyle="--",
                 color="#d3d3d3",
+                legend=False,
             )
 
             self.ax.fill_between(
