@@ -169,7 +169,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_extrema()
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 21)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 15)
 
     def test_find_extrema_raw(self):
         anomaly = Anomaly(

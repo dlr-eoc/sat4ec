@@ -166,7 +166,7 @@ def from_raw_data(
 ):
     for key in aois.keys():
         aoi_dir = working_dir.joinpath(key)
-
+        print(key)
         for orbit in orbits:
             for pol in pols:
                 shutil.copy(aois[key], aoi_dir)
