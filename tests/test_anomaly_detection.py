@@ -121,9 +121,9 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_extrema()
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 23)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 21)
 
-    def test_find_extrema_with_insenstive(self):
+    def test_find_uncorrected_extrema(self):
         anomaly = Anomaly(
             data=self.indicator_spline_file,
             df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),

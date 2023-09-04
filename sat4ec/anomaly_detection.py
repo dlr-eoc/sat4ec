@@ -78,19 +78,52 @@ class Anomaly:
         self.find_maxima()  # find maxima on dataframe
         self.find_minima()  # find minima on dataframe
         self.correct_insensitive()  # drop indices not significantly deviating from the global mean
+        self.delete_adjacent()  # drop indices of anomalies in close neighboorhood
+
+    def delete_adjacent(self, min_diff=40):
+        """
+        Delete anomalies that are in close neighboorhood as these represent saddle points.
+        Anomalies on saddle points were selected as the find extrema method is executed twice on minima and maxima.
+        """
+
+        time_diff = (
+            self.dataframe.index.to_series().diff()
+        )  # get difference in days between observations
+        cond_df = self.dataframe.loc[
+            time_diff < f"{min_diff} days"
+        ]  # difference in days must be less than min_diff
+
+        self.dataframe = self.dataframe.drop(  # delete 1st adjacent anomaly at index
+            cond_df.index
+        )
+        self.dataframe = self.dataframe.drop(
+            self.dataframe.loc[
+                self.dataframe.index[
+                    max(0, self.dataframe.index.searchsorted(cond_df.index) - 1)  # prev. index of 1st adjacent anomaly
+                ]
+            ].index
+        )
 
     def correct_insensitive(self, factor=0.25):
         # correct extrema if not significantly deviating from the global mean
         upper_df = self.dataframe.loc[
-            self.dataframe[self.column] > (self.global_mean + factor * self.global_std)  # greater than mean + std
-        ].loc[self.dataframe["anomaly"]]  # only include indices where anomaly is present
+            self.dataframe[self.column]
+            > (self.global_mean + factor * self.global_std)  # greater than mean + std
+        ].loc[
+            self.dataframe["anomaly"]
+        ]  # only include indices where anomaly is present
         lower_lower = self.dataframe.loc[
-            self.dataframe[self.column] < (self.global_mean - factor * self.global_std)  # less than mean + std
-        ].loc[self.dataframe["anomaly"]]  # only include indices where anomaly is present
+            self.dataframe[self.column]
+            < (self.global_mean - factor * self.global_std)  # less than mean + std
+        ].loc[
+            self.dataframe["anomaly"]
+        ]  # only include indices where anomaly is present
 
-        self.dataframe = self.dataframe.drop(
+        self.dataframe = self.dataframe.drop(  # delete insensitive anomalies at index
             index=self.dataframe.index.difference(  # compute difference to original dataframe, i.e. drop indices
-                pd.concat([upper_df, lower_lower], axis=0).index  # combine upper and lower dataframe
+                pd.concat(
+                    [upper_df, lower_lower], axis=0
+                ).index  # combine upper and lower dataframe
             )
         )
 
