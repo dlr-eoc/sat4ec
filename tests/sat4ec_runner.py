@@ -75,8 +75,8 @@ def compute_anomaly(
     return anomaly
 
 
-def plot_data(spline=False, out_dir=None, name=None, raw_data=None, raw_columns=None, spline_data=None, anomaly_data=None, orbit="asc"):
-    if spline:
+def plot_data(out_dir=None, name=None, raw_data=None, raw_columns=None, spline_data=None, anomaly_data=None, orbit="asc"):
+    if spline_data is not None:
         with PlotData(
                 out_dir=out_dir,
                 name=name,
@@ -90,7 +90,7 @@ def plot_data(spline=False, out_dir=None, name=None, raw_data=None, raw_columns=
             plotting.plot_splinedata()
             plotting.plot_anomalies()
             plotting.plot_finalize()
-            plotting.save(spline=spline)
+            plotting.save(spline=True)
 
     else:
         with PlotData(
@@ -105,7 +105,7 @@ def plot_data(spline=False, out_dir=None, name=None, raw_data=None, raw_columns=
             plotting.plot_rawdata(background=False)
             plotting.plot_anomalies()
             plotting.plot_finalize()
-            plotting.save(spline=spline)
+            plotting.save(spline=False)
 
 
 def entire_workflow(
@@ -166,7 +166,7 @@ def from_raw_data(
 ):
     for key in aois.keys():
         aoi_dir = working_dir.joinpath(key)
-
+        print(key)
         for orbit in orbits:
             for pol in pols:
                 shutil.copy(aois[key], aoi_dir)

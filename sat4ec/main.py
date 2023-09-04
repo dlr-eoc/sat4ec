@@ -30,7 +30,6 @@ logger = get_logger(__name__, out_dir=OUT_DIR)
 
 
 def plot_data(
-    spline=False,
     out_dir=None,
     name=None,
     raw_data=None,
@@ -39,7 +38,7 @@ def plot_data(
     anomaly_data=None,
     orbit="asc",
 ):
-    if spline:
+    if spline_data:
         with PlotData(
             out_dir=out_dir,
             name=name,
@@ -53,7 +52,7 @@ def plot_data(
             plotting.plot_splinedata()
             plotting.plot_anomalies()
             plotting.plot_finalize()
-            plotting.save(spline=spline)
+            plotting.save(spline=True)
 
     else:
         with PlotData(
@@ -68,7 +67,7 @@ def plot_data(
             plotting.plot_rawdata(background=False)
             plotting.plot_anomalies()
             plotting.plot_finalize()
-            plotting.save(spline=spline)
+            plotting.save(spline=False)
 
 
 def compute_raw_data(aoi=None, start_date=None, end_date=None, orbit="asc", pol="VH"):

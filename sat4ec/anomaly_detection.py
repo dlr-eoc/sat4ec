@@ -13,6 +13,7 @@ class Anomaly:
         out_dir=None,
         pol="VH",
         orbit="asc",
+        factor=0.25,
     ):
         self.parameters = parameters
         self.column = anomaly_column  # dataframe column containing the anomaly data
@@ -22,6 +23,9 @@ class Anomaly:
         self.out_dir = out_dir
         self.orbit = orbit
         self.pol = pol
+        self.factor = (
+            factor  # factor representing sensitive/insensitive standard deviation
+        )
 
         self.indicator_df = self._get_data(data)
         self._prepare_dataframe()
@@ -80,41 +84,66 @@ class Anomaly:
         self.correct_insensitive()  # drop indices not significantly deviating from the global mean
         self.delete_adjacent()  # drop indices of anomalies in close neighboorhood
 
-    def delete_adjacent(self, min_diff=40):
+    def delete_adjacent(self):
         """
         Delete anomalies that are in close neighboorhood as these represent saddle points.
         Anomalies on saddle points were selected as the find extrema method is executed twice on minima and maxima.
         """
+        adjacent_dates = self.get_adjacent_dates()  # get adjacent anomaly dates
+        adjacent_backscatter = self.get_adjacent_backscatter()  # get adjacent anomaly values
+        self.dataframe = self.dataframe.drop(  # delete anomaly values based on date and backscatter value
+            self.dataframe.iloc[adjacent_dates].index.intersection(  # indices from date and backscatter must be euqal
+                self.dataframe.iloc[adjacent_backscatter].index
+            )
+        )
 
+    def get_adjacent_backscatter(self):
+        backscatter_diff = self.dataframe[
+            self.column
+        ].diff()  # get difference in backscatter between observations
+        cond_df = self.dataframe.loc[
+            backscatter_diff.abs() < (2 * self.factor * self.global_std)
+        ]  # difference in backscatter must be less than part of standard deviation
+
+        adjacent_indices = list(
+            self.dataframe.index.searchsorted(cond_df.index) - 1
+        )  # adjacent anomalies in self.dataframe
+
+        if len(adjacent_indices) > 0:
+            adjacent_indices.insert(len(adjacent_indices), adjacent_indices[-1] + 1)
+
+        return adjacent_indices
+
+    def get_adjacent_dates(self, date_diff=31):
         time_diff = (
             self.dataframe.index.to_series().diff()
         )  # get difference in days between observations
         cond_df = self.dataframe.loc[
-            time_diff < f"{min_diff} days"
-        ]  # difference in days must be less than min_diff
+            time_diff < f"{date_diff} days"
+        ]  # difference in days must be less than date_diff
 
-        self.dataframe = self.dataframe.drop(  # delete 1st adjacent anomaly at index
-            cond_df.index
-        )
-        self.dataframe = self.dataframe.drop(
-            self.dataframe.loc[
-                self.dataframe.index[
-                    max(0, self.dataframe.index.searchsorted(cond_df.index) - 1)  # prev. index of 1st adjacent anomaly
-                ]
-            ].index
-        )
+        adjacent_indices = list(
+            self.dataframe.index.searchsorted(cond_df.index) - 1
+        )  # adjacent anomalies in self.dataframe
 
-    def correct_insensitive(self, factor=0.25):
+        if len(adjacent_indices) > 0:
+            adjacent_indices.insert(len(adjacent_indices), adjacent_indices[-1] + 1)
+
+        return adjacent_indices
+
+    def correct_insensitive(self):
         # correct extrema if not significantly deviating from the global mean
         upper_df = self.dataframe.loc[
             self.dataframe[self.column]
-            > (self.global_mean + factor * self.global_std)  # greater than mean + std
+            > (
+                self.global_mean + self.factor * self.global_std
+            )  # greater than mean + std
         ].loc[
             self.dataframe["anomaly"]
         ]  # only include indices where anomaly is present
         lower_lower = self.dataframe.loc[
             self.dataframe[self.column]
-            < (self.global_mean - factor * self.global_std)  # less than mean + std
+            < (self.global_mean - self.factor * self.global_std)  # less than mean + std
         ].loc[
             self.dataframe["anomaly"]
         ]  # only include indices where anomaly is present
