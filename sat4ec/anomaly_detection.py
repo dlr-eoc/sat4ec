@@ -33,7 +33,9 @@ class Anomaly:
 
     def _prepare_dataframe(self):
         self.dataframe = self.indicator_df.copy()  # create target dataframe
-        self.dataframe["anomaly"] = False  # create new column storing anomaly state [boolean]
+        self.dataframe[
+            "anomaly"
+        ] = False  # create new column storing anomaly state [boolean]
 
     def _get_data(self, data):
         if isinstance(data, Path):
@@ -75,6 +77,22 @@ class Anomaly:
     def find_extrema(self):
         self.find_maxima()  # find maxima on dataframe
         self.find_minima()  # find minima on dataframe
+        self.correct_insensitive()  # drop indices not significantly deviating from the global mean
+
+    def correct_insensitive(self, factor=0.25):
+        # correct extrema if not significantly deviating from the global mean
+        upper_df = self.dataframe.loc[
+            self.dataframe[self.column] > (self.global_mean + factor * self.global_std)  # greater than mean + std
+        ].loc[self.dataframe["anomaly"]]  # only include indices where anomaly is present
+        lower_lower = self.dataframe.loc[
+            self.dataframe[self.column] < (self.global_mean - factor * self.global_std)  # less than mean + std
+        ].loc[self.dataframe["anomaly"]]  # only include indices where anomaly is present
+
+        self.dataframe = self.dataframe.drop(
+            index=self.dataframe.index.difference(  # compute difference to original dataframe, i.e. drop indices
+                pd.concat([upper_df, lower_lower], axis=0).index  # combine upper and lower dataframe
+            )
+        )
 
     def flip_data(self):
         positive = self.dataframe.loc[
@@ -107,12 +125,9 @@ class Anomaly:
         peaks, _ = find_peaks(self.dataframe[self.column].to_numpy(), distance=10)
         self.dataframe.iloc[peaks, [-1]] = True  # index -1 equals anomaly column
 
-        # correct maxima if not significantly deviating from the global mean
-        print(self.global_mean)
-        print(self.global_std)
-        print(self.dataframe.loc[self.dataframe["mean"] < (self.global_mean + self.global_std)].loc[self.dataframe["anomaly"]])
-
     def find_minima(self):
         self.flip_data()  # flip data to make original minima to maximas that can be detected
         self.find_maxima()  # find maxima (originally minima) on dataframe
-        self.dataframe[self.column] = self.indicator_df[self.column]  # revert flipped data column to original state
+        self.dataframe[self.column] = self.indicator_df[
+            self.column
+        ]  # revert flipped data column to original state

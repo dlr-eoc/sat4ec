@@ -121,6 +121,20 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_extrema()
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 23)
+
+    def test_find_extrema_with_insenstive(self):
+        anomaly = Anomaly(
+            data=self.indicator_spline_file,
+            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),
+            anomaly_column="mean",
+            out_dir=self.indicator.out_dir,
+            orbit=self.orbit,
+            pol=self.pol,
+        )
+
+        anomaly.find_maxima()  # find maxima on dataframe
+        anomaly.find_minima()  # find minima on dataframe
         self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 35)
 
     def test_find_extrema_raw(self):
