@@ -195,7 +195,7 @@ class PlotData:
         if " " in self.name:
             self.name = "_".join(self.name.split(" "))
 
-    def save(self, spline=True):
+    def save(self, spline=True, dpi=96):
         self.correct_name()
 
         if spline:
@@ -210,4 +210,4 @@ class PlotData:
                 f"indicator_1_{self.name}_rawdata_{self.orbit}_{self.pol}.png",
             )
 
-        self.fig.savefig(out_file)
+        self.fig.savefig(out_file, dpi=dpi)

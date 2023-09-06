@@ -75,7 +75,7 @@ def compute_anomaly(
     return anomaly
 
 
-def plot_data(out_dir=None, name=None, raw_data=None, raw_columns=None, spline_data=None, anomaly_data=None, orbit="asc"):
+def plot_data(out_dir=None, name=None, raw_data=None, raw_columns=None, spline_data=None, anomaly_data=None, orbit="asc", dpi=96):
     if spline_data is not None:
         with PlotData(
                 out_dir=out_dir,
@@ -90,7 +90,7 @@ def plot_data(out_dir=None, name=None, raw_data=None, raw_columns=None, spline_d
             plotting.plot_splinedata()
             plotting.plot_anomalies()
             plotting.plot_finalize()
-            plotting.save(spline=True)
+            plotting.save(spline=True, dpi=dpi)
 
     else:
         with PlotData(
@@ -105,7 +105,7 @@ def plot_data(out_dir=None, name=None, raw_data=None, raw_columns=None, spline_d
             plotting.plot_rawdata(background=False)
             plotting.plot_anomalies()
             plotting.plot_finalize()
-            plotting.save(spline=False)
+            plotting.save(spline=False, dpi=dpi)
 
 
 def entire_workflow(
