@@ -13,14 +13,14 @@ class TestPlotting(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestPlotting, self).__init__(*args, **kwargs)
 
-        aoi = AOI(TEST_DIR.joinpath("AOIs", "bmw_leipzig.geojson"))
+        aoi = AOI(TEST_DIR.joinpath("AOIs", "bmw_regensburg.geojson"))
         aoi.get_features()
         self.aoi = aoi.geometry
-        self.out_dir = TEST_DIR.joinpath("bmw_leipzig")
+        self.out_dir = TEST_DIR.joinpath("bmw_regensburg")
         self.name = "BMW Regensburg"
         self.start_date = "2022-01-01"
         self.end_date = "2022-12-31"
-        self.orbit = "asc"
+        self.orbit = "des"
         self.pol = "VH"
         self.anomaly_options = {
             "invert": False,
@@ -56,7 +56,7 @@ class TestPlotting(unittest.TestCase):
             raw_columns=helper_functions.get_anomaly_columns(
                 self.indicator.columns_map,
             ),
-            orbit="asc",
+            orbit=self.orbit,
         ) as plotting:
             plotting.plot_rawdata()
             plotting.plot_finalize(show=True)
@@ -68,7 +68,7 @@ class TestPlotting(unittest.TestCase):
                 self.indicator.columns_map,
                 dst_cols=["mean", "std"]
             ),
-            orbit="asc",
+            orbit=self.orbit,
         ) as plotting:
             plotting.plot_rawdata()
             plotting.plot_finalize(show=True)
@@ -79,7 +79,7 @@ class TestPlotting(unittest.TestCase):
             raw_columns=helper_functions.get_anomaly_columns(
                 self.indicator.columns_map
             ),
-            orbit="asc",
+            orbit=self.orbit,
         ) as plotting:
             plotting.plot_splinedata()
             plotting.plot_finalize(show=True)
@@ -91,7 +91,7 @@ class TestPlotting(unittest.TestCase):
                 self.indicator.columns_map
             ),
             spline_data=self.indicator_spline_file,
-            orbit="asc",
+            orbit=self.orbit,
         ) as plotting:
             plotting.plot_rawdata(background=True)
             plotting.plot_splinedata()
@@ -105,7 +105,8 @@ class TestPlotting(unittest.TestCase):
                 dst_cols=["mean", "std"]
             ),
             spline_data=self.indicator_spline_file,
-            orbit="asc",
+            orbit=self.orbit,
+            name=self.name
         ) as plotting:
             plotting.plot_rawdata(background=True)
             plotting.plot_splinedata()
@@ -119,7 +120,8 @@ class TestPlotting(unittest.TestCase):
             ),
             spline_data=self.indicator_spline_file,
             anomaly_data=self.anomaly_spline_file,
-            orbit="asc",
+            orbit=self.orbit,
+            name=self.name
         ) as plotting:
             plotting.plot_rawdata(background=True)
             plotting.plot_splinedata()
@@ -134,7 +136,8 @@ class TestPlotting(unittest.TestCase):
             ),
             spline_data=self.indicator_spline_file,
             anomaly_data=self.anomaly_spline_file,
-            orbit="asc",
+            orbit=self.orbit,
+            name=self.name
         ) as plotting:
             plotting.plot_splinedata()
             plotting.plot_anomalies()
@@ -148,7 +151,7 @@ class TestPlotting(unittest.TestCase):
                 self.indicator.columns_map
             ),
             anomaly_data=self.anomaly_raw_file,
-            orbit="asc",
+            orbit=self.orbit,
         ) as plotting:
             print(self.anomaly_spline_file)
             plotting.plot_rawdata()
@@ -165,7 +168,7 @@ class TestPlotting(unittest.TestCase):
             ),
             spline_data=self.indicator_spline_file,
             anomaly_data=self.anomaly_spline_file,
-            orbit="asc",
+            orbit=self.orbit,
         ) as plotting:
             plotting.plot_rawdata(background=True)
             plotting.plot_splinedata()
@@ -182,7 +185,7 @@ class TestPlotting(unittest.TestCase):
                 self.indicator.columns_map
             ),
             anomaly_data=self.anomaly_raw_file,
-            orbit="asc",
+            orbit=self.orbit,
         ) as plotting:
             plotting.plot_rawdata(background=False)
             plotting.plot_anomalies()

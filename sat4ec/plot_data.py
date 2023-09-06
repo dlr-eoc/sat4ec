@@ -173,7 +173,12 @@ class PlotData:
         plt.title(f"{self.name} {self.pol} polarization, {self.long_orbit} orbit")
         plt.ylabel("Sentinel-1 backscatter [dB]")
         plt.xlabel("Timestamp")
-        self.fig.legend(loc="outside lower center", ncols=len(self.raw_columns) + 1)
+        self.fig.legend(
+            loc="outside lower center",
+            ncols=len(self.raw_columns) + 1,
+            bbox_to_anchor=(0.5, 0)
+        )
+        plt.tight_layout(pad=2.5)
 
         if show:  # for development
             plt.show()
