@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 from pathlib import Path
+from datetime import datetime, timedelta
 
 
 class PlotData:
@@ -173,6 +174,11 @@ class PlotData:
         plt.title(f"{self.name} {self.pol} polarization, {self.long_orbit} orbit")
         plt.ylabel("Sentinel-1 backscatter [dB]")
         plt.xlabel("Timestamp")
+        plt.ylim(self.raw_dataframe["mean"].min() - 1, self.raw_dataframe["std"].max() + 1)
+        plt.xlim(
+            datetime.date(self.raw_dataframe.index[0]) - timedelta(days=7),
+            datetime.date(pd.to_datetime(self.raw_dataframe["interval_to"][-1])) + timedelta(days=7)
+        )
         self.fig.legend(
             loc="outside lower center",
             ncols=len(self.raw_columns) + 1,

@@ -20,7 +20,7 @@ class TestPlotting(unittest.TestCase):
         self.name = "BMW Regensburg"
         self.start_date = "2022-01-01"
         self.end_date = "2022-12-31"
-        self.orbit = "des"
+        self.orbit = "asc"
         self.pol = "VH"
         self.anomaly_options = {
             "invert": False,
@@ -153,7 +153,6 @@ class TestPlotting(unittest.TestCase):
             anomaly_data=self.anomaly_raw_file,
             orbit=self.orbit,
         ) as plotting:
-            print(self.anomaly_spline_file)
             plotting.plot_rawdata()
             plotting.plot_anomalies()
             plotting.plot_finalize(show=True)
