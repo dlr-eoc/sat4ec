@@ -14,11 +14,11 @@ docker build -f sat4ec.Dockerfile -t sat4ec .
 
 Define an area of interest (AOI) over a production parking lot and save as geojson or gpkg.
 
-![AOI BMW Regensburg](data/bmw/regensburg/aoi_bmw_regensburg.png)
+![AOI BMW Regensburg](docs/aoi_bmw_regensburg.png)
 
 Cars are often parked in very small space and covered with a protective layer.
 
-![AOI BMW Regensburg cars](data/bmw/regensburg/bmw_regensburg_car_zoom.png)
+![AOI BMW Regensburg cars](docs/bmw_regensburg_car_zoom.png)
 
 ### Execution
 
@@ -58,7 +58,7 @@ docker run
 
 The default settings plot the aggregated mean Sentinel-1 backscatter per AOI with the aggregated standard deviation. All units are in dB. Each datapoint is represented by a distinct date with a 1 day resolution. This data is plotted in grey colors and already shows the timely variation of backscatter. To draw a clearer picture, mean and standard deviation data is interpolated with a weighted spline function. The spline weights were computed with `local_mean / global_mean`, giving datapoints exceeding the global mean a higher significance.
 
-![](data/bmw/regensburg/results/plot/indicator_1_bmw_regensburg_splinedata_asc_VH.png)
+![](docs/indicator_1_bmw_regensburg_splinedata_asc_VH.png)
 
 ## Data
 

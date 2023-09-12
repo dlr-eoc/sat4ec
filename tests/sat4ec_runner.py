@@ -18,7 +18,7 @@ def get_name(name=None):
         raise ValueError(f"The name of the AOI {name} does not follow scheme BRAND_LOCATION.")
 
     else:
-        return f"{brand.upper()}_{location.title()}"
+        return f"{brand.upper()} {location.title()}"
 
 
 def get_indicator(
@@ -135,6 +135,8 @@ def entire_workflow(
                         orbit,
                         "--polarization",
                         pol,
+                        "--name",
+                        get_name(key)
                     ],
                     capture_output=False,
                 )
@@ -258,12 +260,15 @@ if __name__ == "__main__":
     ]
 
     aois = {
-        "volvo_gent": aoi_dir.joinpath("volvo_gent.geojson"),
-        "munich_airport": aoi_dir.joinpath("munich_airport.geojson"),
-        "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson"),
-        "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson"),
-        "vw_emden": aoi_dir.joinpath("vw_emden.geojson"),
-        "bmw_regensburg": aoi_dir.joinpath("bmw_regensburg.geojson"),
+        # "volvo_gent": aoi_dir.joinpath("volvo_gent.geojson"),
+        # "munich_airport": aoi_dir.joinpath("munich_airport.geojson"),
+        # "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson"),
+        # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson"),
+        # "vw_emden": aoi_dir.joinpath("vw_emden.geojson"),
+        # "bmw_regensburg": aoi_dir.joinpath("bmw_regensburg.geojson"),
+        # "opel_ruesselsheim": aoi_dir.joinpath("opel_ruesselsheim.geojson"),
+        "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg.geojson"),
+        # "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
     }
 
     main(orbits, pols, aois, aoi_dir, start="2016-01-01", end="2022-12-31")

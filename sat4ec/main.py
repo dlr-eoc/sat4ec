@@ -38,7 +38,7 @@ def plot_data(
     anomaly_data=None,
     orbit="asc",
 ):
-    if spline_data:
+    if spline_data is not None:
         with PlotData(
             out_dir=out_dir,
             name=name,
@@ -140,7 +140,7 @@ def main(
         )
 
         spline_anomalies = compute_anomaly(
-            df=indicator.dataframe,
+            df=indicator.spline_dataframe,
             df_columns=get_anomaly_columns(indicator.columns_map, dst_cols=columns),
             out_dir=indicator.out_dir,
             orbit=orbit,
@@ -217,7 +217,7 @@ def run():
         end_date=args.end_date,
         pol=pol,
         orbit=orbit,
-        name=args.name,
+        name=args.name[0],
         columns=args.columns,
     )
 
@@ -259,6 +259,7 @@ def create_parser():
     )
     parser.add_argument(
         "--name",
+        nargs=1,
         help="Name of the location, e.g. BMW Regensburg. Appears in the plot title.",
     )
     parser.add_argument(
