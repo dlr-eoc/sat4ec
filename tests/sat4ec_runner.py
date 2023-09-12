@@ -18,7 +18,7 @@ def get_name(name=None):
         raise ValueError(f"The name of the AOI {name} does not follow scheme BRAND_LOCATION.")
 
     else:
-        return f"{brand.upper()}_{location.title()}"
+        return f"{brand.upper()} {location.title()}"
 
 
 def get_indicator(
@@ -75,7 +75,7 @@ def compute_anomaly(
     return anomaly
 
 
-def plot_data(out_dir=None, name=None, raw_data=None, raw_columns=None, spline_data=None, anomaly_data=None, orbit="asc"):
+def plot_data(out_dir=None, name=None, raw_data=None, raw_columns=None, spline_data=None, anomaly_data=None, orbit="asc", dpi=96):
     if spline_data is not None:
         with PlotData(
                 out_dir=out_dir,
@@ -90,7 +90,7 @@ def plot_data(out_dir=None, name=None, raw_data=None, raw_columns=None, spline_d
             plotting.plot_splinedata()
             plotting.plot_anomalies()
             plotting.plot_finalize()
-            plotting.save(spline=True)
+            plotting.save(spline=True, dpi=dpi)
 
     else:
         with PlotData(
@@ -105,7 +105,7 @@ def plot_data(out_dir=None, name=None, raw_data=None, raw_columns=None, spline_d
             plotting.plot_rawdata(background=False)
             plotting.plot_anomalies()
             plotting.plot_finalize()
-            plotting.save(spline=False)
+            plotting.save(spline=False, dpi=dpi)
 
 
 def entire_workflow(
@@ -135,6 +135,8 @@ def entire_workflow(
                         orbit,
                         "--polarization",
                         pol,
+                        "--name",
+                        get_name(key)
                     ],
                     capture_output=False,
                 )
@@ -166,7 +168,7 @@ def from_raw_data(
 ):
     for key in aois.keys():
         aoi_dir = working_dir.joinpath(key)
-        print(key)
+
         for orbit in orbits:
             for pol in pols:
                 shutil.copy(aois[key], aoi_dir)
@@ -258,12 +260,15 @@ if __name__ == "__main__":
     ]
 
     aois = {
-        "volvo_gent": aoi_dir.joinpath("volvo_gent.geojson"),
-        "munich_airport": aoi_dir.joinpath("munich_airport.geojson"),
-        "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson"),
-        "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson"),
-        "vw_emden": aoi_dir.joinpath("vw_emden.geojson"),
-        "bmw_regensburg": aoi_dir.joinpath("bmw_regensburg.geojson"),
+        # "volvo_gent": aoi_dir.joinpath("volvo_gent.geojson"),
+        # "munich_airport": aoi_dir.joinpath("munich_airport.geojson"),
+        # "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson"),
+        # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson"),
+        # "vw_emden": aoi_dir.joinpath("vw_emden.geojson"),
+        # "bmw_regensburg": aoi_dir.joinpath("bmw_regensburg.geojson"),
+        # "opel_ruesselsheim": aoi_dir.joinpath("opel_ruesselsheim.geojson"),
+        "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg.geojson"),
+        # "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
     }
 
     main(orbits, pols, aois, aoi_dir, start="2016-01-01", end="2022-12-31")

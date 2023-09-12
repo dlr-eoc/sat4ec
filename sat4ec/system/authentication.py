@@ -9,8 +9,14 @@ class Config:
         self.secret = secret
         self.config = None
 
+        self._check_directory()
         self._get_credentials()
         self._get_config()
+
+    @staticmethod
+    def _check_directory():
+        if not Path(__file__).parent.exists():
+            Path(__file__).parent.mkdir(parents=True)
 
     def _get_credentials(self):
         credentials = load_yaml(Path(__file__).parent.joinpath("credentials.yaml"))

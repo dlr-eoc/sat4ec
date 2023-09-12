@@ -204,7 +204,8 @@ class IndicatorData(Config):
     def apply_regression(self):
         # apply spline with weights: data point mean / global mean
         # where datapoint mean == global mean, weight equals 1 which is the default method weight
-        # where datapoint mean < or > global mean, weight > 1 and indicates higher significance
+        # where datapoint mean > global mean, weight > 1 and indicates higher significance
+        # where datapoint mean < global mean, weight < 1 and indicates lower significance
         self.spline_dataframe = self.dataframe.copy()
 
         for col in get_anomaly_columns(self.columns_map):
