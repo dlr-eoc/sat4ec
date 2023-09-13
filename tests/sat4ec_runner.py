@@ -2,6 +2,9 @@ import shutil
 import subprocess
 import pandas as pd
 from pathlib import Path
+import matplotlib.pyplot as plt
+import seaborn as sns
+from datetime import datetime, timedelta
 
 from sat4ec.data_retrieval import IndicatorData as IData
 from sat4ec.aoi_check import AOI
@@ -11,14 +14,15 @@ from system.helper_functions import get_anomaly_columns
 
 
 class Config:
-    def __init__(self,
-                 orbits=None,
-                 pols=None,
-                 aois=None,
-                 aoi_dir=Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/AOIs"),
-                 start="2020-01-01",
-                 end="2020-12-31",
-                 ):
+    def __init__(
+        self,
+        orbits=None,
+        pols=None,
+        aois=None,
+        aoi_dir=Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/AOIs"),
+        start="2020-01-01",
+        end="2020-12-31",
+    ):
         self.orbits = orbits
         self.pols = pols
         self.aoi_dir = aoi_dir
@@ -28,10 +32,10 @@ class Config:
         self.working_dir = None
 
     def get_loop(self):
-        for key in self.aois.keys():
+        for index, key in enumerate(self.aois.keys()):
             for orbit in self.orbits:
                 for pol in self.pols:
-                    yield key, orbit, pol
+                    yield index, key, orbit, pol
 
     def check_working_dir(self):
         if not self.working_dir.exists():
@@ -39,15 +43,17 @@ class Config:
 
 
 class Facility:
-    def __init__(self, aoi_data=None,
-                 out_dir=None,
-                 start_date=None,
-                 end_date=None,
-                 pol="VH",
-                 orbit="asc",
-                 name="Unkown Brand",
-                 columns="mean",
-                 ):
+    def __init__(
+        self,
+        aoi_data=None,
+        out_dir=None,
+        start_date=None,
+        end_date=None,
+        pol="VH",
+        orbit="asc",
+        name="Unkown Brand",
+        columns="mean",
+    ):
         self.orbit = orbit
         self.pol = pol
         self.aoi_data = aoi_data
@@ -113,13 +119,15 @@ class Facility:
     def plot_data(self, dpi=96, spline=False, anomaly_data=None):
         if spline:
             with PlotData(
-                    out_dir=self.out_dir,
-                    name=self.name,
-                    raw_data=self.indicator.dataframe,
-                    raw_columns=get_anomaly_columns(self.indicator.columns_map, dst_cols=["mean"]),
-                    spline_data=self.indicator.spline_dataframe,
-                    anomaly_data=anomaly_data.dataframe,
-                    orbit=self.orbit,
+                out_dir=self.out_dir,
+                name=self.name,
+                raw_data=self.indicator.dataframe,
+                raw_columns=get_anomaly_columns(
+                    self.indicator.columns_map, dst_cols=["mean"]
+                ),
+                spline_data=self.indicator.spline_dataframe,
+                anomaly_data=anomaly_data.dataframe,
+                orbit=self.orbit,
             ) as plotting:
                 plotting.plot_rawdata(background=True)
                 plotting.plot_splinedata()
@@ -129,12 +137,14 @@ class Facility:
 
         else:
             with PlotData(
-                    out_dir=self.out_dir,
-                    name=self.name,
-                    raw_data=self.indicator.dataframe,
-                    raw_columns=get_anomaly_columns(self.indicator.columns_map, dst_cols=["mean"]),
-                    anomaly_data=anomaly_data.dataframe,
-                    orbit=self.orbit,
+                out_dir=self.out_dir,
+                name=self.name,
+                raw_data=self.indicator.dataframe,
+                raw_columns=get_anomaly_columns(
+                    self.indicator.columns_map, dst_cols=["mean"]
+                ),
+                anomaly_data=anomaly_data.dataframe,
+                orbit=self.orbit,
             ) as plotting:
                 plotting.plot_rawdata(background=False)
                 plotting.plot_anomalies()
@@ -142,13 +152,190 @@ class Facility:
                 plotting.save(spline=spline, dpi=dpi)
 
 
+class Development:
+    def __init__(self, config=None):
+        self.config = config
+        self.facility = None
+        # self.config.working_dir = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/collection")
+
+        self._init_plot()
+
+    @staticmethod
+    def get_long_orbit(orbit="asc"):
+        return "ascending" if orbit == "asc" else "descending"
+
+    def _init_plot(self):
+        self.fig, self.axs = plt.subplots(
+            len(self.config.aois.keys()), 1, figsize=(20, 10)
+        )
+
+    def plot_raw_data(self, ax=None):
+        sns.lineplot(
+            data=self.facility.indicator.dataframe,
+            x=self.facility.indicator.dataframe.index,
+            y=self.facility.indicator.dataframe["mean"],
+            legend=False,
+            color="#d3d3d3",
+            zorder=1,
+            ax=ax,
+        )
+
+    def plot_splinedata(self, ax=None):
+        sns.lineplot(
+            data=self.facility.indicator.spline_dataframe,
+            x=self.facility.indicator.spline_dataframe.index,
+            y=self.facility.indicator.spline_dataframe["mean"],
+            label="mean",
+            legend=False,
+            zorder=2,
+            ax=ax,
+        )
+
+    def plot_mean_range(self, factor=0.25, ax=None):
+        """
+        Plot a range of mean + std that defines an insensitive area where anomalies are less likely.
+        """
+
+        sns.lineplot(
+            data=self.facility.indicator.spline_dataframe,
+            x=self.facility.indicator.spline_dataframe.index,
+            y=self.facility.indicator.spline_dataframe["mean"].mean(),
+            linestyle="--",
+            color="#d3d3d3",
+            legend=False,
+            ax=ax,
+        )
+
+        upper_boundary = (
+            self.facility.indicator.spline_dataframe["mean"].mean()
+            + factor * self.facility.indicator.spline_dataframe["std"].mean()
+        )
+        lower_boundary = (
+            self.facility.indicator.spline_dataframe["mean"].mean()
+            - factor * self.facility.indicator.spline_dataframe["std"].mean()
+        )
+
+        sns.lineplot(
+            data=self.facility.indicator.spline_dataframe,
+            x=self.facility.indicator.spline_dataframe.index,
+            y=upper_boundary,
+            linestyle="--",
+            color="#d3d3d3",
+            legend=False,
+            ax=ax,
+        )
+
+        sns.lineplot(
+            data=self.facility.indicator.spline_dataframe,
+            x=self.facility.indicator.spline_dataframe.index,
+            y=lower_boundary,
+            linestyle="--",
+            color="#d3d3d3",
+            legend=False,
+            ax=ax,
+        )
+
+        ax.fill_between(
+            self.facility.indicator.spline_dataframe.index,
+            lower_boundary,
+            upper_boundary,
+            color="#ebebeb",
+        )
+
+    @staticmethod
+    def plot_anomalies(ax=None, anomaly_data=None):
+        sns.scatterplot(
+            data=anomaly_data.dataframe.loc[anomaly_data.dataframe["anomaly"]],
+            x=anomaly_data.dataframe.loc[anomaly_data.dataframe["anomaly"]].index,
+            y=anomaly_data.dataframe.loc[anomaly_data.dataframe["anomaly"]]["mean"],
+            marker="o",
+            s=25,
+            zorder=3,
+            color="red",
+            label="anomaly",
+            legend=False,
+            ax=ax,
+        )
+
+    def subplot_settings(self, ax=None, name=None, pol="VH", orbit="ascending"):
+        ax.set_title(f"{name} {pol} polarization, {orbit} orbit")
+        ax.set_ylim(
+            self.facility.indicator.dataframe["mean"].min() - 1,
+            self.facility.indicator.dataframe["mean"].max() + 1,
+        )
+        ax.set_xlim(
+            datetime.date(self.facility.indicator.dataframe.index[0])
+            - timedelta(days=7),
+            datetime.date(
+                pd.to_datetime(self.facility.indicator.dataframe["interval_to"][-1])
+            )
+            + timedelta(days=7),
+        )
+        ax.set_ylabel("Sentinel-1 backscatter [dB]")
+
+    def plot_finalize(self, show=False):
+        plt.xlabel("Timestamp")
+
+        handles, labels = plt.gca().get_legend_handles_labels()
+        unique = [
+            (h, l)
+            for i, (h, l) in enumerate(zip(handles, labels))
+            if l not in labels[:i]
+        ]
+        self.fig.legend(
+            *zip(*unique), loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0)
+        )
+
+        plt.tight_layout(pad=2.5)
+
+        if show:  # for development
+            plt.show()
+
+    def from_raw_data(self):
+        for index, aoi_name, orbit, pol in self.config.get_loop():
+            self.config.working_dir = Path(
+                r"/mnt/data1/gitlab/sat4ec/tests/testdata"
+            ).joinpath(aoi_name)
+            self.config.check_working_dir()
+            shutil.copy(self.config.aois[aoi_name], self.config.working_dir)
+
+            self.facility = Facility(
+                orbit=orbit,
+                pol=pol,
+                aoi_data=self.config.working_dir.joinpath(
+                    self.config.aois[aoi_name].name
+                ),
+                start_date=self.config.start,
+                end_date=self.config.end,
+                out_dir=self.config.working_dir,
+                name=get_name(aoi_name),
+            )
+            self.facility.get_aoi()
+            self.facility.get_indicator()
+            spline_anomalies = self.facility.compute_anomaly(spline=True)
+            self.plot_mean_range(ax=self.axs[index])
+            self.plot_raw_data(ax=self.axs[index])
+            self.plot_splinedata(ax=self.axs[index])
+            self.plot_anomalies(ax=self.axs[index], anomaly_data=spline_anomalies)
+            self.subplot_settings(
+                ax=self.axs[index],
+                name=get_name(aoi_name),
+                pol=pol,
+                orbit=self.get_long_orbit(orbit),
+            )
+
+        self.plot_finalize(show=True)
+
+
 class Production:
     def __init__(self, config=None):
         self.config = config
 
     def entire_workflow(self):
-        for aoi_name, orbit, pol in self.config.get_loop():
-            self.config.working_dir = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata").joinpath(aoi_name)
+        for index, aoi_name, orbit, pol in self.config.get_loop():
+            self.config.working_dir = Path(
+                r"/mnt/data1/gitlab/sat4ec/tests/testdata"
+            ).joinpath(aoi_name)
             self.config.check_working_dir()
             shutil.copy(self.config.aois[aoi_name], self.config.working_dir)
 
@@ -169,24 +356,28 @@ class Production:
                     "--polarization",
                     pol,
                     "--name",
-                    get_name(aoi_name)
+                    get_name(aoi_name),
                 ],
                 capture_output=False,
             )
 
     def from_raw_data(self):
-        for aoi_name, orbit, pol in self.config.get_loop():
-            self.config.working_dir = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata").joinpath(aoi_name)
+        for index, aoi_name, orbit, pol in self.config.get_loop():
+            self.config.working_dir = Path(
+                r"/mnt/data1/gitlab/sat4ec/tests/testdata"
+            ).joinpath(aoi_name)
             self.config.check_working_dir()
             shutil.copy(self.config.aois[aoi_name], self.config.working_dir)
             facility = Facility(
                 orbit=orbit,
                 pol=pol,
-                aoi_data=self.config.working_dir.joinpath(self.config.aois[aoi_name].name),
+                aoi_data=self.config.working_dir.joinpath(
+                    self.config.aois[aoi_name].name
+                ),
                 start_date=self.config.start,
                 end_date=self.config.end,
                 out_dir=self.config.working_dir,
-                name=get_name(aoi_name)
+                name=get_name(aoi_name),
             )
             facility.get_aoi()
             facility.get_indicator()
@@ -201,7 +392,9 @@ def get_name(name=None):
     location = name.split("_")[1]
 
     if len(name.split("_")) > 2:
-        raise ValueError(f"The name of the AOI {name} does not follow scheme BRAND_LOCATION.")
+        raise ValueError(
+            f"The name of the AOI {name} does not follow scheme BRAND_LOCATION."
+        )
 
     else:
         return f"{brand.upper()} {location.title()}"
@@ -209,7 +402,10 @@ def get_name(name=None):
 
 if __name__ == "__main__":
     aoi_dir = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/AOIs")
-    orbits = ["asc", "des"]
+    orbits = [
+        "asc",
+        # "des"
+    ]
 
     pols = [
         # "VV",
@@ -225,10 +421,14 @@ if __name__ == "__main__":
         # "bmw_regensburg": aoi_dir.joinpath("bmw_regensburg.geojson"),
         # "opel_ruesselsheim": aoi_dir.joinpath("opel_ruesselsheim.geojson"),
         "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg.geojson"),
-        # "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
+        "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
     }
 
-    conf = Config(orbits=orbits, pols=pols, aois=aois, start="2020-01-01", end="2022-12-31")
-    prod = Production(config=conf)
+    conf = Config(
+        orbits=orbits, pols=pols, aois=aois, start="2016-01-01", end="2022-12-31"
+    )
+    # prod = Production(config=conf)
     # prod.entire_workflow()
-    prod.from_raw_data()
+    # prod.from_raw_data()
+    dev = Development(config=conf)
+    dev.from_raw_data()
