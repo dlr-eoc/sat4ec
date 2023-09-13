@@ -166,8 +166,19 @@ class Development:
 
     def _init_plot(self):
         self.fig, self.axs = plt.subplots(
-            len(self.config.aois.keys()), 1, figsize=(20, 10)
+            len(self.config.aois.keys()), len(self.config.orbits), figsize=(20, 10)
         )
+
+    def _get_axis(self, index=None, orbit=None):
+        if len(self.config.orbits) == 1:
+            return self.axs[index]
+
+        else:
+            if orbit == "asc":
+                return self.axs[index][0]
+
+            else:
+                return self.axs[index][1]
 
     def plot_raw_data(self, ax=None):
         sns.lineplot(
@@ -293,6 +304,8 @@ class Development:
 
     def from_raw_data(self):
         for index, aoi_name, orbit, pol in self.config.get_loop():
+            ax = self._get_axis(index=index, orbit=orbit)
+
             self.config.working_dir = Path(
                 r"/mnt/data1/gitlab/sat4ec/tests/testdata"
             ).joinpath(aoi_name)
@@ -313,12 +326,12 @@ class Development:
             self.facility.get_aoi()
             self.facility.get_indicator()
             spline_anomalies = self.facility.compute_anomaly(spline=True)
-            self.plot_mean_range(ax=self.axs[index])
-            self.plot_raw_data(ax=self.axs[index])
-            self.plot_splinedata(ax=self.axs[index])
-            self.plot_anomalies(ax=self.axs[index], anomaly_data=spline_anomalies)
+            self.plot_mean_range(ax=ax)
+            self.plot_raw_data(ax=ax)
+            self.plot_splinedata(ax=ax)
+            self.plot_anomalies(ax=ax, anomaly_data=spline_anomalies)
             self.subplot_settings(
-                ax=self.axs[index],
+                ax=ax,
                 name=get_name(aoi_name),
                 pol=pol,
                 orbit=self.get_long_orbit(orbit),
@@ -404,7 +417,7 @@ if __name__ == "__main__":
     aoi_dir = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/AOIs")
     orbits = [
         "asc",
-        # "des"
+        "des"
     ]
 
     pols = [
