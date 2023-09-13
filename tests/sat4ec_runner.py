@@ -10,6 +10,192 @@ from plot_data import PlotData
 from system.helper_functions import get_anomaly_columns
 
 
+class Config:
+    def __init__(self,
+                 orbits=None,
+                 pols=None,
+                 aois=None,
+                 aoi_dir=Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/AOIs"),
+                 start="2020-01-01",
+                 end="2020-12-31",
+                 ):
+        self.orbits = orbits
+        self.pols = pols
+        self.aoi_dir = aoi_dir
+        self.aois = aois
+        self.start = start
+        self.end = end
+        self.working_dir = None
+
+    def get_loop(self):
+        for key in self.aois.keys():
+            for orbit in self.orbits:
+                for pol in self.pols:
+                    yield key, orbit, pol
+
+    def check_working_dir(self):
+        if not self.working_dir.exists():
+            self.working_dir.mkdir(parents=True)
+
+
+class Facility:
+    def __init__(self, aoi_data=None,
+                 out_dir=None,
+                 start_date=None,
+                 end_date=None,
+                 pol="VH",
+                 orbit="asc",
+                 name="Unkown Brand",
+                 columns="mean",
+                 ):
+        self.orbit = orbit
+        self.pol = pol
+        self.aoi_data = aoi_data
+        self.aoi = None
+        self.start_date = start_date
+        self.end_date = end_date
+        self.out_dir = out_dir
+        self.columns = columns
+        self.name = name
+        self.indicator = None
+        self.raw_anomalies = None
+        self.spline_anomalies = None
+
+    def get_aoi(self):
+        self.aoi = AOI(data=self.aoi_data)
+        self.aoi.get_features()
+
+    def get_indicator(self):
+        self.indicator = IData(
+            aoi=self.aoi.geometry,
+            out_dir=self.out_dir,
+            start_date=self.start_date,
+            end_date=self.end_date,
+            orbit=self.orbit,
+            pol=self.pol,
+        )
+        self.indicator.dataframe = pd.read_csv(
+            self.out_dir.joinpath("raw", f"indicator_1_rawdata_{self.orbit}_VH.csv")
+        )
+        self.indicator.dataframe["interval_from"] = pd.to_datetime(
+            self.indicator.dataframe["interval_from"]
+        )
+        self.indicator.dataframe = self.indicator.dataframe.set_index("interval_from")
+
+        self.indicator.apply_regression()
+        self.indicator.save(spline=True)
+
+    def compute_anomaly(
+        self,
+        anomaly_column="mean",
+        spline=False,
+    ):
+        if spline:
+            data = self.indicator.spline_dataframe
+
+        else:
+            data = self.indicator.dataframe
+
+        anomaly = Anomaly(
+            data=data,
+            df_columns=self.indicator.columns_map,
+            anomaly_column=anomaly_column,
+            out_dir=self.out_dir,
+            orbit=self.orbit,
+            pol=self.pol,
+        )
+
+        anomaly.find_extrema()
+        anomaly.save(spline=spline)
+
+        return anomaly
+
+    def plot_data(self, dpi=96, spline=False, anomaly_data=None):
+        if spline:
+            with PlotData(
+                    out_dir=self.out_dir,
+                    name=self.name,
+                    raw_data=self.indicator.dataframe,
+                    raw_columns=get_anomaly_columns(self.indicator.columns_map, dst_cols=["mean"]),
+                    spline_data=self.indicator.spline_dataframe,
+                    anomaly_data=anomaly_data.dataframe,
+                    orbit=self.orbit,
+            ) as plotting:
+                plotting.plot_rawdata(background=True)
+                plotting.plot_splinedata()
+                plotting.plot_anomalies()
+                plotting.plot_finalize()
+                plotting.save(spline=spline, dpi=dpi)
+
+        else:
+            with PlotData(
+                    out_dir=self.out_dir,
+                    name=self.name,
+                    raw_data=self.indicator.dataframe,
+                    raw_columns=get_anomaly_columns(self.indicator.columns_map, dst_cols=["mean"]),
+                    anomaly_data=anomaly_data.dataframe,
+                    orbit=self.orbit,
+            ) as plotting:
+                plotting.plot_rawdata(background=False)
+                plotting.plot_anomalies()
+                plotting.plot_finalize()
+                plotting.save(spline=spline, dpi=dpi)
+
+
+class Production:
+    def __init__(self, config=None):
+        self.config = config
+
+    def entire_workflow(self):
+        for aoi_name, orbit, pol in self.config.get_loop():
+            self.config.working_dir = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata").joinpath(aoi_name)
+            self.config.check_working_dir()
+            shutil.copy(self.config.aois[aoi_name], self.config.working_dir)
+
+            response = subprocess.run(
+                [
+                    "python3",
+                    "../sat4ec/main.py",
+                    "--aoi_data",
+                    self.config.working_dir.joinpath(self.config.aois[aoi_name].name),
+                    "--out_dir",
+                    self.config.working_dir,
+                    "--start_date",
+                    f"{self.config.start}",
+                    "--end_date",
+                    f"{self.config.end}",
+                    "--orbit",
+                    orbit,
+                    "--polarization",
+                    pol,
+                    "--name",
+                    get_name(aoi_name)
+                ],
+                capture_output=False,
+            )
+
+    def from_raw_data(self):
+        for aoi_name, orbit, pol in self.config.get_loop():
+            self.config.working_dir = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata").joinpath(aoi_name)
+            self.config.check_working_dir()
+            shutil.copy(self.config.aois[aoi_name], self.config.working_dir)
+            facility = Facility(
+                orbit=orbit,
+                pol=pol,
+                aoi_data=self.config.working_dir.joinpath(self.config.aois[aoi_name].name),
+                start_date=self.config.start,
+                end_date=self.config.end,
+                out_dir=self.config.working_dir,
+                name=get_name(aoi_name)
+            )
+            facility.get_aoi()
+            facility.get_indicator()
+            raw_anomalies = facility.compute_anomaly(spline=False)
+            spline_anomalies = facility.compute_anomaly(spline=True)
+            facility.plot_data(spline=False, anomaly_data=raw_anomalies)
+            facility.plot_data(spline=True, anomaly_data=spline_anomalies)
+
+
 def get_name(name=None):
     brand = name.split("_")[0]
     location = name.split("_")[1]
@@ -19,235 +205,6 @@ def get_name(name=None):
 
     else:
         return f"{brand.upper()} {location.title()}"
-
-
-def get_indicator(
-    aoi=None,
-    out_dir=None,
-    start_date="2020-01-01",
-    end_date="2020-12-31",
-    orbit="asc",
-    pol="VH",
-):
-    indicator = IData(
-        aoi=aoi,
-        out_dir=out_dir,
-        start_date=start_date,
-        end_date=end_date,
-        orbit=orbit,
-        pol=pol,
-    )
-    indicator.dataframe = pd.read_csv(
-        out_dir.joinpath("raw", f"indicator_1_rawdata_{orbit}_VH.csv")
-    )
-    indicator.dataframe["interval_from"] = pd.to_datetime(
-        indicator.dataframe["interval_from"]
-    )
-    indicator.dataframe = indicator.dataframe.set_index("interval_from")
-
-    indicator.apply_regression()
-    indicator.save(spline=True)
-
-    return indicator
-
-
-def compute_anomaly(
-    df=None,
-    df_columns=None,
-    anomaly_column="mean",
-    out_dir=None,
-    orbit="asc",
-    pol="VH",
-    spline=False,
-):
-    anomaly = Anomaly(
-        data=df,
-        df_columns=df_columns,
-        anomaly_column=anomaly_column,
-        out_dir=out_dir,
-        orbit=orbit,
-        pol=pol,
-    )
-
-    anomaly.find_extrema()
-    anomaly.save(spline=spline)
-
-    return anomaly
-
-
-def plot_data(out_dir=None, name=None, raw_data=None, raw_columns=None, spline_data=None, anomaly_data=None, orbit="asc", dpi=96):
-    if spline_data is not None:
-        with PlotData(
-                out_dir=out_dir,
-                name=name,
-                raw_data=raw_data,
-                raw_columns=raw_columns,
-                spline_data=spline_data,
-                anomaly_data=anomaly_data,
-                orbit=orbit,
-        ) as plotting:
-            plotting.plot_rawdata(background=True)
-            plotting.plot_splinedata()
-            plotting.plot_anomalies()
-            plotting.plot_finalize()
-            plotting.save(spline=True, dpi=dpi)
-
-    else:
-        with PlotData(
-                out_dir=out_dir,
-                name=name,
-                raw_data=raw_data,
-                raw_columns=raw_columns,
-                spline_data=spline_data,
-                anomaly_data=anomaly_data,
-                orbit=orbit,
-        ) as plotting:
-            plotting.plot_rawdata(background=False)
-            plotting.plot_anomalies()
-            plotting.plot_finalize()
-            plotting.save(spline=False, dpi=dpi)
-
-
-def entire_workflow(
-    orbits=None,
-    pols=None,
-    aois=None,
-    working_dir=None,
-    start="2020-01-01",
-    end="2020-12-31",
-):
-    for key in aois.keys():
-        for orbit in orbits:
-            for pol in pols:
-                shutil.copy(aois[key], working_dir)
-
-                response = subprocess.run(
-                    [
-                        "python3",
-                        "../sat4ec/main.py",
-                        "--aoi_data",
-                        str(working_dir.joinpath(aois[key].name)),
-                        "--start_date",
-                        f"{start}",
-                        "--end_date",
-                        f"{end}",
-                        "--orbit",
-                        orbit,
-                        "--polarization",
-                        pol,
-                        "--name",
-                        get_name(key)
-                    ],
-                    capture_output=False,
-                )
-
-        if working_dir.joinpath(key).exists():
-            for item in working_dir.joinpath(key).glob("*"):
-                for _file in item.glob("*"):  # delete files per orbit directory
-                    _file.unlink()
-
-                if item.is_dir():
-                    shutil.rmtree(item)  # delete orbit directory
-
-                if item.is_file():
-                    item.unlink()
-
-            shutil.rmtree(working_dir.joinpath(key))  # delete obsolete directory
-
-        working_dir.joinpath("results").rename(working_dir.joinpath(key))
-        working_dir.joinpath(aois[key].name).unlink()
-
-
-def from_raw_data(
-    orbits=None,
-    pols=None,
-    aois=None,
-    working_dir=None,
-    start="2020-01-01",
-    end="2020-12-31",
-):
-    for key in aois.keys():
-        aoi_dir = working_dir.joinpath(key)
-
-        for orbit in orbits:
-            for pol in pols:
-                shutil.copy(aois[key], aoi_dir)
-
-                with AOI(data=aoi_dir.joinpath(aois[key].name)) as aoi:
-                    aoi.get_features()
-
-                    indicator = get_indicator(
-                        aoi=aoi.geometry,
-                        out_dir=aoi_dir,
-                        start_date=start,
-                        end_date=end,
-                        orbit=orbit,
-                        pol=pol,
-                    )
-
-                    raw_anomalies = compute_anomaly(
-                        df=indicator.dataframe,
-                        df_columns=get_anomaly_columns(indicator.columns_map),
-                        out_dir=indicator.out_dir,
-                        orbit=orbit,
-                        pol=pol,
-                        spline=False,
-                    )
-
-                    spline_anomalies = compute_anomaly(
-                        df=indicator.spline_dataframe,
-                        df_columns=get_anomaly_columns(indicator.columns_map),
-                        out_dir=indicator.out_dir,
-                        orbit=orbit,
-                        pol=pol,
-                        spline=True,
-                    )
-
-                    plot_data(
-                        out_dir=indicator.out_dir,
-                        name=get_name(key),
-                        raw_data=indicator.dataframe,
-                        raw_columns=get_anomaly_columns(indicator.columns_map, dst_cols=["mean", "std"]),
-                        anomaly_data=raw_anomalies.dataframe,
-                        orbit=orbit,
-                    )
-
-                    plot_data(
-                        out_dir=indicator.out_dir,
-                        name=get_name(key),
-                        raw_data=indicator.dataframe,
-                        raw_columns=get_anomaly_columns(indicator.columns_map, dst_cols=["mean", "std"]),
-                        spline_data=indicator.spline_dataframe,
-                        anomaly_data=spline_anomalies.dataframe,
-                        orbit=orbit,
-                    )
-
-
-def main(
-    orbits=None,
-    pols=None,
-    aois=None,
-    aoi_dir=None,
-    start="2020-01-01",
-    end="2020-12-31",
-):
-    working_dir = aoi_dir.parent
-    # entire_workflow(
-    #     orbits=orbits,
-    #     pols=pols,
-    #     aois=aois,
-    #     working_dir=working_dir,
-    #     start=start,
-    #     end=end,
-    # )
-    from_raw_data(
-        orbits=orbits,
-        pols=pols,
-        aois=aois,
-        working_dir=working_dir,
-        start=start,
-        end=end,
-    )
 
 
 if __name__ == "__main__":
@@ -271,4 +228,7 @@ if __name__ == "__main__":
         # "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
     }
 
-    main(orbits, pols, aois, aoi_dir, start="2016-01-01", end="2022-12-31")
+    conf = Config(orbits=orbits, pols=pols, aois=aois, start="2020-01-01", end="2022-12-31")
+    prod = Production(config=conf)
+    # prod.entire_workflow()
+    prod.from_raw_data()

@@ -11,12 +11,6 @@ from data_retrieval import IndicatorData as IData
 from stac import StacItems
 from system.helper_functions import get_logger, get_anomaly_columns
 
-
-# container-specific paths
-# IN_DIR = Path("/scratch/in")
-# OUT_DIR = Path("/scratch/out")
-OUT_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/results")
-
 # clean output directory
 # for item in Path(OUT_DIR).glob("*"):
 #     if item.is_file():
@@ -24,9 +18,6 @@ OUT_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/results")
 #
 #     else:
 #         shutil.rmtree(item, ignore_errors=True)
-
-# set up logging
-logger = get_logger(__name__, out_dir=OUT_DIR)
 
 
 def plot_data(
@@ -70,10 +61,10 @@ def plot_data(
             plotting.save(spline=False)
 
 
-def compute_raw_data(aoi=None, start_date=None, end_date=None, orbit="asc", pol="VH"):
+def compute_raw_data(aoi=None, out_dir=None, start_date=None, end_date=None, orbit="asc", pol="VH"):
     indicator = IData(
         aoi=aoi.geometry,
-        out_dir=OUT_DIR,
+        out_dir=out_dir,
         start_date=start_date,
         end_date=end_date,
         orbit=orbit,
@@ -116,18 +107,19 @@ def compute_anomaly(
 
 def main(
     aoi_data=None,
+    out_dir=None,
     start_date=None,
     end_date=None,
     pol="VH",
     orbit="asc",
-    name="",
+    name="Unkown Brand",
     columns=("mean", "std"),
 ):
     with AOI(data=aoi_data) as aoi:
         aoi.get_features()
 
         indicator = compute_raw_data(
-            aoi=aoi, start_date=start_date, end_date=end_date, orbit=orbit, pol=pol
+            aoi=aoi, out_dir=out_dir, start_date=start_date, end_date=end_date, orbit=orbit, pol=pol
         )
 
         raw_anomalies = compute_anomaly(
@@ -183,11 +175,6 @@ def main(
         # stac.join_with_anomalies()
         # stac.save()
 
-        shutil.move(
-            Path(OUT_DIR).joinpath("log_sat4ec.json"),
-            indicator.out_dir.joinpath(f"LOG_{indicator.orbit}_{indicator.pol}.json"),
-        )
-
 
 def run():
     args = parse_commandline_args()
@@ -213,6 +200,7 @@ def run():
 
     main(
         aoi_data=args.aoi_data,
+        out_dir=Path(args.out_dir),
         start_date=args.start_date,
         end_date=args.end_date,
         pol=pol,
@@ -232,6 +220,12 @@ def create_parser():
         help="Path to AOI.[GEOJSON, SHP, GPKG], AOI geometry as WKT, "
         "Polygon or Multipolygon.",
         metavar="AOI",
+    )
+    parser.add_argument(
+        "--out_dir",
+        default="dummy",
+        help="Path to output directory.",
+        metavar="OUT",
     )
     parser.add_argument(
         "--start_date",

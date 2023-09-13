@@ -26,7 +26,7 @@ class PlotData:
         self.raw_dataframe = self._get_data(data=raw_data)
         self.spline_dataframe = self._get_data(data=spline_data)
         self.anomaly_dataframe = self._get_data(data=anomaly_data)
-        self._get_subplot()
+        self._get_subplots()
         self._get_long_orbit()
 
     def _get_data(self, data):
@@ -51,8 +51,8 @@ class PlotData:
 
         return df
 
-    def _get_subplot(self):
-        self.fig, self.ax = plt.subplots(1, 1, figsize=(20, 10))
+    def _get_subplots(self):
+        self.fig, self.axs = plt.subplots(1, 1, figsize=(20, 10))
 
     def _get_long_orbit(self):
         self.long_orbit = "ascending" if self.orbit == "asc" else "descending"
@@ -75,7 +75,7 @@ class PlotData:
                     legend=False,
                     color="#d3d3d3",
                     zorder=1,
-                    ax=self.ax,
+                    ax=self.axs,
                 )
 
         else:
@@ -89,7 +89,7 @@ class PlotData:
                     label=col,
                     legend=False,
                     zorder=1,
-                    ax=self.ax,
+                    ax=self.axs,
                 )
 
     def plot_splinedata(self):
@@ -101,7 +101,7 @@ class PlotData:
                 label=col,
                 legend=False,
                 zorder=2,
-                ax=self.ax,
+                ax=self.axs,
             )
 
     def plot_mean_range(self, columns=None, factor=0.25):
@@ -149,7 +149,7 @@ class PlotData:
                 legend=False,
             )
 
-            self.ax.fill_between(
+            self.axs.fill_between(
                 self.spline_dataframe.index,
                 lower_boundary,
                 upper_boundary,
@@ -167,14 +167,14 @@ class PlotData:
             color="red",
             label="anomaly",
             legend=False,
-            ax=self.ax,
+            ax=self.axs,
         )
 
     def plot_finalize(self, show=False):
         plt.title(f"{self.name} {self.pol} polarization, {self.long_orbit} orbit")
         plt.ylabel("Sentinel-1 backscatter [dB]")
         plt.xlabel("Timestamp")
-        plt.ylim(self.raw_dataframe["mean"].min() - 1, self.raw_dataframe["std"].max() + 1)
+        plt.ylim(self.raw_dataframe["mean"].min() - 1, self.raw_dataframe["mean"].max() + 1)
         plt.xlim(
             datetime.date(self.raw_dataframe.index[0]) - timedelta(days=7),
             datetime.date(pd.to_datetime(self.raw_dataframe["interval_to"][-1])) + timedelta(days=7)
