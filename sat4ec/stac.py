@@ -24,6 +24,8 @@ class StacItems(Config):
         self.out_dir = out_dir
 
         self.anomalies_df = self._get_data(data)
+        self._get_catalog()
+        self._get_collection()
 
     def _get_data(self, data):
         if isinstance(data, Path):
@@ -38,9 +40,6 @@ class StacItems(Config):
 
         else:
             return None
-
-        self._get_catalog()
-        self._get_collection()
 
     @staticmethod
     def _load_df(filename):

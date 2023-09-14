@@ -22,7 +22,7 @@ class TestGetData(unittest.TestCase):
         aoi.get_features()
         self.aoi = aoi.geometry
         self.out_dir = TEST_DIR.joinpath("bmw_regensburg")
-        self.start_date = "2022-01-01"
+        self.start_date = "2016-01-01"
         self.end_date = "2022-12-31"
         self.orbit = "asc"
         self.pol = "VH"
@@ -35,12 +35,6 @@ class TestGetData(unittest.TestCase):
             orbit=self.orbit,
             pol=self.pol,
         )
-
-        self.anomaly_options = {
-            "invert": False,
-            "normalize": False,
-            "plot": False,
-        }
 
         self.anomaly = Anomaly(
             data=self.indicator.out_dir.joinpath(
