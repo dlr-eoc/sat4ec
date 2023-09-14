@@ -141,7 +141,7 @@ def main(
         )
 
         stac = StacItems(
-            data=raw_anomalies.dataframe,
+            data=spline_anomalies.dataframe,
             geometry=indicator.geometry,
             orbit=indicator.orbit,
             pol=pol,
@@ -171,9 +171,9 @@ def main(
             orbit=orbit,
         )
 
-        # stac.scenes_to_df()
-        # stac.join_with_anomalies()
-        # stac.save()
+        stac.scenes_to_df()
+        stac.join_with_anomalies()
+        stac.save()
 
 
 def run():
