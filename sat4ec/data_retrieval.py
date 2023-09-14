@@ -201,13 +201,16 @@ class IndicatorData(Config):
     def rename_column(self, src=None, dst=None):
         self.dataframe.rename(columns={f"{src}": f"{dst}"}, inplace=True)
 
-    def apply_regression(self):
+    def apply_pandas_rolling(self):
+        for col in get_anomaly_columns(self.columns_map):
+            # self.spline_dataframe[col] = self.dataframe[col].rolling(5, center=True, closed="both", win_type="gaussian").mean(std=self.dataframe["std"].mean())
+            self.spline_dataframe[col] = self.dataframe[col].rolling(5, center=True, closed="both", win_type="cosine").mean(5)
+
+    def apply_spline(self):
         # apply spline with weights: data point mean / global mean
         # where datapoint mean == global mean, weight equals 1 which is the default method weight
         # where datapoint mean > global mean, weight > 1 and indicates higher significance
         # where datapoint mean < global mean, weight < 1 and indicates lower significance
-        self.spline_dataframe = self.dataframe.copy()
-
         for col in get_anomaly_columns(self.columns_map):
             tck = splrep(
                 np.arange(len(self.dataframe)),  # numerical index on dataframe.index
@@ -217,6 +220,15 @@ class IndicatorData(Config):
             )
 
             self.spline_dataframe[col] = BSpline(*tck)(np.arange(len(self.dataframe)))
+
+    def apply_regression(self, mode="rolling"):
+        self.spline_dataframe = self.dataframe.copy()
+
+        if mode == "rolling":
+            self.apply_pandas_rolling()
+
+        elif mode == "spline":
+            self.apply_spline()
 
     def save(self, spline=True):
         if spline:

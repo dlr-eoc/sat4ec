@@ -88,7 +88,7 @@ class Facility:
         )
         self.indicator.dataframe = self.indicator.dataframe.set_index("interval_from")
 
-        self.indicator.apply_regression()
+        self.indicator.apply_regression(mode="rolling")
         self.indicator.save(spline=True)
 
     def compute_anomaly(
@@ -251,6 +251,7 @@ class Development:
             lower_boundary,
             upper_boundary,
             color="#ebebeb",
+            alpha=0.3
         )
 
     @staticmethod
@@ -432,8 +433,8 @@ if __name__ == "__main__":
         # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson"),
         # "vw_emden": aoi_dir.joinpath("vw_emden.geojson"),
         # "bmw_regensburg": aoi_dir.joinpath("bmw_regensburg.geojson"),
-        # "opel_ruesselsheim": aoi_dir.joinpath("opel_ruesselsheim.geojson"),
-        "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg.geojson"),
+        "opel_ruesselsheim": aoi_dir.joinpath("opel_ruesselsheim.geojson"),
+        # "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg.geojson"),
         "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
     }
 
