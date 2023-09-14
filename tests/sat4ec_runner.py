@@ -10,6 +10,7 @@ from sat4ec.data_retrieval import IndicatorData as IData
 from sat4ec.aoi_check import AOI
 from anomaly_detection import Anomaly
 from plot_data import PlotData
+from stac import StacItems
 from system.helper_functions import get_anomaly_columns
 
 
@@ -116,6 +117,19 @@ class Facility:
 
         return anomaly
 
+    def get_scenes(self, anomaly_data=None):
+        stac = StacItems(
+            data=anomaly_data.dataframe,
+            geometry=self.indicator.geometry,
+            orbit=self.orbit,
+            pol=self.pol,
+            out_dir=self.out_dir,
+        )
+
+        stac.scenes_to_df()
+        stac.join_with_anomalies()
+        stac.save()
+
     def plot_data(self, dpi=96, spline=False, anomaly_data=None):
         if spline:
             with PlotData(
@@ -175,10 +189,18 @@ class Development:
 
         else:
             if orbit == "asc":
-                return self.axs[index][0]
+                if len(self.config.aois.keys()) > 1:
+                    return self.axs[index][0]
+
+                else:
+                    return self.axs[0]
 
             else:
-                return self.axs[index][1]
+                if len(self.config.aois.keys()) > 1:
+                    return self.axs[index][1]
+
+                else:
+                    return self.axs[1]
 
     def plot_raw_data(self, ax=None):
         sns.lineplot(
@@ -302,6 +324,16 @@ class Development:
         if show:  # for development
             plt.show()
 
+    def save(self, dpi=96):
+        if len(list(self.config.aois.keys())) == 1:
+            out_dir = self.config.working_dir.joinpath("plot")
+
+        else:
+            out_dir = self.config.working_dir.parent.joinpath("_plots")
+
+        out_file = out_dir.joinpath(f"{'_'.join(list(self.config.aois.keys()))}.png")
+        self.fig.savefig(out_file, dpi=dpi)
+
     def from_raw_data(self):
         for index, aoi_name, orbit, pol in self.config.get_loop():
             ax = self._get_axis(index=index, orbit=orbit)
@@ -326,6 +358,7 @@ class Development:
             self.facility.get_aoi()
             self.facility.get_indicator()
             spline_anomalies = self.facility.compute_anomaly(spline=True)
+            self.facility.get_scenes(anomaly_data=spline_anomalies)
             self.plot_mean_range(ax=ax)
             self.plot_raw_data(ax=ax)
             self.plot_splinedata(ax=ax)
@@ -338,6 +371,7 @@ class Development:
             )
 
         self.plot_finalize(show=True)
+        self.save()
 
 
 class Production:
@@ -396,6 +430,7 @@ class Production:
             facility.get_indicator()
             raw_anomalies = facility.compute_anomaly(spline=False)
             spline_anomalies = facility.compute_anomaly(spline=True)
+            facility.get_scenes(anomaly_data=spline_anomalies)
             facility.plot_data(spline=False, anomaly_data=raw_anomalies)
             facility.plot_data(spline=True, anomaly_data=spline_anomalies)
 
