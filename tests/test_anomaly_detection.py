@@ -4,7 +4,6 @@ import pandas as pd
 from sat4ec.aoi_check import AOI
 from sat4ec.data_retrieval import IndicatorData as IData
 from sat4ec.anomaly_detection import Anomaly
-from sat4ec.system import helper_functions
 from pathlib import Path
 
 TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
@@ -80,14 +79,9 @@ class TestAD(unittest.TestCase):
             pd.testing.assert_frame_equal(anomaly.dataframe, anomaly.indicator_df)
         )
 
-    def test_anomaly_columns(self):
-        columns = helper_functions.get_anomaly_columns(self.indicator.columns_map)
-        self.assertEqual(columns, ["min", "max", "mean", "std"])
-
     def test_find_maxima_spline(self):
         anomaly = Anomaly(
             data=self.indicator_spline_file,
-            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -100,7 +94,6 @@ class TestAD(unittest.TestCase):
     def test_find_minima_spline(self):
         anomaly = Anomaly(
             data=self.indicator_spline_file,
-            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -113,7 +106,6 @@ class TestAD(unittest.TestCase):
     def test_find_extrema_spline(self):
         anomaly = Anomaly(
             data=self.indicator_spline_file,
-            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -126,7 +118,6 @@ class TestAD(unittest.TestCase):
     def test_find_uncorrected_extrema(self):
         anomaly = Anomaly(
             data=self.indicator_spline_file,
-            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -161,7 +152,6 @@ class TestAD(unittest.TestCase):
 
         anomaly = Anomaly(
             data=self.indicator_spline_file,
-            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -174,7 +164,6 @@ class TestAD(unittest.TestCase):
     def test_find_extrema_raw(self):
         anomaly = Anomaly(
             data=self.indicator_raw_file,
-            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -187,7 +176,6 @@ class TestAD(unittest.TestCase):
     def test_anomaly_save_raw(self):
         anomaly = Anomaly(
             data=self.indicator_raw_file,
-            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -195,7 +183,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_extrema()
-        anomaly.save(spline=False)
+        anomaly.save_raw()
 
         self.assertTrue(
             anomaly.out_dir.joinpath(
@@ -206,7 +194,6 @@ class TestAD(unittest.TestCase):
     def test_anomaly_save_spline(self):
         anomaly = Anomaly(
             data=self.indicator_spline_file,
-            df_columns=helper_functions.get_anomaly_columns(self.indicator.columns_map),
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -214,7 +201,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_extrema()
-        anomaly.save(spline=True)
+        anomaly.save_spline()
 
         self.assertTrue(
             anomaly.out_dir.joinpath(

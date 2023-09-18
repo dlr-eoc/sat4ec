@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import datetime
 from scipy.interpolate import splrep, BSpline
-from system.helper_functions import get_anomaly_columns, get_monthly_keyword
+from system.helper_functions import get_monthly_keyword
 from system.authentication import Config
 from sentinelhub import (
     Geometry,
