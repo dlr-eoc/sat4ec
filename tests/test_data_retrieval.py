@@ -96,6 +96,26 @@ class TestGetData(unittest.TestCase):
         self.assertTrue(indicator.dataframe.dtypes["std"], "float32")
         self.assertTrue(indicator.dataframe.index.inferred_type, pd.DatetimeIndex)
 
+    def test_monthly_aggregate(self):
+        indicator = IData(
+            aoi=self.aoi,
+            out_dir=self.out_dir,
+            start_date=self.start_date,
+            end_date=self.end_date,
+            orbit=self.orbit,
+            pol=self.pol,
+            monthly=True
+        )
+
+        indicator.get_request_grd()
+        indicator.get_data()
+        indicator.stats_to_df()
+        daily_dataframe = indicator.dataframe.copy()
+        indicator.monthly_aggregate()
+
+        self.assertTrue(indicator.dataframe.index.inferred_type, pd.DatetimeIndex)
+        self.assertTrue(len(indicator.dataframe) < len(daily_dataframe))
+
     def test_spline(self):
         indicator = IData(
             aoi=self.aoi,
@@ -111,7 +131,7 @@ class TestGetData(unittest.TestCase):
         indicator.dataframe = indicator.dataframe.set_index("interval_from")
 
         indicator.apply_regression()
-        indicator.save(spline=True)
+        indicator.save_spline()
         self.assertTrue(
             indicator.out_dir.joinpath(
                 "spline", f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv"
@@ -131,7 +151,7 @@ class TestGetData(unittest.TestCase):
         indicator.get_request_grd()
         indicator.get_data()
         indicator.stats_to_df()
-        indicator.save(spline=False)
+        indicator.save_raw()
         self.assertTrue(
             indicator.out_dir.joinpath(
                 "raw", f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv"
