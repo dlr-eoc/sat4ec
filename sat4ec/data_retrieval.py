@@ -219,15 +219,14 @@ class IndicatorData(Config):
         # where datapoint mean < global mean, weight < 1 and indicates lower significance
         self.spline_dataframe = self.dataframe.copy()
 
-        for col in get_anomaly_columns(self.columns_map):
-            tck = splrep(
-                np.arange(len(self.dataframe)),  # numerical index on dataframe.index
-                self.dataframe[col].to_numpy(),  # variable to interpolate
-                w=(self.dataframe[col] / self.dataframe[col].mean()).to_numpy(),  # weights
-                s=len(self.dataframe),
-            )
+        tck = splrep(
+            np.arange(len(self.dataframe)),  # numerical index on dataframe.index
+            self.dataframe["mean"].to_numpy(),  # variable to interpolate
+            w=(self.dataframe["mean"] / self.dataframe["mean"].mean()).to_numpy(),  # weights
+            s=len(self.dataframe),
+        )
 
-            self.spline_dataframe[col] = BSpline(*tck)(np.arange(len(self.dataframe)))
+        self.spline_dataframe["mean"] = BSpline(*tck)(np.arange(len(self.dataframe)))
 
     def save_spline(self):
         out_file = self.out_dir.joinpath(
