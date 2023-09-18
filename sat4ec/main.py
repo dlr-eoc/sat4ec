@@ -9,7 +9,7 @@ from datetime import datetime
 
 from data_retrieval import IndicatorData as IData
 from stac import StacItems
-from system.helper_functions import get_logger, get_anomaly_columns
+from system.helper_functions import get_logger
 
 # clean output directory
 # for item in Path(OUT_DIR).glob("*"):
@@ -24,44 +24,36 @@ def plot_data(
     out_dir=None,
     name=None,
     raw_data=None,
-    raw_columns=None,
     spline_data=None,
     anomaly_data=None,
     orbit="asc",
+    monthly=False
 ):
-    if spline_data is not None:
-        with PlotData(
-            out_dir=out_dir,
-            name=name,
-            raw_data=raw_data,
-            raw_columns=raw_columns,
-            spline_data=spline_data,
-            anomaly_data=anomaly_data,
-            orbit=orbit,
-        ) as plotting:
-            plotting.plot_rawdata(background=True)
-            plotting.plot_splinedata()
-            plotting.plot_anomalies()
-            plotting.plot_finalize()
-            plotting.save(spline=True)
-
-    else:
-        with PlotData(
-            out_dir=out_dir,
-            name=name,
-            raw_data=raw_data,
-            raw_columns=raw_columns,
-            spline_data=spline_data,
-            anomaly_data=anomaly_data,
-            orbit=orbit,
-        ) as plotting:
-            plotting.plot_rawdata(background=False)
-            plotting.plot_anomalies()
-            plotting.plot_finalize()
-            plotting.save(spline=False)
+    with PlotData(
+        out_dir=out_dir,
+        name=name,
+        raw_data=raw_data,
+        spline_data=spline_data,
+        anomaly_data=anomaly_data,
+        orbit=orbit,
+        monthly=monthly
+    ) as plotting:
+        plotting.plot_rawdata()
+        plotting.plot_splinedata()
+        plotting.plot_anomalies()
+        plotting.plot_finalize()
+        plotting.save_spline()
 
 
-def compute_raw_data(aoi=None, out_dir=None, start_date=None, end_date=None, orbit="asc", pol="VH"):
+def compute_raw_data(
+    aoi=None,
+    out_dir=None,
+    start_date=None,
+    end_date=None,
+    orbit="asc",
+    pol="VH",
+    monthly=False,
+):
     indicator = IData(
         aoi=aoi.geometry,
         out_dir=out_dir,
@@ -69,38 +61,49 @@ def compute_raw_data(aoi=None, out_dir=None, start_date=None, end_date=None, orb
         end_date=end_date,
         orbit=orbit,
         pol=pol,
+        monthly=monthly,
     )
 
     indicator.get_request_grd()
     indicator.get_data()
     indicator.stats_to_df()
+    indicator.save_raw()  # save raw data
+
+    if monthly:
+        indicator.monthly_aggregate()
+        indicator.save_raw()  # save raw mothly data
+
     indicator.apply_regression(mode="rolling")
-    indicator.save(spline=False)  # save raw data
-    indicator.save(spline=True)  # save spline data
+    indicator.save_spline()  # save spline data
 
     return indicator
 
 
 def compute_anomaly(
     df=None,
-    df_columns=None,
     anomaly_column="mean",
     out_dir=None,
     orbit="asc",
     pol="VH",
-    spline=False,
+    monthly=False,
+    spline=False
 ):
     anomaly = Anomaly(
         data=df,
-        df_columns=df_columns,
         anomaly_column=anomaly_column,
         out_dir=out_dir,
         orbit=orbit,
         pol=pol,
+        monthly=monthly
     )
 
     anomaly.find_extrema()
-    anomaly.save(spline=spline)
+
+    if spline:
+        anomaly.save_spline()
+
+    else:
+        anomaly.save_raw()
 
     return anomaly
 
@@ -113,18 +116,23 @@ def main(
     pol="VH",
     orbit="asc",
     name="Unkown Brand",
-    columns=("mean", "std"),
+    monthly=False,
 ):
     with AOI(data=aoi_data) as aoi:
         aoi.get_features()
 
         indicator = compute_raw_data(
-            aoi=aoi, out_dir=out_dir, start_date=start_date, end_date=end_date, orbit=orbit, pol=pol
+            aoi=aoi,
+            out_dir=out_dir,
+            start_date=start_date,
+            end_date=end_date,
+            orbit=orbit,
+            pol=pol,
+            monthly=monthly,
         )
 
         raw_anomalies = compute_anomaly(
             df=indicator.dataframe,
-            df_columns=get_anomaly_columns(indicator.columns_map, dst_cols=columns),
             out_dir=indicator.out_dir,
             orbit=orbit,
             pol=pol,
@@ -133,11 +141,11 @@ def main(
 
         spline_anomalies = compute_anomaly(
             df=indicator.spline_dataframe,
-            df_columns=get_anomaly_columns(indicator.columns_map, dst_cols=columns),
             out_dir=indicator.out_dir,
             orbit=orbit,
             pol=pol,
-            spline=True,
+            monthly=monthly,
+            spline=True
         )
 
         stac = StacItems(
@@ -152,23 +160,10 @@ def main(
             out_dir=indicator.out_dir,
             name=name,
             raw_data=indicator.dataframe,
-            raw_columns=get_anomaly_columns(
-                indicator.columns_map, dst_cols=columns
-            ),
-            anomaly_data=raw_anomalies.dataframe,
-            orbit=orbit,
-        )
-
-        plot_data(
-            out_dir=indicator.out_dir,
-            name=name,
-            raw_data=indicator.dataframe,
-            raw_columns=get_anomaly_columns(
-                indicator.columns_map, dst_cols=columns
-            ),
             spline_data=indicator.spline_dataframe,
             anomaly_data=spline_anomalies.dataframe,
             orbit=orbit,
+            monthly=monthly
         )
 
         stac.scenes_to_df()
@@ -198,6 +193,17 @@ def run():
     else:
         pol = args.polarization.upper()
 
+    if args.aggregate[0] == "daily":
+        aggregate = False
+
+    elif args.aggregate[0] == "monthly":
+        aggregate = True
+
+    else:
+        raise ValueError(
+            f"The provided value {args.aggregate} for the aggregation is incorrect. Choose from [daily, monthly]."
+        )
+
     main(
         aoi_data=args.aoi_data,
         out_dir=Path(args.out_dir),
@@ -206,7 +212,7 @@ def run():
         pol=pol,
         orbit=orbit,
         name=args.name[0],
-        columns=args.columns,
+        monthly=aggregate,
     )
 
 
@@ -245,6 +251,13 @@ def create_parser():
         default="VH",
     )
     parser.add_argument(
+        "--aggregate",
+        help="Aggregation interval, default: daily",
+        choices=["daily", "monthly"],
+        nargs=1,
+        default="daily",
+    )
+    parser.add_argument(
         "--orbit",
         help="Orbit of Sentinel-1 data, default: ascending",
         choices=["asc", "des"],
@@ -255,13 +268,6 @@ def create_parser():
         "--name",
         nargs=1,
         help="Name of the location, e.g. BMW Regensburg. Appears in the plot title.",
-    )
-    parser.add_argument(
-        "--columns",
-        help="Parameters to plot.",
-        choices=["mean", "std", "min", "max"],
-        nargs=1,
-        default=["mean", "std"],
     )
 
     return parser

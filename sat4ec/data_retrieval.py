@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
+import datetime
 from scipy.interpolate import splrep, BSpline
-from system.helper_functions import get_anomaly_columns
+from system.helper_functions import get_monthly_keyword
 from system.authentication import Config
 from sentinelhub import (
     Geometry,
@@ -24,6 +25,7 @@ class IndicatorData(Config):
         resolution=5,
         orbit="asc",
         pol="VH",
+        monthly=False
     ):
         super().__init__()
         self.aoi = aoi
@@ -43,6 +45,7 @@ class IndicatorData(Config):
         self.out_dir = out_dir
         self.thresholds = {"min": None, "max": None}
         self.outliers = None
+        self.monthly = monthly
 
         self._get_geometry()
         self._get_dimensions()
@@ -129,7 +132,7 @@ class IndicatorData(Config):
             aggregation=SentinelHubStatistical.aggregation(
                 evalscript=self.eval_script,
                 time_interval=self.interval,
-                aggregation_interval="P1D",  # interval set to 1 day increment
+                aggregation_interval="P1D",  # interval set to 1 day or 30 day increment
                 size=self.size,
             ),
             input_data=[
@@ -198,28 +201,34 @@ class IndicatorData(Config):
         for col in self.columns_map:
             self.rename_column(src=col, dst=self.columns_map[col])
 
+    def monthly_aggregate(self):
+        self.dataframe["year"] = self.dataframe.index.year
+        self.dataframe["month"] = self.dataframe.index.month
+        self.dataframe = self.dataframe.groupby(by=["year", "month"], as_index=False).mean()
+        self.dataframe["interval_from"] = pd.to_datetime(self.dataframe[["year", "month"]].assign(DAY=15))
+        self.dataframe = self.dataframe.set_index("interval_from")
+        self.dataframe.drop(["year", "month"], axis=1, inplace=True)
+
     def rename_column(self, src=None, dst=None):
         self.dataframe.rename(columns={f"{src}": f"{dst}"}, inplace=True)
 
     def apply_pandas_rolling(self):
-        for col in get_anomaly_columns(self.columns_map):
-            # self.spline_dataframe[col] = self.dataframe[col].rolling(5, center=True, closed="both", win_type="gaussian").mean(std=self.dataframe["std"].mean())
-            self.spline_dataframe[col] = self.dataframe[col].rolling(5, center=True, closed="both", win_type="cosine").mean(5)
+        # self.spline_dataframe[col] = self.dataframe[col].rolling(5, center=True, closed="both", win_type="gaussian").mean(std=self.dataframe["std"].mean())
+        self.spline_dataframe["mean"] = self.dataframe["mean"].rolling(5, center=True, closed="both", win_type="cosine").mean(5)
 
     def apply_spline(self):
         # apply spline with weights: data point mean / global mean
         # where datapoint mean == global mean, weight equals 1 which is the default method weight
         # where datapoint mean > global mean, weight > 1 and indicates higher significance
         # where datapoint mean < global mean, weight < 1 and indicates lower significance
-        for col in get_anomaly_columns(self.columns_map):
-            tck = splrep(
-                np.arange(len(self.dataframe)),  # numerical index on dataframe.index
-                self.dataframe[col].to_numpy(),  # variable to interpolate
-                w=(self.dataframe[col] / self.dataframe[col].mean()).to_numpy(),  # weights
-                s=len(self.dataframe),
-            )
+        tck = splrep(
+            np.arange(len(self.dataframe)),  # numerical index on dataframe.index
+            self.dataframe["mean"].to_numpy(),  # variable to interpolate
+            w=(self.dataframe["mean"] / self.dataframe["mean"].mean()).to_numpy(),  # weights
+            s=len(self.dataframe),
+        )
 
-            self.spline_dataframe[col] = BSpline(*tck)(np.arange(len(self.dataframe)))
+        self.spline_dataframe["mean"] = BSpline(*tck)(np.arange(len(self.dataframe)))
 
     def apply_regression(self, mode="rolling"):
         self.spline_dataframe = self.dataframe.copy()
@@ -230,20 +239,19 @@ class IndicatorData(Config):
         elif mode == "spline":
             self.apply_spline()
 
-    def save(self, spline=True):
-        if spline:
-            out_file = self.out_dir.joinpath(
-                "spline",
-                f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv",
-            )
-            self.spline_dataframe.to_csv(out_file)
+    def save_spline(self):
+        out_file = self.out_dir.joinpath(
+            "spline",
+            f"indicator_1_splinedata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+        )
+        self.spline_dataframe.to_csv(out_file)
 
-        else:
-            out_file = self.out_dir.joinpath(
-                "raw",
-                f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv",
-            )
-            self.dataframe.to_csv(out_file)
+    def save_raw(self):
+        out_file = self.out_dir.joinpath(
+            "raw",
+            f"indicator_1_rawdata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+        )
+        self.dataframe.to_csv(out_file)
 
 
 class Band:

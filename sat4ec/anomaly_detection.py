@@ -1,4 +1,5 @@
 import pandas as pd
+from system.helper_functions import get_monthly_keyword
 from scipy.signal import find_peaks
 from pathlib import Path
 
@@ -9,15 +10,14 @@ class Anomaly:
         data=None,
         parameters=(10, 1.5),
         anomaly_column=None,
-        df_columns=None,
         out_dir=None,
         pol="VH",
         orbit="asc",
         factor=0.25,
+        monthly=False
     ):
         self.parameters = parameters
         self.column = anomaly_column  # dataframe column containing the anomaly data
-        self.df_columns = df_columns  # dataframe columns that should be plotted
         self.ad = None
         self.dataframe = None  # output
         self.out_dir = out_dir
@@ -26,6 +26,7 @@ class Anomaly:
         self.factor = (
             factor  # factor representing sensitive/insensitive standard deviation
         )
+        self.monthly = monthly
 
         self.indicator_df = self._get_data(data)
         self._prepare_dataframe()
@@ -63,19 +64,18 @@ class Anomaly:
 
         return df
 
-    def save(self, spline=True):
-        if spline:
-            out_file = self.out_dir.joinpath(
-                "anomalies",
-                f"indicator_1_anomalies_spline_{self.orbit}_{self.pol}.csv",
-            )
+    def save_raw(self):
+        out_file = self.out_dir.joinpath(
+            "anomalies",
+            f"indicator_1_anomalies_raw_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+        )
+        self.dataframe.to_csv(out_file)
 
-        else:
-            out_file = self.out_dir.joinpath(
-                "anomalies",
-                f"indicator_1_anomalies_raw_{self.orbit}_{self.pol}.csv",
-            )
-
+    def save_spline(self):
+        out_file = self.out_dir.joinpath(
+            "anomalies",
+            f"indicator_1_anomalies_spline_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+        )
         self.dataframe.to_csv(out_file)
 
     def find_extrema(self):

@@ -6,13 +6,17 @@ from jsonformatter import JsonFormatter
 from pathlib import Path
 
 
+def get_monthly_keyword(monthly=False):
+    if monthly:
+        return "monthly_"
+
+    else:
+        return ""
+
+
 def load_yaml(yaml_path):
     with open(yaml_path, "r") as f:
         return yaml.safe_load(f)
-
-
-def get_anomaly_columns(columns_dict=None, dst_cols=("mean", "std")):
-    return [col for col in columns_dict.values() if col in dst_cols]
 
 
 def get_logger(
