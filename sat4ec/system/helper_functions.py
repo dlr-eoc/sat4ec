@@ -6,6 +6,14 @@ from jsonformatter import JsonFormatter
 from pathlib import Path
 
 
+def get_monthly_keyword(monthly=False):
+    if monthly:
+        return "monthly_"
+
+    else:
+        return ""
+
+
 def load_yaml(yaml_path):
     with open(yaml_path, "r") as f:
         return yaml.safe_load(f)

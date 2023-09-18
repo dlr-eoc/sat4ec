@@ -11,7 +11,7 @@ from sat4ec.aoi_check import AOI
 from anomaly_detection import Anomaly
 from plot_data import PlotData
 from stac import StacItems
-from system.helper_functions import get_anomaly_columns
+from system.helper_functions import get_anomaly_columns, get_monthly_keyword
 
 
 class Config:
@@ -23,6 +23,7 @@ class Config:
         aoi_dir=Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/AOIs"),
         start="2020-01-01",
         end="2020-12-31",
+        monthly=False,
     ):
         self.orbits = orbits
         self.pols = pols
@@ -31,6 +32,7 @@ class Config:
         self.start = start
         self.end = end
         self.working_dir = None
+        self.monthly = monthly
 
     def get_loop(self):
         for index, key in enumerate(self.aois.keys()):
@@ -54,6 +56,7 @@ class Facility:
         orbit="asc",
         name="Unkown Brand",
         columns="mean",
+        monthly=False,
     ):
         self.orbit = orbit
         self.pol = pol
@@ -67,6 +70,7 @@ class Facility:
         self.indicator = None
         self.raw_anomalies = None
         self.spline_anomalies = None
+        self.monthly = monthly
 
     def get_aoi(self):
         self.aoi = AOI(data=self.aoi_data)
@@ -80,6 +84,7 @@ class Facility:
             end_date=self.end_date,
             orbit=self.orbit,
             pol=self.pol,
+            monthly=self.monthly,
         )
         self.indicator.dataframe = pd.read_csv(
             self.out_dir.joinpath("raw", f"indicator_1_rawdata_{self.orbit}_VH.csv")
@@ -89,8 +94,12 @@ class Facility:
         )
         self.indicator.dataframe = self.indicator.dataframe.set_index("interval_from")
 
+        if self.monthly:
+            self.indicator.monthly_aggregate()
+            self.indicator.save_raw()
+
         self.indicator.apply_regression()
-        self.indicator.save(spline=True)
+        self.indicator.save_spline()
 
     def compute_anomaly(
         self,
@@ -110,10 +119,16 @@ class Facility:
             out_dir=self.out_dir,
             orbit=self.orbit,
             pol=self.pol,
+            monthly=self.monthly,
         )
 
         anomaly.find_extrema()
-        anomaly.save(spline=spline)
+
+        if spline:
+            anomaly.save_spline()
+
+        else:
+            anomaly.save_raw()
 
         return anomaly
 
@@ -142,12 +157,13 @@ class Facility:
                 spline_data=self.indicator.spline_dataframe,
                 anomaly_data=anomaly_data.dataframe,
                 orbit=self.orbit,
+                monthly=self.monthly,
             ) as plotting:
                 plotting.plot_rawdata(background=True)
                 plotting.plot_splinedata()
                 plotting.plot_anomalies()
                 plotting.plot_finalize()
-                plotting.save(spline=spline, dpi=dpi)
+                plotting.save_spline(dpi=dpi)
 
         else:
             with PlotData(
@@ -159,11 +175,12 @@ class Facility:
                 ),
                 anomaly_data=anomaly_data.dataframe,
                 orbit=self.orbit,
+                monthly=self.monthly,
             ) as plotting:
                 plotting.plot_rawdata(background=False)
                 plotting.plot_anomalies()
                 plotting.plot_finalize()
-                plotting.save(spline=spline, dpi=dpi)
+                plotting.save_raw(dpi=dpi)
 
 
 class Development:
@@ -296,14 +313,17 @@ class Development:
             self.facility.indicator.dataframe["mean"].min() - 1,
             self.facility.indicator.dataframe["mean"].max() + 1,
         )
-        ax.set_xlim(
-            datetime.date(self.facility.indicator.dataframe.index[0])
-            - timedelta(days=7),
-            datetime.date(
-                pd.to_datetime(self.facility.indicator.dataframe["interval_to"][-1])
+
+        if not self.config.monthly:
+            ax.set_xlim(
+                datetime.date(self.facility.indicator.dataframe.index[0])
+                - timedelta(days=7),
+                datetime.date(
+                    pd.to_datetime(self.facility.indicator.dataframe["interval_to"][-1])
+                )
+                + timedelta(days=7),
             )
-            + timedelta(days=7),
-        )
+
         ax.set_ylabel("Sentinel-1 backscatter [dB]")
 
     def plot_finalize(self, show=False):
@@ -331,7 +351,9 @@ class Development:
         else:
             out_dir = self.config.working_dir.parent.joinpath("_plots")
 
-        out_file = out_dir.joinpath(f"{'_'.join(list(self.config.aois.keys()))}.png")
+        out_file = out_dir.joinpath(
+            f"{'_'.join(list(self.config.aois.keys()))}_{get_monthly_keyword(monthly=self.config.monthly)}.png"
+        )
         self.fig.savefig(out_file, dpi=dpi)
 
     def from_raw_data(self):
@@ -354,6 +376,7 @@ class Development:
                 end_date=self.config.end,
                 out_dir=self.config.working_dir,
                 name=get_name(aoi_name),
+                monthly=self.config.monthly,
             )
             self.facility.get_aoi()
             self.facility.get_indicator()
@@ -404,6 +427,8 @@ class Production:
                     pol,
                     "--name",
                     get_name(aoi_name),
+                    "--aggregate",
+                    "monthly" if self.config.monthly else "daily",
                 ],
                 capture_output=False,
             )
@@ -425,6 +450,7 @@ class Production:
                 end_date=self.config.end,
                 out_dir=self.config.working_dir,
                 name=get_name(aoi_name),
+                monthly=self.config.monthly,
             )
             facility.get_aoi()
             facility.get_indicator()
@@ -450,10 +476,7 @@ def get_name(name=None):
 
 if __name__ == "__main__":
     aoi_dir = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/AOIs")
-    orbits = [
-        "asc",
-        "des"
-    ]
+    orbits = ["asc", "des"]
 
     pols = [
         # "VV",
@@ -461,22 +484,27 @@ if __name__ == "__main__":
     ]
 
     aois = {
-        # "volvo_gent": aoi_dir.joinpath("volvo_gent.geojson"),
         # "munich_airport": aoi_dir.joinpath("munich_airport.geojson"),
         # "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson"),
+        "volvo_gent": aoi_dir.joinpath("volvo_gent.geojson"),
         # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson"),
         # "vw_emden": aoi_dir.joinpath("vw_emden.geojson"),
         # "bmw_regensburg": aoi_dir.joinpath("bmw_regensburg.geojson"),
         # "opel_ruesselsheim": aoi_dir.joinpath("opel_ruesselsheim.geojson"),
-        "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg.geojson"),
-        "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
+        # "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg.geojson"),
+        # "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
     }
 
     conf = Config(
-        orbits=orbits, pols=pols, aois=aois, start="2016-01-01", end="2022-12-31"
+        orbits=orbits,
+        pols=pols,
+        aois=aois,
+        start="2016-01-01",
+        end="2022-12-31",
+        monthly=True,
     )
-    # prod = Production(config=conf)
-    # prod.entire_workflow()
+    prod = Production(config=conf)
+    prod.entire_workflow()
     # prod.from_raw_data()
-    dev = Development(config=conf)
-    dev.from_raw_data()
+    # dev = Development(config=conf)
+    # dev.from_raw_data()

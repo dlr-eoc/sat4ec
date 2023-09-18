@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+from system.helper_functions import get_monthly_keyword
 from pathlib import Path
 from datetime import datetime, timedelta
 
@@ -16,12 +17,14 @@ class PlotData:
         out_dir=None,
         orbit="asc",
         pol="VH",
+        monthly=False
     ):
         self.name = name
         self.out_dir = out_dir
         self.orbit = orbit
         self.pol = pol
         self.raw_columns = raw_columns
+        self.monthly = monthly
 
         self.raw_dataframe = self._get_data(data=raw_data)
         self.spline_dataframe = self._get_data(data=spline_data)
@@ -175,10 +178,13 @@ class PlotData:
         plt.ylabel("Sentinel-1 backscatter [dB]")
         plt.xlabel("Timestamp")
         plt.ylim(self.raw_dataframe["mean"].min() - 1, self.raw_dataframe["mean"].max() + 1)
-        plt.xlim(
-            datetime.date(self.raw_dataframe.index[0]) - timedelta(days=7),
-            datetime.date(pd.to_datetime(self.raw_dataframe["interval_to"][-1])) + timedelta(days=7)
-        )
+
+        if not self.monthly:
+            plt.xlim(
+                datetime.date(self.raw_dataframe.index[0]) - timedelta(days=7),
+                datetime.date(pd.to_datetime(self.raw_dataframe["interval_to"][-1])) + timedelta(days=7)
+            )
+
         self.fig.legend(
             loc="outside lower center",
             ncols=len(self.raw_columns) + 1,
@@ -195,19 +201,22 @@ class PlotData:
         if " " in self.name:
             self.name = "_".join(self.name.split(" "))
 
-    def save(self, spline=True, dpi=96):
+    def save_spline(self, dpi=96):
         self.correct_name()
 
-        if spline:
-            out_file = self.out_dir.joinpath(
-                "plot",
-                f"indicator_1_{self.name}_splinedata_{self.orbit}_{self.pol}.png",
-            )
+        out_file = self.out_dir.joinpath(
+            "plot",
+            f"indicator_1_{self.name}_splinedata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.png",
+        )
 
-        else:
-            out_file = self.out_dir.joinpath(
-                "plot",
-                f"indicator_1_{self.name}_rawdata_{self.orbit}_{self.pol}.png",
-            )
+        self.fig.savefig(out_file, dpi=dpi)
+
+    def save_raw(self, dpi=96):
+        self.correct_name()
+
+        out_file = self.out_dir.joinpath(
+            "plot",
+            f"indicator_1_{self.name}_rawdata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.png",
+        )
 
         self.fig.savefig(out_file, dpi=dpi)
