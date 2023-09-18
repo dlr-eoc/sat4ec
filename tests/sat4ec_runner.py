@@ -486,12 +486,12 @@ if __name__ == "__main__":
     aois = {
         # "munich_airport": aoi_dir.joinpath("munich_airport.geojson"),
         # "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson"),
-        "volvo_gent": aoi_dir.joinpath("volvo_gent.geojson"),
+        # "volvo_gent": aoi_dir.joinpath("volvo_gent.geojson"),
         # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson"),
         # "vw_emden": aoi_dir.joinpath("vw_emden.geojson"),
         # "bmw_regensburg": aoi_dir.joinpath("bmw_regensburg.geojson"),
         # "opel_ruesselsheim": aoi_dir.joinpath("opel_ruesselsheim.geojson"),
-        # "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg.geojson"),
+        "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg.geojson"),
         # "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
     }
 
@@ -504,7 +504,7 @@ if __name__ == "__main__":
         monthly=True,
     )
     prod = Production(config=conf)
-    prod.entire_workflow()
-    # prod.from_raw_data()
+    # prod.entire_workflow()
+    prod.from_raw_data()
     # dev = Development(config=conf)
     # dev.from_raw_data()

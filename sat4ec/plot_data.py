@@ -67,33 +67,47 @@ class PlotData:
         plt.close()
 
     def plot_rawdata(self, background=False):
-        if (
-            background
-        ):  # determines the use of overlaid spline, raw data plotted grey then
-            for col in self.raw_columns:
-                sns.lineplot(
-                    data=self.raw_dataframe,
-                    x=self.raw_dataframe.index,
-                    y=self.raw_dataframe[col],
-                    legend=False,
-                    color="#d3d3d3",
-                    zorder=1,
-                    ax=self.axs,
-                )
+        upper_boundary = self.raw_dataframe["mean"] + self.raw_dataframe["std"]
+        lower_boundary = self.raw_dataframe["mean"] - self.raw_dataframe["std"]
+
+        if background:
+            color = "#d3d3d3"
+            label = None
 
         else:
-            for col in self.raw_columns:
-                sns.lineplot(
-                    data=self.raw_dataframe,
-                    x=self.raw_dataframe.index,
-                    y=self.raw_dataframe[col],
-                    # marker="o",
-                    # markersize=5,
-                    label=col,
-                    legend=False,
-                    zorder=1,
-                    ax=self.axs,
-                )
+            color = "#000000"
+            label = "mean"
+
+        # plot of main line
+        sns.lineplot(
+            data=self.raw_dataframe,
+            x=self.raw_dataframe.index,
+            y=self.raw_dataframe["mean"],
+            legend=False,
+            color=color,
+            label=label,
+            zorder=1,
+            ax=self.axs,
+        )
+
+        # plot of baundaries
+        for boundary in [upper_boundary, lower_boundary]:
+            sns.lineplot(
+                data=self.raw_dataframe,
+                x=self.raw_dataframe.index,
+                y=boundary,
+                color="#d3d3d3",
+                alpha=0,
+                legend=False,
+            )
+
+        # fill space between boundaries
+        self.axs.fill_between(
+            self.raw_dataframe.index,
+            lower_boundary,
+            upper_boundary,
+            color="#ebebeb",
+        )
 
     def plot_splinedata(self):
         for col in self.raw_columns:
@@ -134,23 +148,16 @@ class PlotData:
                 - factor * self.spline_dataframe["std"].mean()
             )
 
-            sns.lineplot(
-                data=self.spline_dataframe,
-                x=self.spline_dataframe.index,
-                y=upper_boundary,
-                linestyle="--",
-                color="#d3d3d3",
-                legend=False,
-            )
-
-            sns.lineplot(
-                data=self.spline_dataframe,
-                x=self.spline_dataframe.index,
-                y=lower_boundary,
-                linestyle="--",
-                color="#d3d3d3",
-                legend=False,
-            )
+            # plot of baundaries
+            for boundary in [upper_boundary, lower_boundary]:
+                sns.lineplot(
+                    data=self.raw_dataframe,
+                    x=self.raw_dataframe.index,
+                    y=boundary,
+                    linestyle="--",
+                    color="#d3d3d3",
+                    legend=False,
+                )
 
             self.axs.fill_between(
                 self.spline_dataframe.index,
@@ -177,7 +184,11 @@ class PlotData:
         plt.title(f"{self.name} {self.pol} polarization, {self.long_orbit} orbit")
         plt.ylabel("Sentinel-1 backscatter [dB]")
         plt.xlabel("Timestamp")
-        plt.ylim(self.raw_dataframe["mean"].min() - 1, self.raw_dataframe["mean"].max() + 1)
+
+        plt.ylim(
+            (self.raw_dataframe["mean"] - self.raw_dataframe["std"]).min() - 1,
+            (self.raw_dataframe["mean"] + self.raw_dataframe["std"]).max() + 1
+        )
 
         if not self.monthly:
             plt.xlim(
