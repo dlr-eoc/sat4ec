@@ -9,7 +9,7 @@ from datetime import datetime
 
 from data_retrieval import IndicatorData as IData
 from stac import StacItems
-from system.helper_functions import get_logger, get_anomaly_columns
+from system.helper_functions import get_logger
 
 # clean output directory
 # for item in Path(OUT_DIR).glob("*"):
@@ -24,44 +24,25 @@ def plot_data(
     out_dir=None,
     name=None,
     raw_data=None,
-    raw_columns=None,
     spline_data=None,
     anomaly_data=None,
     orbit="asc",
     monthly=False
 ):
-    if spline_data is not None:
-        with PlotData(
-            out_dir=out_dir,
-            name=name,
-            raw_data=raw_data,
-            raw_columns=raw_columns,
-            spline_data=spline_data,
-            anomaly_data=anomaly_data,
-            orbit=orbit,
-            monthly=monthly
-        ) as plotting:
-            plotting.plot_rawdata(background=True)
-            plotting.plot_splinedata()
-            plotting.plot_anomalies()
-            plotting.plot_finalize()
-            plotting.save_spline()
-
-    else:
-        with PlotData(
-            out_dir=out_dir,
-            name=name,
-            raw_data=raw_data,
-            raw_columns=raw_columns,
-            spline_data=spline_data,
-            anomaly_data=anomaly_data,
-            orbit=orbit,
-            monthly=monthly
-        ) as plotting:
-            plotting.plot_rawdata(background=False)
-            plotting.plot_anomalies()
-            plotting.plot_finalize()
-            plotting.save_raw()
+    with PlotData(
+        out_dir=out_dir,
+        name=name,
+        raw_data=raw_data,
+        spline_data=spline_data,
+        anomaly_data=anomaly_data,
+        orbit=orbit,
+        monthly=monthly
+    ) as plotting:
+        plotting.plot_rawdata()
+        plotting.plot_splinedata()
+        plotting.plot_anomalies()
+        plotting.plot_finalize()
+        plotting.save_spline()
 
 
 def compute_raw_data(
@@ -100,7 +81,6 @@ def compute_raw_data(
 
 def compute_anomaly(
     df=None,
-    df_columns=None,
     anomaly_column="mean",
     out_dir=None,
     orbit="asc",
@@ -110,7 +90,6 @@ def compute_anomaly(
 ):
     anomaly = Anomaly(
         data=df,
-        df_columns=df_columns,
         anomaly_column=anomaly_column,
         out_dir=out_dir,
         orbit=orbit,
@@ -137,7 +116,6 @@ def main(
     pol="VH",
     orbit="asc",
     name="Unkown Brand",
-    columns=("mean", "std"),
     monthly=False,
 ):
     with AOI(data=aoi_data) as aoi:
@@ -155,7 +133,6 @@ def main(
 
         raw_anomalies = compute_anomaly(
             df=indicator.dataframe,
-            df_columns=get_anomaly_columns(indicator.columns_map, dst_cols=columns),
             out_dir=indicator.out_dir,
             orbit=orbit,
             pol=pol,
@@ -165,7 +142,6 @@ def main(
 
         spline_anomalies = compute_anomaly(
             df=indicator.spline_dataframe,
-            df_columns=get_anomaly_columns(indicator.columns_map, dst_cols=columns),
             out_dir=indicator.out_dir,
             orbit=orbit,
             pol=pol,
@@ -185,17 +161,6 @@ def main(
             out_dir=indicator.out_dir,
             name=name,
             raw_data=indicator.dataframe,
-            raw_columns=get_anomaly_columns(indicator.columns_map, dst_cols=columns),
-            anomaly_data=raw_anomalies.dataframe,
-            orbit=orbit,
-            monthly=monthly
-        )
-
-        plot_data(
-            out_dir=indicator.out_dir,
-            name=name,
-            raw_data=indicator.dataframe,
-            raw_columns=get_anomaly_columns(indicator.columns_map, dst_cols=columns),
             spline_data=indicator.spline_dataframe,
             anomaly_data=spline_anomalies.dataframe,
             orbit=orbit,
@@ -248,7 +213,6 @@ def run():
         pol=pol,
         orbit=orbit,
         name=args.name[0],
-        columns=args.columns,
         monthly=aggregate,
     )
 
@@ -305,13 +269,6 @@ def create_parser():
         "--name",
         nargs=1,
         help="Name of the location, e.g. BMW Regensburg. Appears in the plot title.",
-    )
-    parser.add_argument(
-        "--columns",
-        help="Parameters to plot.",
-        choices=["mean", "std", "min", "max"],
-        nargs=1,
-        default=["mean", "std"],
     )
 
     return parser

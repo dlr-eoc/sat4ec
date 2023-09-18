@@ -13,17 +13,15 @@ class PlotData:
         raw_data=None,
         spline_data=None,
         anomaly_data=None,
-        raw_columns=None,
         out_dir=None,
         orbit="asc",
         pol="VH",
-        monthly=False
+        monthly=False,
     ):
         self.name = name
         self.out_dir = out_dir
         self.orbit = orbit
         self.pol = pol
-        self.raw_columns = raw_columns
         self.monthly = monthly
 
         self.raw_dataframe = self._get_data(data=raw_data)
@@ -66,29 +64,10 @@ class PlotData:
     def __exit__(self, exc_type, exc_val, exc_tb):
         plt.close()
 
-    def plot_rawdata(self, background=False):
+    def plot_rawdata(self):
+        plusminus = u"\u00B1"
         upper_boundary = self.raw_dataframe["mean"] + self.raw_dataframe["std"]
         lower_boundary = self.raw_dataframe["mean"] - self.raw_dataframe["std"]
-
-        if background:
-            color = "#d3d3d3"
-            label = None
-
-        else:
-            color = "#000000"
-            label = "mean"
-
-        # plot of main line
-        sns.lineplot(
-            data=self.raw_dataframe,
-            x=self.raw_dataframe.index,
-            y=self.raw_dataframe["mean"],
-            legend=False,
-            color=color,
-            label=label,
-            zorder=1,
-            ax=self.axs,
-        )
 
         # plot of baundaries
         for boundary in [upper_boundary, lower_boundary]:
@@ -107,64 +86,72 @@ class PlotData:
             lower_boundary,
             upper_boundary,
             color="#ebebeb",
+            label=f"mean {plusminus} std"
+        )
+
+        # plot of main line
+        sns.lineplot(
+            data=self.raw_dataframe,
+            x=self.raw_dataframe.index,
+            y=self.raw_dataframe["mean"],
+            legend=False,
+            color="#bbbbbb",
+            label="raw mean",
+            zorder=1,
+            ax=self.axs,
         )
 
     def plot_splinedata(self):
-        for col in self.raw_columns:
-            sns.lineplot(
-                data=self.spline_dataframe,
-                x=self.spline_dataframe.index,
-                y=self.spline_dataframe[col],
-                label=col,
-                legend=False,
-                zorder=2,
-                ax=self.axs,
-            )
+        sns.lineplot(
+            data=self.spline_dataframe,
+            x=self.spline_dataframe.index,
+            y=self.spline_dataframe["mean"],
+            label="mean",
+            legend=False,
+            zorder=2,
+            ax=self.axs,
+        )
 
-    def plot_mean_range(self, columns=None, factor=0.25):
+    def plot_mean_range(self, factor=0.25):
         """
         Plot a range of mean + std that defines an insensitive area where anomalies are less likely.
         """
 
-        if not columns:
-            columns = self.raw_columns
+        sns.lineplot(
+            data=self.spline_dataframe,
+            x=self.spline_dataframe.index,
+            y=self.spline_dataframe["mean"].mean(),
+            linestyle="--",
+            color="#d3d3d3",
+            legend=False,
+        )
 
-        for col in columns:
+        upper_boundary = (
+            self.spline_dataframe["mean"].mean()
+            + factor * self.spline_dataframe["std"].mean()
+        )
+        lower_boundary = (
+            self.spline_dataframe["mean"].mean()
+            - factor * self.spline_dataframe["std"].mean()
+        )
+
+        # plot of baundaries
+        for boundary in [upper_boundary, lower_boundary]:
             sns.lineplot(
-                data=self.spline_dataframe,
-                x=self.spline_dataframe.index,
-                y=self.spline_dataframe[col].mean(),
+                data=self.raw_dataframe,
+                x=self.raw_dataframe.index,
+                y=boundary,
                 linestyle="--",
                 color="#d3d3d3",
                 legend=False,
             )
 
-            upper_boundary = (
-                self.spline_dataframe[col].mean()
-                + factor * self.spline_dataframe["std"].mean()
-            )
-            lower_boundary = (
-                self.spline_dataframe[col].mean()
-                - factor * self.spline_dataframe["std"].mean()
-            )
-
-            # plot of baundaries
-            for boundary in [upper_boundary, lower_boundary]:
-                sns.lineplot(
-                    data=self.raw_dataframe,
-                    x=self.raw_dataframe.index,
-                    y=boundary,
-                    linestyle="--",
-                    color="#d3d3d3",
-                    legend=False,
-                )
-
-            self.axs.fill_between(
-                self.spline_dataframe.index,
-                lower_boundary,
-                upper_boundary,
-                color="#ebebeb",
-            )
+        self.axs.fill_between(
+            self.spline_dataframe.index,
+            lower_boundary,
+            upper_boundary,
+            color="#ebebeb",
+        )
 
     def plot_anomalies(self):
         sns.scatterplot(
@@ -187,20 +174,17 @@ class PlotData:
 
         plt.ylim(
             (self.raw_dataframe["mean"] - self.raw_dataframe["std"]).min() - 1,
-            (self.raw_dataframe["mean"] + self.raw_dataframe["std"]).max() + 1
+            (self.raw_dataframe["mean"] + self.raw_dataframe["std"]).max() + 1,
         )
 
         if not self.monthly:
             plt.xlim(
                 datetime.date(self.raw_dataframe.index[0]) - timedelta(days=7),
-                datetime.date(pd.to_datetime(self.raw_dataframe["interval_to"][-1])) + timedelta(days=7)
+                datetime.date(pd.to_datetime(self.raw_dataframe["interval_to"][-1]))
+                + timedelta(days=7),
             )
 
-        self.fig.legend(
-            loc="outside lower center",
-            ncols=len(self.raw_columns) + 1,
-            bbox_to_anchor=(0.5, 0)
-        )
+        self.fig.legend(loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0))
         plt.tight_layout(pad=2.5)
 
         if show:  # for development

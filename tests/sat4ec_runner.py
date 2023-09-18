@@ -11,7 +11,7 @@ from sat4ec.aoi_check import AOI
 from anomaly_detection import Anomaly
 from plot_data import PlotData
 from stac import StacItems
-from system.helper_functions import get_anomaly_columns, get_monthly_keyword
+from system.helper_functions import get_monthly_keyword
 
 
 class Config:
@@ -114,7 +114,6 @@ class Facility:
 
         anomaly = Anomaly(
             data=data,
-            df_columns=self.indicator.columns_map,
             anomaly_column=anomaly_column,
             out_dir=self.out_dir,
             orbit=self.orbit,
@@ -145,42 +144,21 @@ class Facility:
         stac.join_with_anomalies()
         stac.save()
 
-    def plot_data(self, dpi=96, spline=False, anomaly_data=None):
-        if spline:
-            with PlotData(
-                out_dir=self.out_dir,
-                name=self.name,
-                raw_data=self.indicator.dataframe,
-                raw_columns=get_anomaly_columns(
-                    self.indicator.columns_map, dst_cols=["mean"]
-                ),
-                spline_data=self.indicator.spline_dataframe,
-                anomaly_data=anomaly_data.dataframe,
-                orbit=self.orbit,
-                monthly=self.monthly,
-            ) as plotting:
-                plotting.plot_rawdata(background=True)
-                plotting.plot_splinedata()
-                plotting.plot_anomalies()
-                plotting.plot_finalize()
-                plotting.save_spline(dpi=dpi)
-
-        else:
-            with PlotData(
-                out_dir=self.out_dir,
-                name=self.name,
-                raw_data=self.indicator.dataframe,
-                raw_columns=get_anomaly_columns(
-                    self.indicator.columns_map, dst_cols=["mean"]
-                ),
-                anomaly_data=anomaly_data.dataframe,
-                orbit=self.orbit,
-                monthly=self.monthly,
-            ) as plotting:
-                plotting.plot_rawdata(background=False)
-                plotting.plot_anomalies()
-                plotting.plot_finalize()
-                plotting.save_raw(dpi=dpi)
+    def plot_data(self, dpi=96, anomaly_data=None):
+        with PlotData(
+            out_dir=self.out_dir,
+            name=self.name,
+            raw_data=self.indicator.dataframe,
+            spline_data=self.indicator.spline_dataframe,
+            anomaly_data=anomaly_data.dataframe,
+            orbit=self.orbit,
+            monthly=self.monthly,
+        ) as plotting:
+            plotting.plot_rawdata()
+            plotting.plot_splinedata()
+            plotting.plot_anomalies()
+            plotting.plot_finalize()
+            plotting.save_spline(dpi=dpi)
 
 
 class Development:
@@ -457,8 +435,7 @@ class Production:
             raw_anomalies = facility.compute_anomaly(spline=False)
             spline_anomalies = facility.compute_anomaly(spline=True)
             facility.get_scenes(anomaly_data=spline_anomalies)
-            facility.plot_data(spline=False, anomaly_data=raw_anomalies)
-            facility.plot_data(spline=True, anomaly_data=spline_anomalies)
+            facility.plot_data(anomaly_data=spline_anomalies)
 
 
 def get_name(name=None):

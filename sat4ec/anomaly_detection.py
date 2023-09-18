@@ -10,7 +10,6 @@ class Anomaly:
         data=None,
         parameters=(10, 1.5),
         anomaly_column=None,
-        df_columns=None,
         out_dir=None,
         pol="VH",
         orbit="asc",
@@ -19,7 +18,6 @@ class Anomaly:
     ):
         self.parameters = parameters
         self.column = anomaly_column  # dataframe column containing the anomaly data
-        self.df_columns = df_columns  # dataframe columns that should be plotted
         self.ad = None
         self.dataframe = None  # output
         self.out_dir = out_dir
