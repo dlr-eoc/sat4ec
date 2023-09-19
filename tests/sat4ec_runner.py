@@ -175,7 +175,7 @@ class Development:
 
     def _init_plot(self):
         self.fig, self.axs = plt.subplots(
-            len(self.config.aois.keys()), len(self.config.orbits), figsize=(20, 10)
+            len(self.config.orbits), len(self.config.aois.keys()), figsize=(20, 10)
         )
 
     def _get_axis(self, index=None, orbit=None):
@@ -198,12 +198,39 @@ class Development:
                     return self.axs[1]
 
     def plot_raw_data(self, ax=None):
+        plusminus = u"\u00B1"
+        upper_boundary = self.facility.indicator.dataframe["mean"] + self.facility.indicator.dataframe["std"]
+        lower_boundary = self.facility.indicator.dataframe["mean"] - self.facility.indicator.dataframe["std"]
+
+        # plot of baundaries
+        for boundary in [upper_boundary, lower_boundary]:
+            sns.lineplot(
+                data=self.facility.indicator.dataframe,
+                x=self.facility.indicator.dataframe.index,
+                y=boundary,
+                color="#d3d3d3",
+                alpha=0,
+                legend=False,
+                ax=ax
+            )
+
+        # fill space between boundaries
+        ax.fill_between(
+            self.facility.indicator.dataframe.index,
+            lower_boundary,
+            upper_boundary,
+            color="#ebebeb",
+            label=f"mean {plusminus} std",
+        )
+
+        # plot of main line
         sns.lineplot(
             data=self.facility.indicator.dataframe,
             x=self.facility.indicator.dataframe.index,
             y=self.facility.indicator.dataframe["mean"],
             legend=False,
-            color="#d3d3d3",
+            color="#bbbbbb",
+            label="raw mean",
             zorder=1,
             ax=ax,
         )
@@ -287,9 +314,9 @@ class Development:
 
     def subplot_settings(self, ax=None, name=None, pol="VH", orbit="ascending"):
         ax.set_title(f"{name} {pol} polarization, {orbit} orbit")
-        ax.set_ylim(
-            self.facility.indicator.dataframe["mean"].min() - 1,
-            self.facility.indicator.dataframe["mean"].max() + 1,
+        plt.ylim(
+            (self.facility.indicator.dataframe["mean"] - self.facility.indicator.dataframe["std"]).min() - 1,
+            (self.facility.indicator.dataframe["mean"] + self.facility.indicator.dataframe["std"]).max() + 1,
         )
 
         if not self.config.monthly:
@@ -464,11 +491,11 @@ if __name__ == "__main__":
         # "munich_airport": aoi_dir.joinpath("munich_airport.geojson"),
         # "munich_ikea": aoi_dir.joinpath("munich_ikea.geojson"),
         # "volvo_gent": aoi_dir.joinpath("volvo_gent.geojson"),
-        # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson"),
-        # "vw_emden": aoi_dir.joinpath("vw_emden.geojson"),
         # "bmw_regensburg": aoi_dir.joinpath("bmw_regensburg.geojson"),
-        # "opel_ruesselsheim": aoi_dir.joinpath("opel_ruesselsheim.geojson"),
+        # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson"),
+        "vw_emden": aoi_dir.joinpath("vw_emden.geojson"),
         "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg.geojson"),
+        # "opel_ruesselsheim": aoi_dir.joinpath("opel_ruesselsheim.geojson"),
         # "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
     }
 
@@ -480,8 +507,8 @@ if __name__ == "__main__":
         end="2022-12-31",
         monthly=True,
     )
-    prod = Production(config=conf)
+    # prod = Production(config=conf)
     # prod.entire_workflow()
-    prod.from_raw_data()
-    # dev = Development(config=conf)
-    # dev.from_raw_data()
+    # prod.from_raw_data()
+    dev = Development(config=conf)
+    dev.from_raw_data()

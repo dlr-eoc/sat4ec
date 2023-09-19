@@ -19,10 +19,10 @@ TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
 class TestGetData(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestGetData, self).__init__(*args, **kwargs)
-        aoi = AOI(TEST_DIR.joinpath("AOIs", "bmw_regensburg.geojson"))
+        aoi = AOI(TEST_DIR.joinpath("AOIs", "vw_wolfsburg.geojson"))
         aoi.get_features()
         self.aoi = aoi.geometry
-        self.out_dir = TEST_DIR.joinpath("bmw_regensburg")
+        self.out_dir = TEST_DIR.joinpath("vw_wolfsburg")
         self.start_date = "2016-01-01"
         self.end_date = "2022-12-31"
         self.orbit = "asc"

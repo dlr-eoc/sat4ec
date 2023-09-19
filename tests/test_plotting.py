@@ -12,10 +12,10 @@ class TestPlotting(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestPlotting, self).__init__(*args, **kwargs)
 
-        aoi = AOI(TEST_DIR.joinpath("AOIs", "bmw_regensburg.geojson"))
+        aoi = AOI(TEST_DIR.joinpath("AOIs", "vw_wolfsburg.geojson"))
         aoi.get_features()
         self.aoi = aoi.geometry
-        self.out_dir = TEST_DIR.joinpath("bmw_regensburg")
+        self.out_dir = TEST_DIR.joinpath("vw_wolfsburg")
         self.name = "BMW Regensburg"
         self.start_date = "2022-01-01"
         self.end_date = "2022-12-31"
@@ -59,7 +59,7 @@ class TestPlotting(unittest.TestCase):
 
     def test_spline_plot(self):
         with PlotData(
-            raw_data=self.indicator_raw_file,
+            # raw_data=self.indicator_raw_file,
             spline_data=self.indicator_spline_file,
             orbit=self.orbit,
         ) as plotting:

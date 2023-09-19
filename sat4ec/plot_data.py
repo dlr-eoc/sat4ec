@@ -102,6 +102,7 @@ class PlotData:
         )
 
     def plot_splinedata(self):
+        print(self.spline_dataframe.index)
         sns.lineplot(
             data=self.spline_dataframe,
             x=self.spline_dataframe.index,
@@ -172,20 +173,20 @@ class PlotData:
         plt.ylabel("Sentinel-1 backscatter [dB]")
         plt.xlabel("Timestamp")
 
-        plt.ylim(
-            (self.raw_dataframe["mean"] - self.raw_dataframe["std"]).min() - 1,
-            (self.raw_dataframe["mean"] + self.raw_dataframe["std"]).max() + 1,
-        )
+        # plt.ylim(
+        #     (self.raw_dataframe["mean"] - self.raw_dataframe["std"]).min() - 1,
+        #     (self.raw_dataframe["mean"] + self.raw_dataframe["std"]).max() + 1,
+        # )
 
-        if not self.monthly:
-            plt.xlim(
-                datetime.date(self.raw_dataframe.index[0]) - timedelta(days=7),
-                datetime.date(pd.to_datetime(self.raw_dataframe["interval_to"][-1]))
-                + timedelta(days=7),
-            )
+        # if not self.monthly:
+        #     plt.xlim(
+        #         datetime.date(self.raw_dataframe.index[0]) - timedelta(days=7),
+        #         datetime.date(pd.to_datetime(self.raw_dataframe["interval_to"][-1]))
+        #         + timedelta(days=7),
+        #     )
 
         self.fig.legend(loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0))
-        plt.tight_layout(pad=2.5)
+        # plt.tight_layout(pad=2.5)
 
         if show:  # for development
             plt.show()
