@@ -1,9 +1,8 @@
 import pandas as pd
 import numpy as np
-import datetime
-from scipy.interpolate import splrep, BSpline, UnivariateSpline, InterpolatedUnivariateSpline
+from scipy.interpolate import splrep, BSpline
 from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import PolynomialFeatures, SplineTransformer
+from sklearn.preprocessing import PolynomialFeatures
 from system.helper_functions import get_monthly_keyword
 from system.authentication import Config
 from sentinelhub import (
@@ -42,7 +41,8 @@ class IndicatorData(Config):
         self.request = None
         self.stats = None
         self.dataframe = None
-        self.spline_dataframe = None
+        self.regression_dataframe = None
+        self.linear_dataframe = None  # dataframe for default linear regression
         self.pol = pol
         self.out_dir = out_dir
         self.thresholds = {"min": None, "max": None}
@@ -66,7 +66,7 @@ class IndicatorData(Config):
         }
 
     def _create_out_dirs(self):
-        for out in ["plot", "raw", "scenes", "anomalies", "spline"]:
+        for out in ["plot", "raw", "scenes", "anomalies", "regression"]:
             if not self.out_dir.joinpath(out).exists():
                 self.out_dir.joinpath(out).mkdir(parents=True)
 
@@ -214,7 +214,7 @@ class IndicatorData(Config):
     def rename_column(self, src=None, dst=None):
         self.dataframe.rename(columns={f"{src}": f"{dst}"}, inplace=True)
 
-    def apply_pandas_rolling(self, x_values):
+    def apply_pandas_rolling(self):
         return self.dataframe["mean"].rolling(
             5,
             center=True,
@@ -222,24 +222,15 @@ class IndicatorData(Config):
             win_type="cosine",
         ).mean(5)  # cosine
 
-    def prepare_regression(self, mode="linear"):
-        if mode == "linear":
-            date_range = pd.date_range(freq="1D", start=self.dataframe.index[0], end=self.dataframe.index[-1])
-
-        elif mode == "poly":
-            date_range = self.dataframe.index
-
-        else:
-            raise ValueError(f"The provided mode {mode} is not supported. Please choose from [linear, poly].")
-
-        self.spline_dataframe = pd.DataFrame({"interval_from": date_range}, index=date_range)
-
+    def prepare_regression(self):
         time_diff = (self.dataframe.index[0] - self.dataframe.index).days * (-1)  # date difference
-        self.dataframe["interval_diff"] = time_diff
+        date_range = pd.date_range(freq="1D", start=self.dataframe.index[0], end=self.dataframe.index[-1])
 
-        return pd.DataFrame({"interval_diff": np.arange(time_diff[-1]+1)})
+        self.regression_dataframe = pd.DataFrame({"interval_from": self.dataframe.index}, index=self.dataframe.index)
+        self.dataframe["interval_diff"] = time_diff  # temporary
+        self.linear_dataframe = pd.DataFrame({"interval_diff": np.arange(time_diff[-1]+1)}, index=date_range)
 
-    def apply_polynomial(self, x_values):
+    def apply_polynomial(self):
         poly_reg_model = LinearRegression()
         poly = PolynomialFeatures(degree=5, include_bias=False)
         poly_features = poly.fit_transform(self.dataframe["interval_diff"].values.reshape(-1, 1))
@@ -247,13 +238,13 @@ class IndicatorData(Config):
 
         return poly_reg_model.predict(poly_features)
 
-    def apply_linear(self, x_values):
+    def apply_linear(self, column="mean"):
         model = LinearRegression(fit_intercept=True)
-        model.fit(self.dataframe[["interval_diff"]], self.dataframe["mean"])
+        model.fit(self.dataframe[["interval_diff"]], self.dataframe[column])
 
-        return model.predict(x_values)
+        return model.predict(self.linear_dataframe.loc[self.linear_dataframe.index.intersection(self.dataframe.index)])
 
-    def apply_spline(self, x_values):
+    def apply_spline(self):
         # apply spline with weights: data point mean / global mean
         # where datapoint mean == global mean, weight equals 1 which is the default method weight
         # where datapoint mean > global mean, weight > 1 and indicates higher significance
@@ -267,31 +258,41 @@ class IndicatorData(Config):
 
         return BSpline(*tck)(np.arange(len(self.dataframe)))
 
+    def linear_regression(self):
+        for col in ["mean", "std"]:
+            predictions = self.apply_linear(column=col)
+            self.regression_dataframe[col] = predictions
+
+        self.save_regression(mode="linear")
+        self.linear_dataframe = self.regression_dataframe.copy()
+        self.regression_dataframe.drop("mean", axis=1)
+        self.regression_dataframe.drop("std", axis=1)
+
     def apply_regression(self, mode="rolling"):
+        self.prepare_regression()
+        self.linear_regression()
+
         if mode == "rolling":
-            predictions = self.apply_pandas_rolling(self.prepare_regression())
+            predictions = self.apply_pandas_rolling()
 
         elif mode == "spline":
-            predictions = self.apply_spline(self.prepare_regression(mode="poly"))
-
-        elif mode == "linear":
-            predictions = self.apply_linear(self.prepare_regression(mode="linear"))
+            predictions = self.apply_spline()
 
         elif mode == "poly":
-            predictions = self.apply_polynomial(self.prepare_regression(mode="poly"))
+            predictions = self.apply_polynomial()
 
         else:
-            raise ValueError(f"The provided mode {mode} is not supported. Please choose from [rolling, spline, linear, poly].")
+            raise ValueError(f"The provided mode {mode} is not supported. Please choose from [rolling, spline, poly].")
 
-        self.spline_dataframe["mean"] = predictions
+        self.regression_dataframe["mean"] = predictions
         self.dataframe.drop("interval_diff", axis=1)
 
-    def save_spline(self):
+    def save_regression(self, mode="linear"):
         out_file = self.out_dir.joinpath(
-            "spline",
-            f"indicator_1_splinedata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+            "regression",
+            f"indicator_1_{mode}_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
-        self.spline_dataframe.to_csv(out_file)
+        self.regression_dataframe.to_csv(out_file)
 
     def save_raw(self):
         out_file = self.out_dir.joinpath(

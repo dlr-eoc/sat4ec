@@ -24,6 +24,7 @@ class Config:
         start="2020-01-01",
         end="2020-12-31",
         monthly=False,
+        regression="spline"
     ):
         self.orbits = orbits
         self.pols = pols
@@ -33,6 +34,7 @@ class Config:
         self.end = end
         self.working_dir = None
         self.monthly = monthly
+        self.regression = regression
 
     def get_loop(self):
         for index, key in enumerate(self.aois.keys()):
@@ -98,16 +100,16 @@ class Facility:
             self.indicator.monthly_aggregate()
             self.indicator.save_raw()
 
-        self.indicator.apply_regression(mode="rolling")
-        self.indicator.save_spline()
+        self.indicator.apply_regression(mode="spline")
+        self.indicator.save_regression(mode="spline")
 
     def compute_anomaly(
         self,
         anomaly_column="mean",
-        spline=False,
+        regression=False,
     ):
-        if spline:
-            data = self.indicator.spline_dataframe
+        if regression:
+            data = self.indicator.regression_dataframe
 
         else:
             data = self.indicator.dataframe
@@ -123,8 +125,8 @@ class Facility:
 
         anomaly.find_extrema()
 
-        if spline:
-            anomaly.save_spline()
+        if regression:
+            anomaly.save_regression()
 
         else:
             anomaly.save_raw()
@@ -149,16 +151,19 @@ class Facility:
             out_dir=self.out_dir,
             name=self.name,
             raw_data=self.indicator.dataframe,
-            spline_data=self.indicator.spline_dataframe,
+            reg_data=self.indicator.regression_dataframe,
+            linear_data=self.indicator.linear_dataframe,
             anomaly_data=anomaly_data.dataframe,
             orbit=self.orbit,
             monthly=self.monthly,
         ) as plotting:
+            plotting.plot_rawdata_range()
+            plotting.plot_mean_range()
             plotting.plot_rawdata()
-            plotting.plot_splinedata()
+            plotting.plot_regression()
             plotting.plot_anomalies()
             plotting.plot_finalize()
-            plotting.save_spline(dpi=dpi)
+            plotting.save_regression(dpi=dpi)
 
 
 class Development:
@@ -197,7 +202,7 @@ class Development:
                 else:
                     return self.axs[1]
 
-    def plot_raw_data(self, ax=None):
+    def plot_rawdata_range(self, ax=None):
         plusminus = u"\u00B1"
         upper_boundary = self.facility.indicator.dataframe["mean"] + self.facility.indicator.dataframe["std"]
         lower_boundary = self.facility.indicator.dataframe["mean"] - self.facility.indicator.dataframe["std"]
@@ -211,7 +216,6 @@ class Development:
                 color="#d3d3d3",
                 alpha=0,
                 legend=False,
-                ax=ax
             )
 
         # fill space between boundaries
@@ -220,9 +224,10 @@ class Development:
             lower_boundary,
             upper_boundary,
             color="#ebebeb",
-            label=f"mean {plusminus} std",
+            label=f"mean {plusminus} std"
         )
 
+    def plot_rawdata(self, ax=None):
         # plot of main line
         sns.lineplot(
             data=self.facility.indicator.dataframe,
@@ -235,66 +240,47 @@ class Development:
             ax=ax,
         )
 
-    def plot_splinedata(self, ax=None):
+    def plot_regression(self, ax=None):
         sns.lineplot(
-            data=self.facility.indicator.spline_dataframe,
-            x=self.facility.indicator.spline_dataframe.index,
-            y=self.facility.indicator.spline_dataframe["mean"],
+            data=self.facility.indicator.regression_dataframe,
+            x=self.facility.indicator.regression_dataframe.index,
+            y=self.facility.indicator.regression_dataframe["mean"],
             label="mean",
             legend=False,
             zorder=2,
             ax=ax,
         )
 
-    def plot_mean_range(self, factor=0.25, ax=None):
+    def plot_mean_range(self, factor=0.2, ax=None):
         """
         Plot a range of mean + std that defines an insensitive area where anomalies are less likely.
         """
 
-        sns.lineplot(
-            data=self.facility.indicator.spline_dataframe,
-            x=self.facility.indicator.spline_dataframe.index,
-            y=self.facility.indicator.spline_dataframe["mean"].mean(),
-            linestyle="--",
-            color="#d3d3d3",
-            legend=False,
-            ax=ax,
-        )
-
         upper_boundary = (
-            self.facility.indicator.spline_dataframe["mean"].mean()
-            + factor * self.facility.indicator.spline_dataframe["std"].mean()
+            self.facility.indicator.linear_dataframe["mean"]
+            + factor * self.facility.indicator.linear_dataframe["std"]
         )
         lower_boundary = (
-            self.facility.indicator.spline_dataframe["mean"].mean()
-            - factor * self.facility.indicator.spline_dataframe["std"].mean()
-        )
-
-        sns.lineplot(
-            data=self.facility.indicator.spline_dataframe,
-            x=self.facility.indicator.spline_dataframe.index,
-            y=upper_boundary,
-            linestyle="--",
-            color="#d3d3d3",
-            legend=False,
-            ax=ax,
-        )
-
-        sns.lineplot(
-            data=self.facility.indicator.spline_dataframe,
-            x=self.facility.indicator.spline_dataframe.index,
-            y=lower_boundary,
-            linestyle="--",
-            color="#d3d3d3",
-            legend=False,
-            ax=ax,
+            self.facility.indicator.linear_dataframe["mean"]
+            - factor * self.facility.indicator.linear_dataframe["std"]
         )
 
         ax.fill_between(
-            self.facility.indicator.spline_dataframe.index,
+            self.facility.indicator.linear_dataframe.index,
             lower_boundary,
             upper_boundary,
-            color="#ebebeb",
+            color="#dba8e5",
+            alpha=0.25
+        )
+
+        sns.lineplot(
+            data=self.facility.indicator.linear_dataframe,
+            x=self.facility.indicator.linear_dataframe.index,
+            y=self.facility.indicator.linear_dataframe["mean"],
+            linestyle="--",
+            color="#ab84b3",
+            legend=False,
+            ax=ax
         )
 
     @staticmethod
@@ -385,12 +371,13 @@ class Development:
             )
             self.facility.get_aoi()
             self.facility.get_indicator()
-            spline_anomalies = self.facility.compute_anomaly(spline=True)
-            self.facility.get_scenes(anomaly_data=spline_anomalies)
+            regression_anomalies = self.facility.compute_anomaly(regression=True)
+            self.facility.get_scenes(anomaly_data=regression_anomalies)
+            self.plot_rawdata_range(ax=ax)
             self.plot_mean_range(ax=ax)
-            self.plot_raw_data(ax=ax)
-            self.plot_splinedata(ax=ax)
-            self.plot_anomalies(ax=ax, anomaly_data=spline_anomalies)
+            self.plot_rawdata(ax=ax)
+            self.plot_regression(ax=ax)
+            self.plot_anomalies(ax=ax, anomaly_data=regression_anomalies)
             self.subplot_settings(
                 ax=ax,
                 name=get_name(aoi_name),
@@ -434,6 +421,8 @@ class Production:
                     get_name(aoi_name),
                     "--aggregate",
                     "monthly" if self.config.monthly else "daily",
+                    "--regression",
+                    self.config.regression
                 ],
                 capture_output=False,
             )
@@ -459,10 +448,10 @@ class Production:
             )
             facility.get_aoi()
             facility.get_indicator()
-            raw_anomalies = facility.compute_anomaly(spline=False)
-            spline_anomalies = facility.compute_anomaly(spline=True)
-            facility.get_scenes(anomaly_data=spline_anomalies)
-            facility.plot_data(anomaly_data=spline_anomalies)
+            raw_anomalies = facility.compute_anomaly(regression=False)
+            regression_anomalies = facility.compute_anomaly(regression=True)
+            facility.get_scenes(anomaly_data=regression_anomalies)
+            facility.plot_data(anomaly_data=regression_anomalies)
 
 
 def get_name(name=None):
@@ -506,6 +495,7 @@ if __name__ == "__main__":
         start="2016-01-01",
         end="2022-12-31",
         monthly=True,
+        regression="spline"
     )
     # prod = Production(config=conf)
     # prod.entire_workflow()

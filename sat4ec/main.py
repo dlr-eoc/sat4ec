@@ -24,7 +24,7 @@ def plot_data(
     out_dir=None,
     name=None,
     raw_data=None,
-    spline_data=None,
+    reg_data=None,
     anomaly_data=None,
     orbit="asc",
     monthly=False
@@ -33,16 +33,17 @@ def plot_data(
         out_dir=out_dir,
         name=name,
         raw_data=raw_data,
-        spline_data=spline_data,
+        reg_data=reg_data,
         anomaly_data=anomaly_data,
         orbit=orbit,
         monthly=monthly
     ) as plotting:
+        plotting.plot_rawdata_range()
         plotting.plot_rawdata()
-        plotting.plot_splinedata()
+        plotting.plot_regression()
         plotting.plot_anomalies()
         plotting.plot_finalize()
-        plotting.save_spline()
+        plotting.save_regression()
 
 
 def compute_raw_data(
@@ -53,6 +54,7 @@ def compute_raw_data(
     orbit="asc",
     pol="VH",
     monthly=False,
+    regression="spline"
 ):
     indicator = IData(
         aoi=aoi.geometry,
@@ -73,8 +75,8 @@ def compute_raw_data(
         indicator.monthly_aggregate()
         indicator.save_raw()  # save raw mothly data
 
-    indicator.apply_regression(mode="rolling")
-    indicator.save_spline()  # save spline data
+    indicator.apply_regression(mode=regression)
+    indicator.save_regression(mode=regression)  # save spline data
 
     return indicator
 
@@ -86,7 +88,7 @@ def compute_anomaly(
     orbit="asc",
     pol="VH",
     monthly=False,
-    spline=False
+    regression=False
 ):
     anomaly = Anomaly(
         data=df,
@@ -99,8 +101,8 @@ def compute_anomaly(
 
     anomaly.find_extrema()
 
-    if spline:
-        anomaly.save_spline()
+    if regression:
+        anomaly.save_regression()
 
     else:
         anomaly.save_raw()
@@ -117,6 +119,7 @@ def main(
     orbit="asc",
     name="Unkown Brand",
     monthly=False,
+    regression="spline"
 ):
     with AOI(data=aoi_data) as aoi:
         aoi.get_features()
@@ -129,6 +132,7 @@ def main(
             orbit=orbit,
             pol=pol,
             monthly=monthly,
+            regression=regression
         )
 
         raw_anomalies = compute_anomaly(
@@ -136,20 +140,20 @@ def main(
             out_dir=indicator.out_dir,
             orbit=orbit,
             pol=pol,
-            spline=False,
+            regression=False,
         )
 
-        spline_anomalies = compute_anomaly(
-            df=indicator.spline_dataframe,
+        reg_anomalies = compute_anomaly(
+            df=indicator.regression_dataframe,
             out_dir=indicator.out_dir,
             orbit=orbit,
             pol=pol,
             monthly=monthly,
-            spline=True
+            regression=True
         )
 
         stac = StacItems(
-            data=spline_anomalies.dataframe,
+            data=reg_anomalies.dataframe,
             geometry=indicator.geometry,
             orbit=indicator.orbit,
             pol=pol,
@@ -160,8 +164,8 @@ def main(
             out_dir=indicator.out_dir,
             name=name,
             raw_data=indicator.dataframe,
-            spline_data=indicator.spline_dataframe,
-            anomaly_data=spline_anomalies.dataframe,
+            reg_data=indicator.regression_dataframe,
+            anomaly_data=reg_anomalies.dataframe,
             orbit=orbit,
             monthly=monthly
         )
@@ -213,6 +217,7 @@ def run():
         orbit=orbit,
         name=args.name[0],
         monthly=aggregate,
+        regression=args.regression[0]
     )
 
 
@@ -268,6 +273,13 @@ def create_parser():
         "--name",
         nargs=1,
         help="Name of the location, e.g. BMW Regensburg. Appears in the plot title.",
+    )
+    parser.add_argument(
+        "--regression",
+        nargs=1,
+        help="Type of the regression, default: spline.",
+        choices=["spline", "poly", "rolling"],
+        default="spline"
     )
 
     return parser
