@@ -12,10 +12,10 @@ class TestPlotting(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestPlotting, self).__init__(*args, **kwargs)
 
-        aoi = AOI(TEST_DIR.joinpath("AOIs", "bmw_regensburg.geojson"))
+        aoi = AOI(TEST_DIR.joinpath("AOIs", "vw_wolfsburg.geojson"))
         aoi.get_features()
         self.aoi = aoi.geometry
-        self.out_dir = TEST_DIR.joinpath("bmw_regensburg")
+        self.out_dir = TEST_DIR.joinpath("vw_wolfsburg")
         self.name = "BMW Regensburg"
         self.start_date = "2022-01-01"
         self.end_date = "2022-12-31"
@@ -39,8 +39,11 @@ class TestPlotting(unittest.TestCase):
         self.indicator_raw_file = self.indicator.out_dir.joinpath(
             "raw", f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv"
         )
-        self.indicator_spline_file = self.indicator.out_dir.joinpath(
-            "spline", f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv"
+        self.indicator_reg_file = self.indicator.out_dir.joinpath(
+            "regression", f"indicator_1_spline_{self.orbit}_{self.pol}.csv"
+        )
+        self.indicator_linear_file = self.indicator.out_dir.joinpath(
+            "regression", f"indicator_1_linear_{self.orbit}_{self.pol}.csv"
         )
         self.anomaly_spline_file = self.indicator.out_dir.joinpath(
             "anomalies", f"indicator_1_anomalies_spline_{self.orbit}_{self.pol}.csv"
@@ -57,47 +60,69 @@ class TestPlotting(unittest.TestCase):
             plotting.plot_rawdata()
             plotting.plot_finalize(show=True)
 
-    def test_spline_plot(self):
+    def test_raw_range_plot(self):
         with PlotData(
             raw_data=self.indicator_raw_file,
-            spline_data=self.indicator_spline_file,
             orbit=self.orbit,
         ) as plotting:
-            plotting.plot_splinedata()
+            plotting.plot_rawdata_range()
             plotting.plot_finalize(show=True)
 
-    def test_raw_spline_overlay(self):
+    def test_regression_plot(self):
         with PlotData(
-            raw_data=self.indicator_raw_file,
-            spline_data=self.indicator_spline_file,
+            # raw_data=self.indicator_raw_file,
+            reg_data=self.indicator_reg_file,
             orbit=self.orbit,
         ) as plotting:
+            plotting.plot_regression()
+            plotting.plot_finalize(show=True)
+
+    def test_raw_regression_overlay(self):
+        with PlotData(
+            raw_data=self.indicator_raw_file,
+            reg_data=self.indicator_reg_file,
+            orbit=self.orbit,
+        ) as plotting:
+            plotting.plot_rawdata_range()
             plotting.plot_rawdata()
-            plotting.plot_splinedata()
+            plotting.plot_regression()
             plotting.plot_finalize(show=True)
 
-    def test_plot_anomalies_spline(self):
+    def test_raw_regression_linear_overlay(self):
         with PlotData(
             raw_data=self.indicator_raw_file,
-            spline_data=self.indicator_spline_file,
+            reg_data=self.indicator_reg_file,
+            linear_data=self.indicator_linear_file,
+            orbit=self.orbit,
+        ) as plotting:
+            plotting.plot_rawdata_range()
+            plotting.plot_mean_range()
+            plotting.plot_rawdata()
+            plotting.plot_regression()
+            plotting.plot_finalize(show=True)
+
+    def test_plot_anomalies_regression(self):
+        with PlotData(
+            raw_data=self.indicator_raw_file,
+            reg_data=self.indicator_reg_file,
             anomaly_data=self.anomaly_spline_file,
             orbit=self.orbit,
             name=self.name
         ) as plotting:
             plotting.plot_rawdata()
-            plotting.plot_splinedata()
+            plotting.plot_regression()
             plotting.plot_anomalies()
             plotting.plot_finalize(show=True)
 
-    def test_plot_anomalies_spline_std(self):
+    def test_plot_anomalies_reg_std(self):
         with PlotData(
-            raw_data=self.indicator_spline_file,
-            spline_data=self.indicator_spline_file,
+            raw_data=self.indicator_reg_file,
+            reg_data=self.indicator_reg_file,
             anomaly_data=self.anomaly_spline_file,
             orbit=self.orbit,
             name=self.name
         ) as plotting:
-            plotting.plot_splinedata()
+            plotting.plot_regression()
             plotting.plot_anomalies()
             plotting.plot_mean_range()
             plotting.plot_finalize(show=True)
@@ -117,15 +142,15 @@ class TestPlotting(unittest.TestCase):
             out_dir=self.out_dir,
             name=self.name,
             raw_data=self.indicator_raw_file,
-            spline_data=self.indicator_spline_file,
+            reg_data=self.indicator_reg_file,
             anomaly_data=self.anomaly_spline_file,
             orbit=self.orbit,
         ) as plotting:
             plotting.plot_rawdata()
-            plotting.plot_splinedata()
+            plotting.plot_regression()
             plotting.plot_anomalies()
             plotting.plot_finalize(show=True)
-            plotting.save_spline()
+            plotting.save_regression()
 
     def test_save_plot_raw(self):
         with PlotData(

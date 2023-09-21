@@ -19,10 +19,10 @@ TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
 class TestGetData(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestGetData, self).__init__(*args, **kwargs)
-        aoi = AOI(TEST_DIR.joinpath("AOIs", "bmw_regensburg.geojson"))
+        aoi = AOI(TEST_DIR.joinpath("AOIs", "vw_wolfsburg.geojson"))
         aoi.get_features()
         self.aoi = aoi.geometry
-        self.out_dir = TEST_DIR.joinpath("bmw_regensburg")
+        self.out_dir = TEST_DIR.joinpath("vw_wolfsburg")
         self.start_date = "2016-01-01"
         self.end_date = "2022-12-31"
         self.orbit = "asc"
@@ -116,7 +116,7 @@ class TestGetData(unittest.TestCase):
         self.assertTrue(indicator.dataframe.index.inferred_type, pd.DatetimeIndex)
         self.assertTrue(len(indicator.dataframe) < len(daily_dataframe))
 
-    def test_spline(self):
+    def test_regression(self):
         indicator = IData(
             aoi=self.aoi,
             out_dir=self.out_dir,
@@ -130,11 +130,11 @@ class TestGetData(unittest.TestCase):
         indicator.dataframe["interval_from"] = pd.to_datetime(indicator.dataframe["interval_from"])
         indicator.dataframe = indicator.dataframe.set_index("interval_from")
 
-        indicator.apply_regression()
-        indicator.save_spline()
+        indicator.apply_regression(mode="spline")
+        indicator.save_regression(mode="spline")
         self.assertTrue(
             indicator.out_dir.joinpath(
-                "spline", f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv"
+                "regression", f"indicator_1_spline_{self.orbit}_{self.pol}.csv"
             ).exists()
         )
 
@@ -151,7 +151,7 @@ class TestGetData(unittest.TestCase):
         indicator.get_request_grd()
         indicator.get_data()
         indicator.stats_to_df()
-        indicator.save_raw()
+        indicator.save_regression()
         self.assertTrue(
             indicator.out_dir.joinpath(
                 "raw", f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv"

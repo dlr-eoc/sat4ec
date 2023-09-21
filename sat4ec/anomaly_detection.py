@@ -71,10 +71,10 @@ class Anomaly:
         )
         self.dataframe.to_csv(out_file)
 
-    def save_spline(self):
+    def save_regression(self):
         out_file = self.out_dir.joinpath(
             "anomalies",
-            f"indicator_1_anomalies_spline_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+            f"indicator_1_anomalies_interpolated_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
         self.dataframe.to_csv(out_file)
 

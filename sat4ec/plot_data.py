@@ -3,7 +3,6 @@ import seaborn as sns
 import pandas as pd
 from system.helper_functions import get_monthly_keyword
 from pathlib import Path
-from datetime import datetime, timedelta
 
 
 class PlotData:
@@ -11,7 +10,8 @@ class PlotData:
         self,
         name=None,
         raw_data=None,
-        spline_data=None,
+        reg_data=None,
+        linear_data=None,
         anomaly_data=None,
         out_dir=None,
         orbit="asc",
@@ -25,7 +25,8 @@ class PlotData:
         self.monthly = monthly
 
         self.raw_dataframe = self._get_data(data=raw_data)
-        self.spline_dataframe = self._get_data(data=spline_data)
+        self.reg_dataframe = self._get_data(data=reg_data)
+        self.linear_dataframe = self._get_data(data=linear_data)
         self.anomaly_dataframe = self._get_data(data=anomaly_data)
         self._get_subplots()
         self._get_long_orbit()
@@ -64,7 +65,7 @@ class PlotData:
     def __exit__(self, exc_type, exc_val, exc_tb):
         plt.close()
 
-    def plot_rawdata(self):
+    def plot_rawdata_range(self):
         plusminus = u"\u00B1"
         upper_boundary = self.raw_dataframe["mean"] + self.raw_dataframe["std"]
         lower_boundary = self.raw_dataframe["mean"] - self.raw_dataframe["std"]
@@ -89,6 +90,7 @@ class PlotData:
             label=f"mean {plusminus} std"
         )
 
+    def plot_rawdata(self):
         # plot of main line
         sns.lineplot(
             data=self.raw_dataframe,
@@ -101,56 +103,46 @@ class PlotData:
             ax=self.axs,
         )
 
-    def plot_splinedata(self):
+    def plot_regression(self):
         sns.lineplot(
-            data=self.spline_dataframe,
-            x=self.spline_dataframe.index,
-            y=self.spline_dataframe["mean"],
+            data=self.reg_dataframe,
+            x=self.reg_dataframe.index,
+            y=self.reg_dataframe["mean"],
             label="mean",
             legend=False,
             zorder=2,
             ax=self.axs,
         )
 
-    def plot_mean_range(self, factor=0.25):
+    def plot_mean_range(self, factor=0.2):
         """
         Plot a range of mean + std that defines an insensitive area where anomalies are less likely.
         """
 
-        sns.lineplot(
-            data=self.spline_dataframe,
-            x=self.spline_dataframe.index,
-            y=self.spline_dataframe["mean"].mean(),
-            linestyle="--",
-            color="#d3d3d3",
-            legend=False,
-        )
-
         upper_boundary = (
-            self.spline_dataframe["mean"].mean()
-            + factor * self.spline_dataframe["std"].mean()
+            self.linear_dataframe["mean"]
+            + factor * self.linear_dataframe["std"]
         )
         lower_boundary = (
-            self.spline_dataframe["mean"].mean()
-            - factor * self.spline_dataframe["std"].mean()
+            self.linear_dataframe["mean"]
+            - factor * self.linear_dataframe["std"]
         )
 
-        # plot of baundaries
-        for boundary in [upper_boundary, lower_boundary]:
-            sns.lineplot(
-                data=self.raw_dataframe,
-                x=self.raw_dataframe.index,
-                y=boundary,
-                linestyle="--",
-                color="#d3d3d3",
-                legend=False,
-            )
-
         self.axs.fill_between(
-            self.spline_dataframe.index,
+            self.linear_dataframe.index,
             lower_boundary,
             upper_boundary,
-            color="#ebebeb",
+            color="#dba8e5",
+            alpha=0.25
+        )
+
+        sns.lineplot(
+            data=self.linear_dataframe,
+            x=self.linear_dataframe.index,
+            y=self.linear_dataframe["mean"],
+            linestyle="--",
+            color="#ab84b3",
+            legend=False,
         )
 
     def plot_anomalies(self):
@@ -172,20 +164,20 @@ class PlotData:
         plt.ylabel("Sentinel-1 backscatter [dB]")
         plt.xlabel("Timestamp")
 
-        plt.ylim(
-            (self.raw_dataframe["mean"] - self.raw_dataframe["std"]).min() - 1,
-            (self.raw_dataframe["mean"] + self.raw_dataframe["std"]).max() + 1,
-        )
+        # plt.ylim(
+        #     (self.raw_dataframe["mean"] - self.raw_dataframe["std"]).min() - 1,
+        #     (self.raw_dataframe["mean"] + self.raw_dataframe["std"]).max() + 1,
+        # )
 
-        if not self.monthly:
-            plt.xlim(
-                datetime.date(self.raw_dataframe.index[0]) - timedelta(days=7),
-                datetime.date(pd.to_datetime(self.raw_dataframe["interval_to"][-1]))
-                + timedelta(days=7),
-            )
+        # if not self.monthly:
+        #     plt.xlim(
+        #         datetime.date(self.raw_dataframe.index[0]) - timedelta(days=7),
+        #         datetime.date(pd.to_datetime(self.raw_dataframe["interval_to"][-1]))
+        #         + timedelta(days=7),
+        #     )
 
         self.fig.legend(loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0))
-        plt.tight_layout(pad=2.5)
+        # plt.tight_layout(pad=2.5)
 
         if show:  # for development
             plt.show()
@@ -196,12 +188,12 @@ class PlotData:
         if " " in self.name:
             self.name = "_".join(self.name.split(" "))
 
-    def save_spline(self, dpi=96):
+    def save_regression(self, dpi=96):
         self.correct_name()
 
         out_file = self.out_dir.joinpath(
             "plot",
-            f"indicator_1_{self.name}_splinedata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.png",
+            f"indicator_1_{self.name}_interpolated_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.png",
         )
 
         self.fig.savefig(out_file, dpi=dpi)
