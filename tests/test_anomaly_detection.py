@@ -13,10 +13,10 @@ class TestAD(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestAD, self).__init__(*args, **kwargs)
 
-        aoi = AOI(TEST_DIR.joinpath("AOIs", "bmw_regensburg.geojson"))
+        aoi = AOI(TEST_DIR.joinpath("AOIs", "vw_wolfsburg.geojson"))
         aoi.get_features()
         self.aoi = aoi.geometry
-        self.out_dir = TEST_DIR.joinpath("bmw_regensburg")
+        self.out_dir = TEST_DIR.joinpath("vw_wolfsburg")
         self.start_date = "2022-01-01"
         self.end_date = "2022-12-31"
         self.orbit = "asc"
@@ -37,10 +37,10 @@ class TestAD(unittest.TestCase):
         )
 
         self.indicator_raw_file = self.indicator.out_dir.joinpath(
-            "raw", f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv"
+            "raw", f"indicator_1_rawdata_monthly_{self.orbit}_{self.pol}.csv"
         )
-        self.indicator_spline_file = self.indicator.out_dir.joinpath(
-            "spline", f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv"
+        self.indicator_regression_file = self.indicator.out_dir.joinpath(
+            "regression", f"indicator_1_spline_monthly_{self.orbit}_{self.pol}.csv"
         )
 
     def test_dataframe_from_file(self):
@@ -79,9 +79,9 @@ class TestAD(unittest.TestCase):
             pd.testing.assert_frame_equal(anomaly.dataframe, anomaly.indicator_df)
         )
 
-    def test_find_maxima_spline(self):
+    def test_find_maxima_regression(self):
         anomaly = Anomaly(
-            data=self.indicator_spline_file,
+            data=self.indicator_regression_file,
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -89,11 +89,11 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_maxima()
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 18)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 7)
 
-    def test_find_minima_spline(self):
+    def test_find_minima_regression(self):
         anomaly = Anomaly(
-            data=self.indicator_spline_file,
+            data=self.indicator_regression_file,
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -101,11 +101,11 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_minima()
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 17)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 5)
 
     def test_find_extrema_spline(self):
         anomaly = Anomaly(
-            data=self.indicator_spline_file,
+            data=self.indicator_regression_file,
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -113,11 +113,11 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_extrema()
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 21)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 7)
 
     def test_find_uncorrected_extrema(self):
         anomaly = Anomaly(
-            data=self.indicator_spline_file,
+            data=self.indicator_regression_file,
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -126,13 +126,13 @@ class TestAD(unittest.TestCase):
 
         anomaly.find_maxima()  # find maxima on dataframe
         anomaly.find_minima()  # find minima on dataframe
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 35)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 12)
 
     def test_delete_adjacent_anomalies(self):
-        aoi = AOI(TEST_DIR.joinpath("AOIs", "bmw_leipzig.geojson"))
+        aoi = AOI(TEST_DIR.joinpath("AOIs", "vw_wolfsburg.geojson"))
         aoi.get_features()
         self.aoi = aoi.geometry
-        self.out_dir = TEST_DIR.joinpath("bmw_leipzig")
+        self.out_dir = TEST_DIR.joinpath("vw_wolfsburg")
 
         self.indicator = IData(
             aoi=self.aoi,
@@ -144,14 +144,18 @@ class TestAD(unittest.TestCase):
         )
 
         self.indicator_raw_file = self.indicator.out_dir.joinpath(
-            "raw", f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv"
+            "raw", f"indicator_1_rawdata_monthly_{self.orbit}_{self.pol}.csv"
         )
-        self.indicator_spline_file = self.indicator.out_dir.joinpath(
-            "spline", f"indicator_1_splinedata_{self.orbit}_{self.pol}.csv"
+        self.indicator_regression_file = self.indicator.out_dir.joinpath(
+            "regression", f"indicator_1_spline_monthly_{self.orbit}_{self.pol}.csv"
+        )
+        self.indicator_linear_regression_file = self.indicator.out_dir.joinpath(
+            "regression", f"indicator_1_linear_monthly_{self.orbit}_{self.pol}.csv"
         )
 
         anomaly = Anomaly(
-            data=self.indicator_spline_file,
+            data=self.indicator_regression_file,
+            linear_data=self.indicator_linear_regression_file,
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -159,7 +163,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_extrema()
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 15)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 12)
 
     def test_find_extrema_raw(self):
         anomaly = Anomaly(
@@ -171,7 +175,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_extrema()
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 104)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["anomaly"]]), 8)
 
     def test_anomaly_save_raw(self):
         anomaly = Anomaly(
@@ -191,9 +195,9 @@ class TestAD(unittest.TestCase):
             ).exists()
         )
 
-    def test_anomaly_save_spline(self):
+    def test_anomaly_save_regression(self):
         anomaly = Anomaly(
-            data=self.indicator_spline_file,
+            data=self.indicator_regression_file,
             anomaly_column="mean",
             out_dir=self.indicator.out_dir,
             orbit=self.orbit,
@@ -201,7 +205,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_extrema()
-        anomaly.save_spline()
+        anomaly.save_regression()
 
         self.assertTrue(
             anomaly.out_dir.joinpath(

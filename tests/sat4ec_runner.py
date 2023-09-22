@@ -24,7 +24,8 @@ class Config:
         start="2020-01-01",
         end="2020-12-31",
         monthly=False,
-        regression="spline"
+        regression="spline",
+        linear=False,
     ):
         self.orbits = orbits
         self.pols = pols
@@ -35,6 +36,7 @@ class Config:
         self.working_dir = None
         self.monthly = monthly
         self.regression = regression
+        self.linear = linear
 
     def get_loop(self):
         for index, key in enumerate(self.aois.keys()):
@@ -147,23 +149,41 @@ class Facility:
         stac.save()
 
     def plot_data(self, dpi=96, anomaly_data=None):
-        with PlotData(
-            out_dir=self.out_dir,
-            name=self.name,
-            raw_data=self.indicator.dataframe,
-            reg_data=self.indicator.regression_dataframe,
-            linear_data=self.indicator.linear_dataframe,
-            anomaly_data=anomaly_data.dataframe,
-            orbit=self.orbit,
-            monthly=self.monthly,
-        ) as plotting:
-            plotting.plot_rawdata_range()
-            plotting.plot_mean_range()
-            plotting.plot_rawdata()
-            plotting.plot_regression()
-            plotting.plot_anomalies()
-            plotting.plot_finalize()
-            plotting.save_regression(dpi=dpi)
+        if self.monthly:
+            with PlotData(
+                out_dir=self.out_dir,
+                name=self.name,
+                raw_data=self.indicator.dataframe,
+                linear_data=self.indicator.linear_dataframe,
+                anomaly_data=anomaly_data.dataframe,
+                orbit=self.orbit,
+                monthly=self.monthly,
+            ) as plotting:
+                plotting.plot_rawdata_range()
+                plotting.plot_mean_range()
+                plotting.plot_rawdata()
+                plotting.plot_anomalies()
+                plotting.plot_finalize()
+                plotting.save_raw(dpi=dpi)
+
+        else:
+            with PlotData(
+                out_dir=self.out_dir,
+                name=self.name,
+                raw_data=self.indicator.dataframe,
+                reg_data=self.indicator.regression_dataframe,
+                linear_data=self.indicator.linear_dataframe,
+                anomaly_data=anomaly_data.dataframe,
+                orbit=self.orbit,
+                monthly=self.monthly,
+            ) as plotting:
+                plotting.plot_rawdata_range()
+                plotting.plot_mean_range()
+                plotting.plot_rawdata()
+                plotting.plot_regression()
+                plotting.plot_anomalies()
+                plotting.plot_finalize()
+                plotting.save_regression(dpi=dpi)
 
 
 class Development:
@@ -422,7 +442,9 @@ class Production:
                     "--aggregate",
                     "monthly" if self.config.monthly else "daily",
                     "--regression",
-                    self.config.regression
+                    self.config.regression,
+                    "--linear",
+                    "true" if self.config.linear else "false",
                 ],
                 capture_output=False,
             )
@@ -450,8 +472,14 @@ class Production:
             facility.get_indicator()
             raw_anomalies = facility.compute_anomaly(regression=False)
             regression_anomalies = facility.compute_anomaly(regression=True)
-            facility.get_scenes(anomaly_data=regression_anomalies)
-            facility.plot_data(anomaly_data=regression_anomalies)
+
+            if self.config.monthly:
+                facility.get_scenes(anomaly_data=raw_anomalies)
+                facility.plot_data(anomaly_data=raw_anomalies)
+
+            else:
+                facility.get_scenes(anomaly_data=regression_anomalies)
+                facility.plot_data(anomaly_data=regression_anomalies)
 
 
 def get_name(name=None):
@@ -469,7 +497,10 @@ def get_name(name=None):
 
 if __name__ == "__main__":
     aoi_dir = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/AOIs")
-    orbits = ["asc", "des"]
+    orbits = [
+        "asc",
+        "des"
+    ]
 
     pols = [
         # "VV",
@@ -482,7 +513,7 @@ if __name__ == "__main__":
         # "volvo_gent": aoi_dir.joinpath("volvo_gent.geojson"),
         # "bmw_regensburg": aoi_dir.joinpath("bmw_regensburg.geojson"),
         # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson"),
-        "vw_emden": aoi_dir.joinpath("vw_emden.geojson"),
+        # "vw_emden": aoi_dir.joinpath("vw_emden.geojson"),
         "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg.geojson"),
         # "opel_ruesselsheim": aoi_dir.joinpath("opel_ruesselsheim.geojson"),
         # "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
@@ -495,10 +526,11 @@ if __name__ == "__main__":
         start="2016-01-01",
         end="2022-12-31",
         monthly=True,
-        regression="spline"
+        regression="spline",
+        linear=True,
     )
-    # prod = Production(config=conf)
-    # prod.entire_workflow()
+    prod = Production(config=conf)
+    prod.entire_workflow()
     # prod.from_raw_data()
-    dev = Development(config=conf)
-    dev.from_raw_data()
+    # dev = Development(config=conf)
+    # dev.from_raw_data()
