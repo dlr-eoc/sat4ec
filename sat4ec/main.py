@@ -26,8 +26,10 @@ def plot_data(
     raw_data=None,
     reg_data=None,
     anomaly_data=None,
+    linear_data=None,
     orbit="asc",
-    monthly=False
+    monthly=False,
+    linear=False
 ):
     with PlotData(
         out_dir=out_dir,
@@ -35,15 +37,28 @@ def plot_data(
         raw_data=raw_data,
         reg_data=reg_data,
         anomaly_data=anomaly_data,
+        linear_data=linear_data,
         orbit=orbit,
         monthly=monthly
     ) as plotting:
         plotting.plot_rawdata_range()
+
+        if linear:
+            plotting.plot_mean_range()
+
         plotting.plot_rawdata()
-        plotting.plot_regression()
+
+        if reg_data is not None:
+            plotting.plot_regression()
+
         plotting.plot_anomalies()
         plotting.plot_finalize()
-        plotting.save_regression()
+
+        if monthly:
+            plotting.save_raw()
+
+        else:
+            plotting.save_regression()
 
 
 def compute_raw_data(
@@ -83,15 +98,16 @@ def compute_raw_data(
 
 def compute_anomaly(
     df=None,
+    linear_data=None,
     anomaly_column="mean",
     out_dir=None,
     orbit="asc",
     pol="VH",
     monthly=False,
-    regression=False
 ):
     anomaly = Anomaly(
         data=df,
+        linear_data=linear_data,
         anomaly_column=anomaly_column,
         out_dir=out_dir,
         orbit=orbit,
@@ -101,11 +117,11 @@ def compute_anomaly(
 
     anomaly.find_extrema()
 
-    if regression:
-        anomaly.save_regression()
+    if monthly:
+        anomaly.save_raw()
 
     else:
-        anomaly.save_raw()
+        anomaly.save_regression()
 
     return anomaly
 
@@ -119,7 +135,8 @@ def main(
     orbit="asc",
     name="Unkown Brand",
     monthly=False,
-    regression="spline"
+    regression="spline",
+    linear=False,
 ):
     with AOI(data=aoi_data) as aoi:
         aoi.get_features()
@@ -137,19 +154,20 @@ def main(
 
         raw_anomalies = compute_anomaly(
             df=indicator.dataframe,
-            out_dir=indicator.out_dir,
-            orbit=orbit,
-            pol=pol,
-            regression=False,
-        )
-
-        reg_anomalies = compute_anomaly(
-            df=indicator.regression_dataframe,
+            linear_data=indicator.linear_dataframe,
             out_dir=indicator.out_dir,
             orbit=orbit,
             pol=pol,
             monthly=monthly,
-            regression=True
+        )
+
+        reg_anomalies = compute_anomaly(
+            df=indicator.regression_dataframe,
+            linear_data=indicator.linear_dataframe,
+            out_dir=indicator.out_dir,
+            orbit=orbit,
+            pol=pol,
+            monthly=monthly,
         )
 
         stac = StacItems(
@@ -160,15 +178,33 @@ def main(
             out_dir=indicator.out_dir,
         )
 
-        plot_data(
-            out_dir=indicator.out_dir,
-            name=name,
-            raw_data=indicator.dataframe,
-            reg_data=indicator.regression_dataframe,
-            anomaly_data=reg_anomalies.dataframe,
-            orbit=orbit,
-            monthly=monthly
-        )
+        if monthly:
+            # plot anomalies on raw data
+            plot_data(
+                out_dir=indicator.out_dir,
+                name=name,
+                raw_data=indicator.dataframe,
+                reg_data=indicator.dataframe,
+                anomaly_data=raw_anomalies.dataframe,
+                linear_data=indicator.linear_dataframe,
+                orbit=orbit,
+                monthly=monthly,
+                linear=linear
+            )
+
+        else:
+            # plot anomalies on regression data
+            plot_data(
+                out_dir=indicator.out_dir,
+                name=name,
+                raw_data=indicator.dataframe,
+                anomaly_data=reg_anomalies.dataframe,
+                reg_data=indicator.regression_dataframe,
+                linear_data=indicator.linear_dataframe,
+                orbit=orbit,
+                monthly=monthly,
+                linear=linear
+            )
 
         stac.scenes_to_df()
         stac.join_with_anomalies()
@@ -197,6 +233,15 @@ def run():
     else:
         pol = args.polarization.upper()
 
+    if args.linear[0].lower() == "true":
+        linear = True
+
+    elif args.linear[0].lower() == "false":
+        linear = False
+
+    else:
+        raise ValueError(f"The provided value {args.linear[0]} for --linear is not supported. Choose from [true, false].")
+
     if args.aggregate[0] == "daily":
         aggregate = False
 
@@ -217,7 +262,8 @@ def run():
         orbit=orbit,
         name=args.name[0],
         monthly=aggregate,
-        regression=args.regression[0]
+        regression=args.regression[0],
+        linear=linear,
     )
 
 
@@ -280,6 +326,13 @@ def create_parser():
         help="Type of the regression, default: spline.",
         choices=["spline", "poly", "rolling"],
         default="spline"
+    )
+    parser.add_argument(
+        "--linear",
+        nargs=1,
+        help="Wether to plot the linear regression with insensitive range or not, default: false.",
+        choices=["true", "false"],
+        default="false"
     )
 
     return parser

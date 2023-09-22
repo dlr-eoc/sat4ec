@@ -8,13 +8,14 @@ class Anomaly:
     def __init__(
         self,
         data=None,
+        linear_data=None,
         parameters=(10, 1.5),
         anomaly_column=None,
         out_dir=None,
         pol="VH",
         orbit="asc",
-        factor=0.25,
-        monthly=False
+        factor=0.2,
+        monthly=False,
     ):
         self.parameters = parameters
         self.column = anomaly_column  # dataframe column containing the anomaly data
@@ -29,6 +30,7 @@ class Anomaly:
         self.monthly = monthly
 
         self.indicator_df = self._get_data(data)
+        self.linear_regression_df = self._get_data(linear_data)
         self._prepare_dataframe()
         self._get_global_statistics()
 
@@ -90,11 +92,16 @@ class Anomaly:
         Anomalies on saddle points were selected as the find extrema method is executed twice on minima and maxima.
         """
         adjacent_dates = self.get_adjacent_dates()  # get adjacent anomaly dates
-        adjacent_backscatter = self.get_adjacent_backscatter()  # get adjacent anomaly values
+
+        adjacent_backscatter = (
+            self.get_adjacent_backscatter()
+        )  # get adjacent anomaly values
         self.dataframe = self.dataframe.drop(  # delete anomaly values based on date and backscatter value
-            self.dataframe.iloc[adjacent_dates].index.intersection(  # indices from date and backscatter must be euqal
-                self.dataframe.iloc[adjacent_backscatter].index
-            )
+            self.dataframe.iloc[
+                adjacent_dates].index
+            # ].index.intersection(  # indices from date and backscatter must be euqal
+            #     self.dataframe.iloc[adjacent_backscatter].index
+            # )
         )
 
     def get_adjacent_backscatter(self):
@@ -116,10 +123,11 @@ class Anomaly:
 
     def get_adjacent_dates(self, date_diff=31):
         time_diff = (
-            self.dataframe.index.to_series().diff()
+            self.dataframe.loc[self.dataframe["anomaly"]].index.to_series().diff()
         )  # get difference in days between observations
+
         cond_df = self.dataframe.loc[
-            time_diff < f"{date_diff} days"
+            (time_diff < f"{date_diff} days") & (self.dataframe["anomaly"])
         ]  # difference in days must be less than date_diff
 
         adjacent_indices = list(
@@ -132,28 +140,41 @@ class Anomaly:
         return adjacent_indices
 
     def correct_insensitive(self):
-        # correct extrema if not significantly deviating from the global mean
+        # -16.08
+        # -16.34
+        # 3.04 * 0.2 = 0.608
+        # delete extrema if not significantly deviating from the global mean
+
         upper_df = self.dataframe.loc[
-            self.dataframe[self.column]
-            > (
-                self.global_mean + self.factor * self.global_std
-            )  # greater than mean + std
+            (
+                self.dataframe[self.column]
+                < (
+                    self.linear_regression_df["mean"]
+                    + self.factor * self.linear_regression_df["std"]  # less than mean + std
+                )
+            )
+            & (self.dataframe[self.column] > self.linear_regression_df["mean"])  # greater than linear mean
         ].loc[
             self.dataframe["anomaly"]
         ]  # only include indices where anomaly is present
+
         lower_lower = self.dataframe.loc[
-            self.dataframe[self.column]
-            < (self.global_mean - self.factor * self.global_std)  # less than mean + std
+            (
+                self.dataframe[self.column]
+                > (
+                    self.linear_regression_df["mean"]
+                    - self.factor * self.linear_regression_df["std"]  # greater than mean - std
+                )
+            )
+            & (self.dataframe[self.column] < self.linear_regression_df["mean"])  # less than linear mean
         ].loc[
             self.dataframe["anomaly"]
         ]  # only include indices where anomaly is present
 
         self.dataframe = self.dataframe.drop(  # delete insensitive anomalies at index
-            index=self.dataframe.index.difference(  # compute difference to original dataframe, i.e. drop indices
-                pd.concat(
+            index=pd.concat(
                     [upper_df, lower_lower], axis=0
                 ).index  # combine upper and lower dataframe
-            )
         )
 
     def flip_data(self):
