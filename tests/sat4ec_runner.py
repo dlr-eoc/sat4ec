@@ -11,7 +11,7 @@ from sat4ec.aoi_check import AOI
 from anomaly_detection import Anomaly
 from plot_data import PlotData
 from stac import StacItems
-from system.helper_functions import get_monthly_keyword
+from system.helper_functions import get_monthly_keyword, get_last_month
 
 
 class Config:
@@ -434,8 +434,8 @@ class Production:
                     self.config.working_dir,
                     "--start_date",
                     f"{self.config.start}",
-                    "--end_date",
-                    f"{self.config.end}",
+                    # "--end_date",
+                    # f"{self.config.end}",
                     "--orbit",
                     orbit,
                     "--polarization",
@@ -520,13 +520,13 @@ if __name__ == "__main__":
         pols=pols,
         aois=aois,
         start="2016-01-01",
-        end="2022-12-31",
-        monthly=True,
+        end=get_last_month(),  # "2022-12-31"
+        monthly=False,
         regression="spline",
         linear=True,
     )
-    # prod = Production(config=conf)
+    prod = Production(config=conf)
     # prod.entire_workflow()
-    # prod.from_raw_data()
-    dev = Development(config=conf)
-    dev.from_raw_data()
+    prod.from_raw_data()
+    # dev = Development(config=conf)
+    # dev.from_raw_data()
