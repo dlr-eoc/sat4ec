@@ -515,8 +515,10 @@ if __name__ == "__main__":
         # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson"),
         # "vw_emden": aoi_dir.joinpath("vw_emden.geojson"),
         # "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg.geojson"),
+        # "vw_zwickau": aoi_dir.joinpath("vw_zwickau.geojson"),
         # "opel_ruesselsheim": aoi_dir.joinpath("opel_ruesselsheim.geojson"),
         "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
+        # "ford_koeln": aoi_dir.joinpath("ford_koeln.geojson"),
     }
 
     conf = Config(
