@@ -2,6 +2,8 @@ import logging
 import sys
 import yaml
 
+from dateutil.relativedelta import relativedelta
+from datetime import datetime
 from jsonformatter import JsonFormatter
 from pathlib import Path
 
@@ -12,6 +14,13 @@ def get_monthly_keyword(monthly=False):
 
     else:
         return ""
+
+
+def get_last_month():
+    current_date = datetime.now()
+    last_month = datetime(current_date.year, current_date.month, 1) + relativedelta(days=-1)
+
+    return datetime.strftime(last_month, "%Y-%m-%d")
 
 
 def load_yaml(yaml_path):

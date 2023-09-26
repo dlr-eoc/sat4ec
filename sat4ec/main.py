@@ -9,7 +9,7 @@ from datetime import datetime
 
 from data_retrieval import IndicatorData as IData
 from stac import StacItems
-from system.helper_functions import get_logger
+from system.helper_functions import get_logger, get_last_month
 
 # clean output directory
 # for item in Path(OUT_DIR).glob("*"):
@@ -214,12 +214,15 @@ def main(
 def run():
     args = parse_commandline_args()
 
-    if not args.start_date and not args.end_date:
-        raise ValueError(f"You must provide a start and an end date.")
+    if not args.end_date:
+        end_date = get_last_month()
+
+    else:
+        end_date = args.end_date
 
     # check if dates are in format YYYY-MM-DD
-    for _date in [args.start_date, args.end_date]:
-        _date = datetime.strptime(_date, "%Y-%m-%d")
+    for _date in [args.start_date, end_date]:
+        _date = datetime.strptime(_date, "%Y-%m-%d")  # throws an error if conversion fails
 
     if isinstance(args.orbit, list):
         orbit = args.orbit[0].lower()
@@ -257,7 +260,7 @@ def run():
         aoi_data=args.aoi_data,
         out_dir=Path(args.out_dir),
         start_date=args.start_date,
-        end_date=args.end_date,
+        end_date=end_date,
         pol=pol,
         orbit=orbit,
         name=args.name[0],
@@ -277,17 +280,20 @@ def create_parser():
         help="Path to AOI.[GEOJSON, SHP, GPKG], AOI geometry as WKT, "
         "Polygon or Multipolygon.",
         metavar="AOI",
+        required=True,
     )
     parser.add_argument(
         "--out_dir",
         default="dummy",
         help="Path to output directory.",
         metavar="OUT",
+        required=True,
     )
     parser.add_argument(
         "--start_date",
         help="Begin of the time series, as YYYY-MM-DD, like 2020-11-01",
         metavar="YYYY-MM-DD",
+        required=True,
     )
     parser.add_argument(
         "--end_date",
