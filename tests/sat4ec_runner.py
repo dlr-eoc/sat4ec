@@ -11,6 +11,7 @@ from sat4ec.aoi_check import AOI
 from anomaly_detection import Anomaly
 from plot_data import PlotData
 from stac import StacItems
+import matplotlib.dates as mdates
 from system.helper_functions import get_monthly_keyword, get_last_month
 
 
@@ -337,6 +338,9 @@ class Development:
 
         ax.set_ylabel("Sentinel-1 backscatter [dB]")
 
+        ax.xaxis.set_minor_locator(mdates.MonthLocator())  # minor ticks display months
+        ax.xaxis.set_minor_formatter(mdates.DateFormatter(""))  # minor ticks are not labelled
+
     def plot_finalize(self, show=False):
         plt.xlabel("Timestamp")
 
@@ -350,7 +354,7 @@ class Development:
             *zip(*unique), loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0)
         )
 
-        plt.tight_layout(pad=2.5)
+        # plt.tight_layout(pad=2.5)
 
         if show:  # for development
             plt.show()
@@ -511,7 +515,7 @@ if __name__ == "__main__":
         # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson"),
         # "vw_emden": aoi_dir.joinpath("vw_emden.geojson"),
         # "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg.geojson"),
-        "opel_ruesselsheim": aoi_dir.joinpath("opel_ruesselsheim.geojson"),
+        # "opel_ruesselsheim": aoi_dir.joinpath("opel_ruesselsheim.geojson"),
         "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
     }
 
