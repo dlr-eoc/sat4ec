@@ -72,7 +72,7 @@ def compute_raw_data(
     regression="spline"
 ):
     indicator = IData(
-        aoi=aoi.geometry,
+        aoi=aoi,
         out_dir=out_dir,
         start_date=start_date,
         end_date=end_date,
@@ -137,78 +137,79 @@ def main(
     monthly=False,
     regression="spline",
     linear=False,
+    aoi_split=False,
 ):
-    with AOI(data=aoi_data) as aoi:
-        aoi.get_features()
-
-        indicator = compute_raw_data(
-            aoi=aoi,
-            out_dir=out_dir,
-            start_date=start_date,
-            end_date=end_date,
-            orbit=orbit,
-            pol=pol,
-            monthly=monthly,
-            regression=regression
-        )
-
-        raw_anomalies = compute_anomaly(
-            df=indicator.dataframe,
-            linear_data=indicator.linear_dataframe,
-            out_dir=indicator.out_dir,
-            orbit=orbit,
-            pol=pol,
-            monthly=monthly,
-        )
-
-        reg_anomalies = compute_anomaly(
-            df=indicator.regression_dataframe,
-            linear_data=indicator.linear_dataframe,
-            out_dir=indicator.out_dir,
-            orbit=orbit,
-            pol=pol,
-            monthly=monthly,
-        )
-
-        stac = StacItems(
-            data=reg_anomalies.dataframe,
-            geometry=indicator.geometry,
-            orbit=indicator.orbit,
-            pol=pol,
-            out_dir=indicator.out_dir,
-        )
-
-        if monthly:
-            # plot anomalies on raw data
-            plot_data(
-                out_dir=indicator.out_dir,
-                name=name,
-                raw_data=indicator.dataframe,
-                reg_data=indicator.dataframe,
-                anomaly_data=raw_anomalies.dataframe,
-                linear_data=indicator.linear_dataframe,
+    with AOI(data=aoi_data, aoi_split=aoi_split) as aoi_collection:
+        for index, aoi in enumerate(aoi_collection.get_feature()):
+            print(index)
+            indicator = compute_raw_data(
+                aoi=aoi,
+                out_dir=out_dir,
+                start_date=start_date,
+                end_date=end_date,
                 orbit=orbit,
+                pol=pol,
                 monthly=monthly,
-                linear=linear
+                regression=regression
             )
 
-        else:
-            # plot anomalies on regression data
-            plot_data(
-                out_dir=indicator.out_dir,
-                name=name,
-                raw_data=indicator.dataframe,
-                anomaly_data=reg_anomalies.dataframe,
-                reg_data=indicator.regression_dataframe,
+            raw_anomalies = compute_anomaly(
+                df=indicator.dataframe,
                 linear_data=indicator.linear_dataframe,
+                out_dir=indicator.out_dir,
                 orbit=orbit,
+                pol=pol,
                 monthly=monthly,
-                linear=linear
             )
 
-        stac.scenes_to_df()
-        stac.join_with_anomalies()
-        stac.save()
+            reg_anomalies = compute_anomaly(
+                df=indicator.regression_dataframe,
+                linear_data=indicator.linear_dataframe,
+                out_dir=indicator.out_dir,
+                orbit=orbit,
+                pol=pol,
+                monthly=monthly,
+            )
+
+            stac = StacItems(
+                data=reg_anomalies.dataframe,
+                geometry=indicator.geometry,
+                orbit=indicator.orbit,
+                pol=pol,
+                out_dir=indicator.out_dir,
+            )
+
+            if monthly:
+                # plot anomalies on raw data
+                plot_data(
+                    out_dir=indicator.out_dir,
+                    name=f"{name}_{index}",
+                    raw_data=indicator.dataframe,
+                    reg_data=indicator.dataframe,
+                    anomaly_data=raw_anomalies.dataframe,
+                    linear_data=indicator.linear_dataframe,
+                    orbit=orbit,
+                    monthly=monthly,
+                    linear=linear
+                )
+
+            else:
+                # plot anomalies on regression data
+                plot_data(
+                    out_dir=indicator.out_dir,
+                    name=f"{name}_{index}",
+                    raw_data=indicator.dataframe,
+                    anomaly_data=reg_anomalies.dataframe,
+                    reg_data=indicator.regression_dataframe,
+                    linear_data=indicator.linear_dataframe,
+                    orbit=orbit,
+                    monthly=monthly,
+                    linear=linear
+                )
+
+            stac.scenes_to_df()
+            stac.join_with_anomalies()
+            stac.save()
 
 
 def run():
@@ -245,6 +246,15 @@ def run():
     else:
         raise ValueError(f"The provided value {args.linear[0]} for --linear is not supported. Choose from [true, false].")
 
+    if args.aoi_split[0].lower() == "true":
+        aoi_split = True
+
+    elif args.aoi_split[0].lower() == "false":
+        aoi_split = False
+
+    else:
+        raise ValueError(f"The provided value {args.aoi_split[0]} for --aoi_split is not supported. Choose from [true, false].")
+
     if args.aggregate[0] == "daily":
         aggregate = False
 
@@ -267,6 +277,7 @@ def run():
         monthly=aggregate,
         regression=args.regression[0],
         linear=linear,
+        aoi_split=aoi_split
     )
 
 
@@ -281,6 +292,13 @@ def create_parser():
         "Polygon or Multipolygon.",
         metavar="AOI",
         required=True,
+    )
+    parser.add_argument(
+        "--aoi_split",
+        nargs=1,
+        help="Wether to split the AOI into separate features or not, default: false.",
+        choices=["true", "false"],
+        default="false"
     )
     parser.add_argument(
         "--out_dir",

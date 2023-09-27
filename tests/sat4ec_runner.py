@@ -27,6 +27,7 @@ class Config:
         monthly=False,
         regression="spline",
         linear=False,
+        aoi_split=False,
     ):
         self.orbits = orbits
         self.pols = pols
@@ -38,6 +39,7 @@ class Config:
         self.monthly = monthly
         self.regression = regression
         self.linear = linear
+        self.aoi_split = aoi_split
 
     def get_loop(self):
         for index, key in enumerate(self.aois.keys()):
@@ -452,6 +454,8 @@ class Production:
                     self.config.regression,
                     "--linear",
                     "true" if self.config.linear else "false",
+                    "--aoi_split",
+                    "true" if self.config.aoi_split else "false",
                 ],
                 capture_output=False,
             )
@@ -515,8 +519,9 @@ if __name__ == "__main__":
         # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson"),
         # "vw_emden": aoi_dir.joinpath("vw_emden.geojson"),
         # "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg.geojson"),
+        "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg_multiple_features.geojson")
         # "opel_ruesselsheim": aoi_dir.joinpath("opel_ruesselsheim.geojson"),
-        "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
+        # "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
     }
 
     conf = Config(
@@ -528,9 +533,10 @@ if __name__ == "__main__":
         monthly=False,
         regression="spline",
         linear=True,
+        aoi_split=True
     )
     prod = Production(config=conf)
-    # prod.entire_workflow()
-    prod.from_raw_data()
+    prod.entire_workflow()
+    # prod.from_raw_data()
     # dev = Development(config=conf)
     # dev.from_raw_data()
