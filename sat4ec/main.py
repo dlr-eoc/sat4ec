@@ -8,6 +8,7 @@ from pathlib import Path
 from datetime import datetime
 
 from data_retrieval import IndicatorData as IData
+from data_retrieval import SubsetCollection as Subsets
 from stac import StacItems
 from system.helper_functions import get_logger, get_last_month
 
@@ -62,7 +63,7 @@ def plot_data(
 
 
 def compute_raw_data(
-    aoi=None,
+    feature=None,
     out_dir=None,
     start_date=None,
     end_date=None,
@@ -72,7 +73,8 @@ def compute_raw_data(
     regression="spline"
 ):
     indicator = IData(
-        aoi=aoi,
+        aoi=feature.geometry,
+        fid=feature.fid,
         out_dir=out_dir,
         start_date=start_date,
         end_date=end_date,
@@ -140,10 +142,11 @@ def main(
     aoi_split=False,
 ):
     with AOI(data=aoi_data, aoi_split=aoi_split) as aoi_collection:
-        for index, aoi in enumerate(aoi_collection.get_feature()):
-            print(index)
+        subsets = Subsets()
+
+        for index, feature in enumerate(aoi_collection.get_feature()):
             indicator = compute_raw_data(
-                aoi=aoi,
+                feature=feature,
                 out_dir=out_dir,
                 start_date=start_date,
                 end_date=end_date,
@@ -153,63 +156,67 @@ def main(
                 regression=regression
             )
 
-            raw_anomalies = compute_anomaly(
-                df=indicator.dataframe,
+            subsets.add_subset(df=indicator.dataframe)
+
+        subsets.aggregate()
+
+        raw_anomalies = compute_anomaly(
+            df=indicator.dataframe,
+            linear_data=indicator.linear_dataframe,
+            out_dir=indicator.out_dir,
+            orbit=orbit,
+            pol=pol,
+            monthly=monthly,
+        )
+
+        reg_anomalies = compute_anomaly(
+            df=indicator.regression_dataframe,
+            linear_data=indicator.linear_dataframe,
+            out_dir=indicator.out_dir,
+            orbit=orbit,
+            pol=pol,
+            monthly=monthly,
+        )
+
+        stac = StacItems(
+            data=reg_anomalies.dataframe,
+            geometry=indicator.geometry,
+            orbit=indicator.orbit,
+            pol=pol,
+            out_dir=indicator.out_dir,
+        )
+
+        if monthly:
+            # plot anomalies on raw data
+            plot_data(
+                out_dir=indicator.out_dir,
+                name=f"{name}_{index}",
+                raw_data=indicator.dataframe,
+                reg_data=indicator.dataframe,
+                anomaly_data=raw_anomalies.dataframe,
                 linear_data=indicator.linear_dataframe,
-                out_dir=indicator.out_dir,
                 orbit=orbit,
-                pol=pol,
                 monthly=monthly,
+                linear=linear
             )
 
-            reg_anomalies = compute_anomaly(
-                df=indicator.regression_dataframe,
+        else:
+            # plot anomalies on regression data
+            plot_data(
+                out_dir=indicator.out_dir,
+                name=f"{name}_{index}",
+                raw_data=indicator.dataframe,
+                anomaly_data=reg_anomalies.dataframe,
+                reg_data=indicator.regression_dataframe,
                 linear_data=indicator.linear_dataframe,
-                out_dir=indicator.out_dir,
                 orbit=orbit,
-                pol=pol,
                 monthly=monthly,
+                linear=linear
             )
 
-            stac = StacItems(
-                data=reg_anomalies.dataframe,
-                geometry=indicator.geometry,
-                orbit=indicator.orbit,
-                pol=pol,
-                out_dir=indicator.out_dir,
-            )
-
-            if monthly:
-                # plot anomalies on raw data
-                plot_data(
-                    out_dir=indicator.out_dir,
-                    name=f"{name}_{index}",
-                    raw_data=indicator.dataframe,
-                    reg_data=indicator.dataframe,
-                    anomaly_data=raw_anomalies.dataframe,
-                    linear_data=indicator.linear_dataframe,
-                    orbit=orbit,
-                    monthly=monthly,
-                    linear=linear
-                )
-
-            else:
-                # plot anomalies on regression data
-                plot_data(
-                    out_dir=indicator.out_dir,
-                    name=f"{name}_{index}",
-                    raw_data=indicator.dataframe,
-                    anomaly_data=reg_anomalies.dataframe,
-                    reg_data=indicator.regression_dataframe,
-                    linear_data=indicator.linear_dataframe,
-                    orbit=orbit,
-                    monthly=monthly,
-                    linear=linear
-                )
-
-            stac.scenes_to_df()
-            stac.join_with_anomalies()
-            stac.save()
+        stac.scenes_to_df()
+        stac.join_with_anomalies()
+        stac.save()
 
 
 def run():

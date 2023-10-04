@@ -12,6 +12,34 @@ import fiona
 # TODO: Compute orientation of aspect line. Orientation only from 0 to 180°.
 # TODO: Compare with S1 orbit orientation. Orbits are constant.
 
+
+class Feature:
+    def __init__(self, feature=None):
+        self.feature = feature
+
+        if self.feature is not None:
+            self._get_geometry()
+            self._get_fid()
+            self._get_azimuth_group()
+
+    def _get_geometry(self):
+        self.geometry = shape(self.feature["geometry"])
+
+    def _get_fid(self):
+        if self.feature["properties"].get("id"):  # check if feature holds column with name id
+            self.fid = self.feature["properties"]["id"]
+
+        else:
+            self.fid = self.feature["id"]
+
+    def _get_azimuth_group(self):
+        if self.feature["properties"].get("group"):
+            self.azimuth_group = self.feature["properties"]["group"]
+
+        else:
+            self.azimuth_group = None
+
+
 class AOI:
     def __init__(self, data, aoi_split=False, name="aoi"):
         self.name = name
@@ -95,27 +123,30 @@ class AOI:
 
     def get_feature(self):
         if self.geometry is not None:
-            yield self.geometry  # return geometry that has already been computed
+            feature = Feature()
+            feature.geometry = self.geometry
+            yield feature  # return feature with geometry that has already been computed
 
         else:
             if len(self.features) == 1:
-                self.geometry = shape(self.features[0]["geometry"])
-                self.build_aoi(geometry_type="Polygon", geometry=self.geometry)
+                feature = Feature(feature=self.features[0])
+                self.build_aoi(geometry_type="Polygon", geometry=feature.geometry)
 
-                yield self.geometry  # AOI holds a single feature/polygon
+                yield feature  # AOI holds a single feature/polygon
 
             elif len(self.features) > 1:
                 if self.aoi_split:
                     # duplicates functionality self.get_features, but treats features individually
-                    for feature in self.features:
-                        self.geometry = shape(feature["geometry"])
-                        yield self.geometry
+                    for f in self.features:
+                        feature = Feature(feature=f)
+                        yield feature
 
                 else:
-                    self.geometry = MultiPolygon([shape(feature["geometry"]) for feature in self.features])
-                    self.build_aoi(geometry_type="MultiPolygon", geometry=self.geometry)
+                    feature = Feature()
+                    feature.geometry = MultiPolygon([shape(feature["geometry"]) for feature in self.features])
+                    self.build_aoi(geometry_type="MultiPolygon", geometry=feature.geometry)
 
-                    yield self.geometry  # AOI holds multiple features/polygons but are merged to a multipolygon
+                    yield feature  # AOI holds multiple features/polygons but are merged to a multipolygon
 
             else:
                 raise AttributeError(f"The AOI {self.filename} does not contain any features.")

@@ -15,10 +15,28 @@ from sentinelhub import (
 )
 
 
+class SubsetCollection:
+    def __init__(self):
+        self.dataframe = None
+
+    def add_subset(self, df=None):
+        self.dataframe = pd.concat([self.dataframe, df], axis=1).sort_index()  # merge arrays
+
+    def aggregate(self):
+        for col in ["mean", "std", "min", "max"]:
+            self.dataframe[f"total_{col}"] = self.dataframe.loc[:, self.dataframe.columns.str.endswith(col)].mean(
+                axis=1)
+
+        for col in ["sample_count", "nodata_count"]:
+            self.dataframe[f"total_{col}"] = self.dataframe.loc[:, self.dataframe.columns.str.endswith(col)].sum(
+                axis=1)
+
+
 class IndicatorData(Config):
     def __init__(
         self,
         aoi=None,
+        fid=None,
         out_dir=None,
         start_date=None,
         end_date=None,
@@ -30,6 +48,7 @@ class IndicatorData(Config):
     ):
         super().__init__()
         self.aoi = aoi
+        self.fid = fid
         self.crs = crs
         self.geometry = None
         self.orbit = orbit
@@ -212,7 +231,7 @@ class IndicatorData(Config):
         self.dataframe.drop(["year", "month"], axis=1, inplace=True)
 
     def rename_column(self, src=None, dst=None):
-        self.dataframe.rename(columns={f"{src}": f"{dst}"}, inplace=True)
+        self.dataframe.rename(columns={f"{src}": f"{self.fid}_{dst}"}, inplace=True)
 
     def apply_pandas_rolling(self):
         return self.dataframe["mean"].rolling(
