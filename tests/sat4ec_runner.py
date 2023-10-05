@@ -193,7 +193,7 @@ class Development:
     def __init__(self, config=None):
         self.config = config
         self.facility = None
-        # self.config.working_dir = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/collection")
+        # self.config.working_dir = Path(r"/mnt/data1/gitlab/source/tests/testdata/collection")
 
         self._init_plot()
 
@@ -433,7 +433,7 @@ class Production:
             response = subprocess.run(
                 [
                     "python3",
-                    "../sat4ec/main.py",
+                    "../source/main.py",
                     "--aoi_data",
                     self.config.working_dir.joinpath(self.config.aois[aoi_name].name),
                     "--out_dir",
@@ -454,8 +454,6 @@ class Production:
                     self.config.regression,
                     "--linear",
                     "true" if self.config.linear else "false",
-                    "--aoi_split",
-                    "true" if self.config.aoi_split else "false",
                 ],
                 capture_output=False,
             )
@@ -519,9 +517,11 @@ if __name__ == "__main__":
         # "bmw_leipzig": aoi_dir.joinpath("bmw_leipzig.geojson"),
         # "vw_emden": aoi_dir.joinpath("vw_emden.geojson"),
         # "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg.geojson"),
+        # "vw_zwickau": aoi_dir.joinpath("vw_zwickau.geojson"),
         "vw_wolfsburg": aoi_dir.joinpath("vw_wolfsburg_multiple_features.geojson")
         # "opel_ruesselsheim": aoi_dir.joinpath("opel_ruesselsheim.geojson"),
         # "porsche_leipzig": aoi_dir.joinpath("porsche_leipzig.geojson"),
+        # "ford_koeln": aoi_dir.joinpath("ford_koeln.geojson"),
     }
 
     conf = Config(
