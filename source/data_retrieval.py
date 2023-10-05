@@ -3,8 +3,8 @@ import numpy as np
 from scipy.interpolate import splrep, BSpline
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
-from system.helper_functions import get_monthly_keyword
-from system.authentication import Config
+from source.system.helper_functions import get_monthly_keyword
+from source.system.authentication import Config
 from sentinelhub import (
     Geometry,
     CRS,

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from system.authentication import Config
+from source.system.authentication import Config
 from sentinelhub import DataCollection, SentinelHubCatalog
 from pathlib import Path
 

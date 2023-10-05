@@ -1,9 +1,9 @@
 import unittest
 
 import pandas as pd
-from sat4ec.aoi_check import AOI
-from sat4ec.data_retrieval import IndicatorData as IData
-from sat4ec.anomaly_detection import Anomaly
+from source.aoi_check import AOI
+from source.data_retrieval import IndicatorData as IData
+from source.anomaly_detection import Anomaly
 from pathlib import Path
 
 TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")

@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from sat4ec.data_retrieval import IndicatorData as IData
-from sat4ec.aoi_check import AOI
+from source.data_retrieval import IndicatorData as IData
+from source.aoi_check import AOI
 
 from sentinelhub import (
     Geometry,
