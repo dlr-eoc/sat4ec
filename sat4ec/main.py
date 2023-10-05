@@ -70,7 +70,6 @@ def compute_raw_data(
     orbit="asc",
     pol="VH",
     monthly=False,
-    regression="spline"
 ):
     indicator = IData(
         aoi=feature.geometry,
@@ -86,14 +85,6 @@ def compute_raw_data(
     indicator.get_request_grd()
     indicator.get_data()
     indicator.stats_to_df()
-    indicator.save_raw()  # save raw data
-
-    if monthly:
-        indicator.monthly_aggregate()
-        indicator.save_raw()  # save raw mothly data
-
-    indicator.apply_regression(mode=regression)
-    indicator.save_regression(mode=regression)  # save spline data
 
     return indicator
 
@@ -142,7 +133,7 @@ def main(
     aoi_split=False,
 ):
     with AOI(data=aoi_data, aoi_split=aoi_split) as aoi_collection:
-        subsets = Subsets()
+        subsets = Subsets(out_dir=out_dir, monthly=monthly, orbit=orbit, pol=pol)
 
         for index, feature in enumerate(aoi_collection.get_feature()):
             indicator = compute_raw_data(
@@ -153,12 +144,22 @@ def main(
                 orbit=orbit,
                 pol=pol,
                 monthly=monthly,
-                regression=regression
             )
 
             subsets.add_subset(df=indicator.dataframe)
 
-        subsets.aggregate()
+        subsets.aggregate_columns()
+        subsets.save_raw()  # save raw data
+
+        if monthly:
+            subsets.monthly_aggregate()
+            subsets.save_raw()  # save raw mothly data
+
+        # TODO: Call regression class on split AOIs
+        subsets.apply_regression(mode=regression)
+        subsets.save_regression(mode=regression)  # save spline data
+        # TODO: Call regression class on aggegated dataframe
+        # TODO: Aggegated dataframe needs saving, the regressed as well
 
         raw_anomalies = compute_anomaly(
             df=indicator.dataframe,
@@ -251,7 +252,8 @@ def run():
         linear = False
 
     else:
-        raise ValueError(f"The provided value {args.linear[0]} for --linear is not supported. Choose from [true, false].")
+        raise ValueError(f"The provided value {args.linear[0]} for --linear is not supported. "
+                         f"Choose from [true, false].")
 
     if args.aoi_split[0].lower() == "true":
         aoi_split = True
@@ -260,7 +262,8 @@ def run():
         aoi_split = False
 
     else:
-        raise ValueError(f"The provided value {args.aoi_split[0]} for --aoi_split is not supported. Choose from [true, false].")
+        raise ValueError(f"The provided value {args.aoi_split[0]} for --aoi_split is not supported. "
+                         f"Choose from [true, false].")
 
     if args.aggregate[0] == "daily":
         aggregate = False

@@ -23,6 +23,11 @@ def get_last_month():
     return datetime.strftime(last_month, "%Y-%m-%d")
 
 
+def create_out_dir(base_dir=None, out_dir=None):
+    if not base_dir.joinpath(out_dir).exists():
+        base_dir.joinpath(out_dir).mkdir(parents=True)
+
+
 def load_yaml(yaml_path):
     with open(yaml_path, "r") as f:
         return yaml.safe_load(f)
