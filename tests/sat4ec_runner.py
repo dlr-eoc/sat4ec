@@ -191,7 +191,7 @@ class Development:
     def __init__(self, config=None):
         self.config = config
         self.facility = None
-        # self.config.working_dir = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/collection")
+        # self.config.working_dir = Path(r"/mnt/data1/gitlab/source/tests/testdata/collection")
 
         self._init_plot()
 
@@ -431,7 +431,7 @@ class Production:
             response = subprocess.run(
                 [
                     "python3",
-                    "../sat4ec/main.py",
+                    "../source/main.py",
                     "--aoi_data",
                     self.config.working_dir.joinpath(self.config.aois[aoi_name].name),
                     "--out_dir",

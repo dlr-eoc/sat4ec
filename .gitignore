@@ -1,8 +1,9 @@
 *.jpg
 .idea/
 *.qmd
-sat4ec/__pycache__
-sat4ec/system/credentials.yaml
+source/__pycache__
+source/system/__pycache__
+source/system/credentials.yaml
 results
 credentials
 obsolete
