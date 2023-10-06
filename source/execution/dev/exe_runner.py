@@ -8,8 +8,8 @@ if __name__ == "__main__":
         aoi_dir=Path(r"input/AOIs"),
         working_dir=Path.home().joinpath("sat4ec"),
         out_dir=Path(r"output"),
-        orbits="asc",  # ascending or descending orbit
-        pols="VH",  # only use VH polarization
+        orbit="asc",  # ascending or descending orbit
+        pol="VH",  # only use VH polarization
         aoi="porsche_leipzig",
         ext="geojson",
         start="2016-01-01",

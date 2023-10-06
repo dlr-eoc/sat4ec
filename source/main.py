@@ -1,15 +1,15 @@
 import argparse
 import shutil
 import traceback
-from source.aoi_check import AOI
-from source.anomaly_detection import Anomaly
-from source.plot_data import PlotData
+from aoi_check import AOI
+from anomaly_detection import Anomaly
+from plot_data import PlotData
 from pathlib import Path
 from datetime import datetime
 
-from source.data_retrieval import IndicatorData as IData
-from source.stac import StacItems
-from source.system.helper_functions import get_logger, get_last_month
+from data_retrieval import IndicatorData as IData
+from stac import StacItems
+from system.helper_functions import get_logger, get_last_month
 
 # clean output directory
 # for item in Path(OUT_DIR).glob("*"):

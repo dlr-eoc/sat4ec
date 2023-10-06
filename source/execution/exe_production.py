@@ -10,7 +10,7 @@ class Production:
         response = subprocess.run(
             [
                 "python3",
-                "../source/main.py",
+                "source/main.py",
                 "--aoi_data",
                 self.config.aoi,
                 "--out_dir",

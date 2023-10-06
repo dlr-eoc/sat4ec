@@ -2,7 +2,7 @@ from shapely.geometry.polygon import Polygon
 from shapely.geometry.multipolygon import MultiPolygon
 from shapely.geometry import mapping, shape
 from shapely import from_wkt
-from pathlib import Path
+from pathlib import Path, PurePath
 import fiona
 
 
@@ -19,18 +19,21 @@ class AOI:
             self.filename = data
             self.load_aoi()
 
-        elif isinstance(data, str):
+        elif isinstance(Path(data), PurePath):  # path can be resolved to a pathlib object
             if Path(data).exists():
                 self.filename = Path(data)
                 self.load_aoi()
 
             else:
-                if "POLYGON" in data:  # wkt string
-                    self.geometry = from_wkt(data)
-                    self.build_aoi(geometry_type="Polygon", geometry=self.geometry)
+                raise FileNotFoundError(f"The provided path {data} does not exist.")
 
-                else:
-                    raise AttributeError(f"The provided data {data} misses the keyword POLYGON.")
+        elif isinstance(data, str):
+            if "POLYGON" in data:  # wkt string
+                self.geometry = from_wkt(data)
+                self.build_aoi(geometry_type="Polygon", geometry=self.geometry)
+
+            else:
+                raise AttributeError(f"The provided data {data} misses the keyword POLYGON.")
 
         elif isinstance(data, Polygon):
             self.geometry = data

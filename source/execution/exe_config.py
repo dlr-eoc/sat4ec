@@ -1,8 +1,8 @@
 class Config:
     def __init__(
         self,
-        orbits=None,
-        pols=None,
+        orbit="asc",
+        pol="VH",
         aoi=None,
         ext="geojson",
         working_dir=None,
@@ -14,10 +14,10 @@ class Config:
         regression="spline",
         linear=False,
     ):
-        self.orbits = orbits
-        self.pols = pols
+        self.orbit = orbit
+        self.pol = "VH"
         self.aoi_dir = aoi_dir
-        self.aoi = aoi,
+        self.aoi = aoi
         self.ext = ext
         self.start = start
         self.end = end
