@@ -1,6 +1,8 @@
 *.jpg
 .idea/
 *.qmd
+.ipynb_checkpoints
+source/execution/.ipynb_checkpoints
 source/__pycache__
 source/system/__pycache__
 source/system/credentials.yaml
