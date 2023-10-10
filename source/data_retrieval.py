@@ -5,6 +5,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from system.helper_functions import get_monthly_keyword, create_out_dir
 from system.authentication import Config
+from aoi_check import Feature
 from sentinelhub import (
     Geometry,
     CRS,
@@ -129,6 +130,10 @@ class SubsetCollection:
             self.dataframe[f"total_{col}"] = self.dataframe.loc[:, self.dataframe.columns.str.endswith(col)].sum(
                 axis=1)
 
+        total_feature = Feature()
+        total_feature.fid = "total"
+        self.add_feature(feature=total_feature)
+
     def drop_columns(self):
         self.regression_dataframe = self.regression_dataframe.T.drop_duplicates().T
         self.linear_dataframe = self.linear_dataframe.T.drop_duplicates().T
@@ -165,6 +170,8 @@ class SubsetCollection:
             regression.apply_feature_regression()
             self.add_regression_subset(df=regression.regression_dataframe)
             self.add_linear_subset(df=regression.linear_dataframe)
+
+        # self.total_regression()
 
         self.drop_columns()
 

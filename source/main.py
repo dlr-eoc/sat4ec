@@ -158,8 +158,6 @@ def main(
 
         subsets.apply_regression(mode=regression)
         subsets.save_regression(mode=regression)  # save spline data
-        # TODO: Call regression class on aggegated dataframe
-        # TODO: Aggegated dataframe needs saving, the regressed as well
 
         raw_anomalies = compute_anomaly(
             df=indicator.dataframe,
