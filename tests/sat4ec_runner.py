@@ -538,5 +538,5 @@ if __name__ == "__main__":
     prod = Production(config=conf)
     prod.entire_workflow()
     # prod.from_raw_data()
-    # dev = Development(config=conf)
-    # dev.from_raw_data()
+    dev = Development(config=conf)
+    dev.from_raw_data()

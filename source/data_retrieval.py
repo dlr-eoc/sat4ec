@@ -15,45 +15,34 @@ from sentinelhub import (
 )
 
 
-class SubsetCollection:
-    def __init__(self, out_dir=None, monthly=False, orbit="asc", pol="VH"):
-        self.dataframe = None
+class Regression:
+    def __init__(self, fid=None, df=None, mode="spline"):
+        self.mode = mode
+        self.fid = fid
+        self.dataframe = df
+        self.linear_dataframe = None
         self.regression_dataframe = None
-        self.linear_dataframe = None  # dataframe for default linear regression
-        self.out_dir = out_dir
-        self.monthly = monthly
-        self.orbit = orbit
-        self.pol = pol
 
-    def add_subset(self, df=None):
-        self.dataframe = pd.concat([self.dataframe, df], axis=1).sort_index()  # merge arrays
+    def apply_feature_regression(self):
+        self.prepare_regression()
+        self.linear_regression()
 
-    def aggregate_columns(self):
-        for col in ["mean", "std", "min", "max"]:
-            self.dataframe[f"total_{col}"] = self.dataframe.loc[:, self.dataframe.columns.str.endswith(col)].mean(
-                axis=1)
+        if self.mode == "rolling":
+            self.regression_dataframe[f"{self.fid}_mean"] = self.apply_pandas_rolling()
 
-        for col in ["sample_count", "nodata_count"]:
-            self.dataframe[f"total_{col}"] = self.dataframe.loc[:, self.dataframe.columns.str.endswith(col)].sum(
-                axis=1)
+        elif self.mode == "spline":
+            self.regression_dataframe[f"{self.fid}_mean"] = self.apply_spline()
 
-    def monthly_aggregate(self):
-        self.dataframe["year"] = self.dataframe.index.year
-        self.dataframe["month"] = self.dataframe.index.month
-        self.dataframe = self.dataframe.groupby(by=["year", "month"], as_index=False).mean()
-        self.dataframe["interval_from"] = pd.to_datetime(self.dataframe[["year", "month"]].assign(DAY=15))
-        self.dataframe = self.dataframe.set_index("interval_from")
-        self.dataframe.drop(["year", "month"], axis=1, inplace=True)
+        elif self.mode == "poly":
+            self.regression_dataframe[f"{self.fid}_mean"] = self.apply_polynomial()
 
-    def save_raw(self):
-        out_file = self.out_dir.joinpath(
-            "raw",
-            f"indicator_1_rawdata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
-        )
-        self.dataframe.to_csv(out_file)
+        else:
+            raise ValueError(f"The provided mode {self.mode} is not supported. Please choose from [rolling, spline, poly].")
+
+        self.dataframe.drop("interval_diff", axis=1, inplace=True)
 
     def apply_pandas_rolling(self):
-        return self.dataframe["mean"].rolling(
+        return self.dataframe[f"{self.fid}_mean"].rolling(
             5,
             center=True,
             closed="both",
@@ -72,7 +61,7 @@ class SubsetCollection:
         poly_reg_model = LinearRegression()
         poly = PolynomialFeatures(degree=5, include_bias=False)
         poly_features = poly.fit_transform(self.dataframe["interval_diff"].values.reshape(-1, 1))
-        poly_reg_model.fit(poly_features, self.dataframe["mean"])
+        poly_reg_model.fit(poly_features, self.dataframe[f"{self.fid}_mean"])
 
         return poly_reg_model.predict(poly_features)
 
@@ -89,48 +78,108 @@ class SubsetCollection:
         # where datapoint mean < global mean, weight < 1 and indicates lower significance
         tck = splrep(
             np.arange(len(self.dataframe)),  # numerical index on dataframe.index
-            self.dataframe["mean"].to_numpy(),  # variable to interpolate
-            w=(self.dataframe["mean"] / self.dataframe["mean"].mean()).to_numpy(),  # weights
+            self.dataframe[f"{self.fid}_mean"].to_numpy(),  # variable to interpolate
+            w=(self.dataframe[f"{self.fid}_mean"] / self.dataframe[f"{self.fid}_mean"].mean()).to_numpy(),  # weights
             s=0.25 * len(self.dataframe),
         )
 
         return BSpline(*tck)(np.arange(len(self.dataframe)))
 
     def linear_regression(self):
-        for col in ["mean", "std"]:
+        for col in [f"{self.fid}_mean", f"{self.fid}_std"]:
             predictions = self.apply_linear(column=col)
             self.regression_dataframe[col] = predictions
 
-        self.save_regression(mode="linear")
+        # self.save_regression(mode="linear")
         self.linear_dataframe = self.regression_dataframe.copy()
-        self.regression_dataframe.drop("mean", axis=1)
-        self.regression_dataframe.drop("std", axis=1)
 
-    def apply_regression(self, mode="rolling"):
-        self.prepare_regression()
-        self.linear_regression()
+        self.regression_dataframe.drop(f"{self.fid}_mean", axis=1)
+        self.regression_dataframe.drop(f"{self.fid}_std", axis=1)
 
-        if mode == "rolling":
-            predictions = self.apply_pandas_rolling()
 
-        elif mode == "spline":
-            predictions = self.apply_spline()
+class SubsetCollection:
+    def __init__(self, out_dir=None, monthly=False, orbit="asc", pol="VH"):
+        self.dataframe = None
+        self.regression_dataframe = None
+        self.linear_dataframe = None  # dataframe for default linear regression
+        self.out_dir = out_dir
+        self.monthly = monthly
+        self.orbit = orbit
+        self.pol = pol
+        self.features = []
 
-        elif mode == "poly":
-            predictions = self.apply_polynomial()
+    def add_subset(self, df=None):
+        self.dataframe = pd.concat([self.dataframe, df], axis=1).sort_index()  # merge arrays
 
-        else:
-            raise ValueError(f"The provided mode {mode} is not supported. Please choose from [rolling, spline, poly].")
+    def add_feature(self, feature=None):
+        self.features.append(feature)
 
-        self.regression_dataframe["mean"] = predictions
-        self.dataframe.drop("interval_diff", axis=1)
+    def add_regression_subset(self, df=None):
+        self.regression_dataframe = pd.concat([self.regression_dataframe, df], axis=1).sort_index()  # merge arrays
 
-    def save_regression(self, mode="linear"):
+    def add_linear_subset(self, df=None):
+        self.linear_dataframe = pd.concat([self.linear_dataframe, df], axis=1).sort_index()  # merge arrays
+
+    def aggregate_columns(self):
+        for col in ["mean", "std", "min", "max"]:
+            self.dataframe[f"total_{col}"] = self.dataframe.loc[:, self.dataframe.columns.str.endswith(col)].mean(
+                axis=1)
+
+        for col in ["sample_count", "nodata_count"]:
+            self.dataframe[f"total_{col}"] = self.dataframe.loc[:, self.dataframe.columns.str.endswith(col)].sum(
+                axis=1)
+
+    def drop_columns(self):
+        self.regression_dataframe = self.regression_dataframe.T.drop_duplicates().T
+        self.linear_dataframe = self.linear_dataframe.T.drop_duplicates().T
+
+        if "interval_from" in self.regression_dataframe.columns:
+            self.regression_dataframe.drop("interval_from", axis=1, inplace=True)
+
+        if "interval_from" in self.linear_dataframe.columns:
+            self.linear_dataframe.drop("interval_from", axis=1, inplace=True)
+
+    def monthly_aggregate(self):
+        self.dataframe["year"] = self.dataframe.index.year
+        self.dataframe["month"] = self.dataframe.index.month
+        self.dataframe = self.dataframe.groupby(by=["year", "month"], as_index=False).mean()
+        self.dataframe["interval_from"] = pd.to_datetime(self.dataframe[["year", "month"]].assign(DAY=15))
+        self.dataframe = self.dataframe.set_index("interval_from")
+        self.dataframe.drop(["year", "month"], axis=1, inplace=True)
+
+    def save_raw(self):
         out_file = self.out_dir.joinpath(
+            "raw",
+            f"indicator_1_rawdata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+        )
+        self.dataframe.to_csv(out_file)
+
+    def apply_regression(self, mode="spline"):
+        for feature in self.features:
+            regression = Regression(
+                fid=feature.fid,
+                df=self.dataframe.loc[:, self.dataframe.columns.str.startswith(f"{feature.fid}_")],
+                mode=mode
+            )
+
+            regression.apply_feature_regression()
+            self.add_regression_subset(df=regression.regression_dataframe)
+            self.add_linear_subset(df=regression.linear_dataframe)
+
+        self.drop_columns()
+
+    def save_regression(self, mode="spline"):
+        reg_out_file = self.out_dir.joinpath(
             "regression",
             f"indicator_1_{mode}_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
-        self.regression_dataframe.to_csv(out_file)
+        self.regression_dataframe.to_csv(reg_out_file)
+
+        lin_out_file = self.out_dir.joinpath(
+            "regression",
+            f"indicator_1_linear_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+        )
+        self.linear_dataframe.to_csv(lin_out_file)
 
 
 class IndicatorData(Config):

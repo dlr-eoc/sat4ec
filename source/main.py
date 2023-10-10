@@ -147,6 +147,7 @@ def main(
             )
 
             subsets.add_subset(df=indicator.dataframe)
+            subsets.add_feature(feature)
 
         subsets.aggregate_columns()
         subsets.save_raw()  # save raw data
@@ -155,7 +156,6 @@ def main(
             subsets.monthly_aggregate()
             subsets.save_raw()  # save raw mothly data
 
-        # TODO: Call regression class on split AOIs
         subsets.apply_regression(mode=regression)
         subsets.save_regression(mode=regression)  # save spline data
         # TODO: Call regression class on aggegated dataframe

@@ -16,7 +16,7 @@ if __name__ == "__main__":
         monthly=False,
         regression="spline",
         linear=True,
-        aoi_split=True,
+        aoi_split=False,
     )
     prod = Production(config=conf)
     prod.workflow(_path=r"/mnt/data1/gitlab/sat4ec/source")

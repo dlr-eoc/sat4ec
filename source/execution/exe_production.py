@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 from source.execution.exe_helper_functions import get_name
 
 
@@ -6,11 +7,11 @@ class Production:
     def __init__(self, config=None):
         self.config = config
 
-    def workflow(self):
+    def workflow(self, _path=r"source"):
         response = subprocess.run(
             [
                 "python3",
-                "source/main.py",
+                f"{Path(_path).joinpath('main.py')}",
                 "--aoi_data",
                 self.config.aoi,
                 "--out_dir",
@@ -31,6 +32,8 @@ class Production:
                 self.config.regression,
                 "--linear",
                 "true" if self.config.linear else "false",
+                "--aoi_split",
+                "true" if self.config.aoi_split else "false",
             ],
             capture_output=False,
         )

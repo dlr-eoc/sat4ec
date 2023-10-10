@@ -16,6 +16,9 @@ import fiona
 class Feature:
     def __init__(self, feature=None):
         self.feature = feature
+        self.fid = None
+        self.azimuth_group = None
+        self.geometry = None
 
         if self.feature is not None:
             self._get_geometry()
@@ -147,6 +150,7 @@ class AOI:
                 else:
                     feature = Feature()
                     feature.geometry = MultiPolygon([shape(feature["geometry"]) for feature in self.features])
+                    feature.fid = "0"
                     self.build_aoi(geometry_type="MultiPolygon", geometry=feature.geometry)
 
                     yield feature  # AOI holds multiple features/polygons but are merged to a multipolygon

@@ -13,6 +13,7 @@ class Config:
         monthly=False,
         regression="spline",
         linear=False,
+        aoi_split=False,
     ):
         self.orbit = orbit
         self.pol = "VH"
@@ -26,6 +27,7 @@ class Config:
         self.monthly = monthly
         self.regression = regression
         self.linear = linear
+        self.aoi_split = aoi_split
 
         self._get_out_dir()
         self._get_aoi_dir()
