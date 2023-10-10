@@ -1,5 +1,5 @@
 from pathlib import Path
-from source.system.helper_functions import load_yaml
+from system.helper_functions import load_yaml
 from sentinelhub import SHConfig
 
 

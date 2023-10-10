@@ -1,7 +1,10 @@
 *.jpg
 .idea/
 *.qmd
+.ipynb_checkpoints
+source/execution/.ipynb_checkpoints
 source/__pycache__
+source/execution/__pycache__
 source/system/__pycache__
 source/system/credentials.yaml
 results
@@ -9,5 +12,6 @@ credentials
 obsolete
 tests/testdata
 data
+docs
 
 !tests/testdata/AOIs/*.geojson
