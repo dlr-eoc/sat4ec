@@ -2,11 +2,11 @@ import unittest
 from pathlib import Path
 import pandas as pd
 
-from sat4ec.data_retrieval import IndicatorData as IData
-from sat4ec.aoi_check import AOI
-from sat4ec.stac import StacItems
-from sat4ec.anomaly_detection import Anomaly
-from sat4ec.system import helper_functions
+from source.data_retrieval import IndicatorData as IData
+from source.aoi_check import AOI
+from source.stac import StacItems
+from source.anomaly_detection import Anomaly
+from source.system import helper_functions
 
 from sentinelhub import SentinelHubCatalog
 from datetime import datetime

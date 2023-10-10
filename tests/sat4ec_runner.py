@@ -6,13 +6,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime, timedelta
 
-from sat4ec.data_retrieval import IndicatorData as IData
-from sat4ec.aoi_check import AOI
-from anomaly_detection import Anomaly
-from plot_data import PlotData
-from stac import StacItems
+from source.data_retrieval import IndicatorData as IData
+from source.aoi_check import AOI
+from source.anomaly_detection import Anomaly
+from source.plot_data import PlotData
+from source.stac import StacItems
 import matplotlib.dates as mdates
-from system.helper_functions import get_monthly_keyword, get_last_month
+from source.system.helper_functions import get_monthly_keyword, get_last_month
 
 
 class Config:

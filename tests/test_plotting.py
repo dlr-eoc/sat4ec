@@ -1,8 +1,8 @@
 import unittest
 
-from sat4ec.aoi_check import AOI
-from sat4ec.data_retrieval import IndicatorData as IData
-from sat4ec.plot_data import PlotData
+from source.aoi_check import AOI
+from source.data_retrieval import IndicatorData as IData
+from source.plot_data import PlotData
 from pathlib import Path
 
 TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
