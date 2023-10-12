@@ -2,7 +2,7 @@ import argparse
 import shutil
 import traceback
 from aoi_check import AOI
-from anomaly_detection import Anomaly
+from anomaly_detection import Anomaly, AnomalyCollection
 from plot_data import PlotData
 from pathlib import Path
 from datetime import datetime
@@ -97,26 +97,28 @@ def compute_anomaly(
     orbit="asc",
     pol="VH",
     monthly=False,
+    features=None,
 ):
-    anomaly = Anomaly(
+    anomalies = AnomalyCollection(
         data=df,
-        linear_data=linear_data,
         anomaly_column=anomaly_column,
+        features=features,
         out_dir=out_dir,
         orbit=orbit,
         pol=pol,
-        monthly=monthly
+        monthly=monthly,
+        linear_data=linear_data,
     )
 
-    anomaly.find_extrema()
+    anomalies.find_extrema()
 
     if monthly:
-        anomaly.save_raw()
+        anomalies.save_raw()
 
     else:
-        anomaly.save_regression()
+        anomalies.save_regression()
 
-    return anomaly
+    return anomalies
 
 
 def main(
@@ -156,25 +158,28 @@ def main(
             subsets.monthly_aggregate()
             subsets.save_raw()  # save raw mothly data
 
+        # TODO: regression on monthly data? Currently linear and spline regression are computed
         subsets.apply_regression(mode=regression)
         subsets.save_regression(mode=regression)  # save spline data
 
         raw_anomalies = compute_anomaly(
-            df=indicator.dataframe,
-            linear_data=indicator.linear_dataframe,
-            out_dir=indicator.out_dir,
+            df=subsets.dataframe,
+            linear_data=subsets.linear_dataframe,
+            out_dir=subsets.out_dir,
             orbit=orbit,
             pol=pol,
             monthly=monthly,
+            features=subsets.features,
         )
 
         reg_anomalies = compute_anomaly(
-            df=indicator.regression_dataframe,
-            linear_data=indicator.linear_dataframe,
-            out_dir=indicator.out_dir,
+            df=subsets.regression_dataframe,
+            linear_data=subsets.linear_dataframe,
+            out_dir=subsets.out_dir,
             orbit=orbit,
             pol=pol,
             monthly=monthly,
+            features=subsets.features,
         )
 
         stac = StacItems(
