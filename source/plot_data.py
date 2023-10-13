@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 
-class PlotData:
+class PlotCollection:
     def __init__(
         self,
         name=None,
@@ -19,13 +19,14 @@ class PlotData:
         orbit="asc",
         pol="VH",
         monthly=False,
+        features=None,
     ):
         self.name = name
         self.out_dir = out_dir
         self.orbit = orbit
         self.pol = pol
         self.monthly = monthly
-
+        self.features = features
         self.raw_dataframe = self._get_data(data=raw_data)
         self.reg_dataframe = self._get_data(data=reg_data)
         self.linear_dataframe = self._get_data(data=linear_data)
@@ -67,10 +68,10 @@ class PlotData:
     def __exit__(self, exc_type, exc_val, exc_tb):
         plt.close()
 
-    def plot_rawdata_range(self):
+    def plot_rawdata_range(self, fid="total"):
         plusminus = u"\u00B1"
-        upper_boundary = self.raw_dataframe["mean"] + self.raw_dataframe["std"]
-        lower_boundary = self.raw_dataframe["mean"] - self.raw_dataframe["std"]
+        upper_boundary = self.raw_dataframe[f"{fid}_mean"] + self.raw_dataframe[f"{fid}_std"]
+        lower_boundary = self.raw_dataframe[f"{fid}_mean"] - self.raw_dataframe[f"{fid}_std"]
 
         # plot of baundaries
         for boundary in [upper_boundary, lower_boundary]:
@@ -92,12 +93,53 @@ class PlotData:
             label=f"mean {plusminus} std"
         )
 
+    def plot_mean_range(self):
+        for feature in self.features:
+            feature_plot = PlotData(
+                raw_data=self.raw_dataframe.loc[
+                    :, self.raw_dataframe.columns.str.startswith(f"{feature.fid}_")
+                ],
+                reg_data=self.reg_dataframe.loc[
+                    :, self.reg_dataframe.columns.str.startswith(f"{feature.fid}_")
+                ],
+                anomaly_data=self.anomaly_dataframe.loc[
+                    :, self.anomaly_dataframe.columns.str.startswith(f"{feature.fid}_")
+                ],
+                linear_data=self.linear_dataframe.loc[
+                    :, self.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
+                ],
+                axs=self.axs,
+                fid=feature.fid,
+            )
+
+            # feature_plot.plot_rawdata()
+            feature_plot.plot_regression()
+        plt.show()
+
+
+class PlotData:
+    def __init__(
+        self,
+        raw_data=None,
+        reg_data=None,
+        linear_data=None,
+        anomaly_data=None,
+        axs=None,
+        fid=None,
+    ):
+        self.raw_dataframe = raw_data
+        self.reg_dataframe = reg_data
+        self.linear_dataframe = linear_data
+        self.anomaly_dataframe = anomaly_data
+        self.axs = axs
+        self.fid = fid
+
     def plot_rawdata(self):
         # plot of main line
         sns.lineplot(
             data=self.raw_dataframe,
             x=self.raw_dataframe.index,
-            y=self.raw_dataframe["mean"],
+            y=self.raw_dataframe[f"{self.fid}_mean"],
             legend=False,
             color="#bbbbbb",
             label="raw mean",
@@ -109,8 +151,8 @@ class PlotData:
         sns.lineplot(
             data=self.reg_dataframe,
             x=self.reg_dataframe.index,
-            y=self.reg_dataframe["mean"],
-            label="mean",
+            y=self.reg_dataframe[f"{self.fid}_mean"],
+            label=f"{self.fid}_mean",
             legend=False,
             zorder=2,
             ax=self.axs,

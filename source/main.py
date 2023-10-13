@@ -2,8 +2,8 @@ import argparse
 import shutil
 import traceback
 from aoi_check import AOI
-from anomaly_detection import Anomaly, AnomalyCollection
-from plot_data import PlotData
+from anomaly_detection import AnomalyCollection
+from plot_data import PlotCollection, PlotData
 from pathlib import Path
 from datetime import datetime
 
@@ -30,9 +30,10 @@ def plot_data(
     linear_data=None,
     orbit="asc",
     monthly=False,
-    linear=False
+    linear=False,
+    features=None,
 ):
-    with PlotData(
+    with PlotCollection(
         out_dir=out_dir,
         name=name,
         raw_data=raw_data,
@@ -40,26 +41,28 @@ def plot_data(
         anomaly_data=anomaly_data,
         linear_data=linear_data,
         orbit=orbit,
-        monthly=monthly
+        monthly=monthly,
+        features=features,
     ) as plotting:
         plotting.plot_rawdata_range()
+        plotting.plot_mean_range()
 
-        if linear:
-            plotting.plot_mean_range()
-
-        plotting.plot_rawdata()
-
-        if reg_data is not None:
-            plotting.plot_regression()
-
-        plotting.plot_anomalies()
-        plotting.plot_finalize()
-
-        if monthly:
-            plotting.save_raw()
-
-        else:
-            plotting.save_regression()
+        # if linear:
+        #     plotting.plot_mean_range()
+        #
+        # plotting.plot_rawdata()
+        #
+        # if reg_data is not None:
+        #     plotting.plot_regression()
+        #
+        # plotting.plot_anomalies()
+        # plotting.plot_finalize()
+        #
+        # if monthly:
+        #     plotting.save_raw()
+        #
+        # else:
+        #     plotting.save_regression()
 
 
 def compute_raw_data(
@@ -182,45 +185,47 @@ def main(
             features=subsets.features,
         )
 
-        stac = StacItems(
-            data=reg_anomalies.dataframe,
-            geometry=indicator.geometry,
-            orbit=indicator.orbit,
-            pol=pol,
-            out_dir=indicator.out_dir,
-        )
+        # stac = StacItems(
+        #     data=reg_anomalies.dataframe,
+        #     geometry=indicator.geometry,
+        #     orbit=indicator.orbit,
+        #     pol=pol,
+        #     out_dir=indicator.out_dir,
+        # )
 
         if monthly:
             # plot anomalies on raw data
             plot_data(
-                out_dir=indicator.out_dir,
+                out_dir=subsets.out_dir,
                 name=f"{name}_{index}",
-                raw_data=indicator.dataframe,
-                reg_data=indicator.dataframe,
+                raw_data=subsets.dataframe,
+                reg_data=subsets.dataframe,
                 anomaly_data=raw_anomalies.dataframe,
-                linear_data=indicator.linear_dataframe,
+                linear_data=subsets.linear_dataframe,
                 orbit=orbit,
                 monthly=monthly,
-                linear=linear
+                linear=linear,
+                features=subsets.features,
             )
 
         else:
             # plot anomalies on regression data
             plot_data(
-                out_dir=indicator.out_dir,
+                out_dir=subsets.out_dir,
                 name=f"{name}_{index}",
-                raw_data=indicator.dataframe,
+                raw_data=subsets.dataframe,
                 anomaly_data=reg_anomalies.dataframe,
-                reg_data=indicator.regression_dataframe,
-                linear_data=indicator.linear_dataframe,
+                reg_data=subsets.regression_dataframe,
+                linear_data=subsets.linear_dataframe,
                 orbit=orbit,
                 monthly=monthly,
-                linear=linear
+                linear=linear,
+                features=subsets.features,
             )
 
-        stac.scenes_to_df()
-        stac.join_with_anomalies()
-        stac.save()
+        # stac.scenes_to_df()
+        # stac.join_with_anomalies()
+        # stac.save()
 
 
 def run():
