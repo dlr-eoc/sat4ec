@@ -93,7 +93,7 @@ class PlotCollection:
             label=f"mean {plusminus} std"
         )
 
-    def plot_mean_range(self):
+    def plot_features(self):
         for feature in self.features:
             feature_plot = PlotData(
                 raw_data=self.raw_dataframe.loc[
@@ -112,8 +112,10 @@ class PlotCollection:
                 fid=feature.fid,
             )
 
-            # feature_plot.plot_rawdata()
+            feature_plot.plot_rawdata()
             feature_plot.plot_regression()
+            feature_plot.plot_mean_range()
+
         plt.show()
 
 
@@ -163,19 +165,13 @@ class PlotData:
         Plot a range of mean + std that defines an insensitive area where anomalies are less likely.
         """
 
-        upper_boundary = (
-            self.linear_dataframe["mean"]
-            + factor * self.linear_dataframe["std"]
-        )
-        lower_boundary = (
-            self.linear_dataframe["mean"]
-            - factor * self.linear_dataframe["std"]
-        )
+        upper_boundary = self.linear_dataframe[f"{self.fid}_mean"] + factor * self.linear_dataframe[f"{self.fid}_std"]
+        lower_boundary = self.linear_dataframe[f"{self.fid}_mean"] - factor * self.linear_dataframe[f"{self.fid}_std"]
 
         self.axs.fill_between(
-            self.linear_dataframe.index,
-            lower_boundary,
-            upper_boundary,
+            x=self.linear_dataframe.index,
+            y1=lower_boundary.tolist(),  # pandas series to list
+            y2=upper_boundary.tolist(),  # pandas series to list
             color="#dba8e5",
             alpha=0.25
         )
@@ -183,7 +179,7 @@ class PlotData:
         sns.lineplot(
             data=self.linear_dataframe,
             x=self.linear_dataframe.index,
-            y=self.linear_dataframe["mean"],
+            y=self.linear_dataframe[f"{self.fid}_mean"],
             linestyle="--",
             color="#ab84b3",
             legend=False,

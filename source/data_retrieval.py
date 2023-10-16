@@ -40,7 +40,7 @@ class Regression:
         else:
             raise ValueError(f"The provided mode {self.mode} is not supported. Please choose from [rolling, spline, poly].")
 
-        self.dataframe.drop("interval_diff", axis=1, inplace=True)
+        self.dataframe = self.dataframe.drop("interval_diff", axis=1, inplace=False)
 
     def apply_pandas_rolling(self):
         return self.dataframe[f"{self.fid}_mean"].rolling(
@@ -55,7 +55,7 @@ class Regression:
         date_range = pd.date_range(freq="1D", start=self.dataframe.index[0], end=self.dataframe.index[-1])
 
         self.regression_dataframe = pd.DataFrame({"interval_from": self.dataframe.index}, index=self.dataframe.index)
-        self.dataframe["interval_diff"] = time_diff  # temporary
+        self.dataframe.loc[:, "interval_diff"] = time_diff  # temporary
         self.linear_dataframe = pd.DataFrame({"interval_diff": np.arange(time_diff[-1]+1)}, index=date_range)
 
     def apply_polynomial(self):

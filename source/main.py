@@ -45,7 +45,7 @@ def plot_data(
         features=features,
     ) as plotting:
         plotting.plot_rawdata_range()
-        plotting.plot_mean_range()
+        plotting.plot_features()
 
         # if linear:
         #     plotting.plot_mean_range()

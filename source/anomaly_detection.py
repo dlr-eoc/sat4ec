@@ -252,8 +252,9 @@ class Anomaly:
             negative.index, self.column
         ].add(negative[self.column].subtract(self.global_mean).abs().mul(2))
 
-        self.dataframe[
-            f"{self.fid}_anomaly"
+        self.dataframe.loc[
+            :,  # all rows
+            f"{self.fid}_anomaly"  # index of column
         ] = False  # boolean values were overwritten before and must be reset
         self.dataframe.loc[
             init_bloolean.index, f"{self.fid}_anomaly"
