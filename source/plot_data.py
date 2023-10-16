@@ -20,6 +20,7 @@ class PlotCollection:
         pol="VH",
         monthly=False,
         features=None,
+        max_cols=2,
     ):
         self.name = name
         self.out_dir = out_dir
@@ -27,6 +28,7 @@ class PlotCollection:
         self.pol = pol
         self.monthly = monthly
         self.features = features
+        self.max_cols = max_cols
         self.raw_dataframe = self._get_data(data=raw_data)
         self.reg_dataframe = self._get_data(data=reg_data)
         self.linear_dataframe = self._get_data(data=linear_data)
@@ -57,10 +59,35 @@ class PlotCollection:
         return df
 
     def _get_subplots(self):
-        self.fig, self.axs = plt.subplots(1, 1, figsize=(20, 10))
+        if len(self.features) <= self.max_cols-1:
+            nrows = 1
+            ncols = len(self.features) + 1
+
+        else:  # len(self.features) > max_cols-1
+            if len(self.features) % self.max_cols == 0:  # e.g. 8 % 4 = 0
+                nrows = len(self.features) / self.max_cols + 1
+                ncols = self.max_cols
+
+            else:
+                nrows = len(self.features) // self.max_cols + 1
+                ncols = self.max_cols
+
+        self.fig, self.axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(20, 10))
 
     def _get_long_orbit(self):
         self.long_orbit = "ascending" if self.orbit == "asc" else "descending"
+
+    def _get_plot_axis(self, index=0):
+        row = index // self.max_cols
+        col = index % self.max_cols
+
+        if self.axs.shape == (4,):
+            ax = self.axs[col]
+
+        else:
+            ax = self.axs[row][col]
+
+        return ax
 
     def __enter__(self):
         return self
@@ -94,7 +121,7 @@ class PlotCollection:
         )
 
     def plot_features(self):
-        for feature in self.features:
+        for index, feature in enumerate(self.features):
             feature_plot = PlotData(
                 raw_data=self.raw_dataframe.loc[
                     :, self.raw_dataframe.columns.str.startswith(f"{feature.fid}_")
@@ -108,7 +135,7 @@ class PlotCollection:
                 linear_data=self.linear_dataframe.loc[
                     :, self.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
                 ],
-                axs=self.axs,
+                ax=self._get_plot_axis(index=index),
                 fid=feature.fid,
                 orbit=self.orbit,
                 pol=self.pol,
@@ -137,7 +164,7 @@ class PlotData:
         reg_data=None,
         linear_data=None,
         anomaly_data=None,
-        axs=None,
+        ax=None,
         fid=None,
         orbit=None,
         pol=None,
@@ -148,7 +175,7 @@ class PlotData:
         self.reg_dataframe = reg_data
         self.linear_dataframe = linear_data
         self.anomaly_dataframe = anomaly_data
-        self.axs = axs
+        self.ax = ax
         self.fid = fid
         self.orbit = orbit
         self.pol = pol
@@ -165,7 +192,7 @@ class PlotData:
             color="#bbbbbb",
             label="raw mean",
             zorder=1,
-            ax=self.axs,
+            ax=self.ax,
         )
 
     def plot_regression(self):
@@ -176,7 +203,7 @@ class PlotData:
             label=f"{self.fid}_mean",
             legend=False,
             zorder=2,
-            ax=self.axs,
+            ax=self.ax,
         )
 
     def plot_mean_range(self, factor=0.2):
@@ -187,7 +214,7 @@ class PlotData:
         upper_boundary = self.linear_dataframe[f"{self.fid}_mean"] + factor * self.linear_dataframe[f"{self.fid}_std"]
         lower_boundary = self.linear_dataframe[f"{self.fid}_mean"] - factor * self.linear_dataframe[f"{self.fid}_std"]
 
-        self.axs.fill_between(
+        self.ax.fill_between(
             x=self.linear_dataframe.index,
             y1=lower_boundary.tolist(),  # pandas series to list
             y2=upper_boundary.tolist(),  # pandas series to list
@@ -215,7 +242,7 @@ class PlotData:
             color="red",
             label="anomaly",
             legend=False,
-            ax=self.axs,
+            ax=self.ax,
         )
 
     def plot_finalize(self, show=False):
@@ -235,8 +262,8 @@ class PlotData:
         #         + timedelta(days=7),
         #     )
 
-        self.axs.xaxis.set_minor_locator(mdates.MonthLocator())  # minor ticks display months
-        self.axs.xaxis.set_minor_formatter(mdates.DateFormatter(""))  # minor ticks are not labelled
+        self.ax.xaxis.set_minor_locator(mdates.MonthLocator())  # minor ticks display months
+        self.ax.xaxis.set_minor_formatter(mdates.DateFormatter(""))  # minor ticks are not labelled
 
         # self.fig.legend(loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0))
         plt.tight_layout(pad=2.5)
