@@ -43,19 +43,8 @@ def plot_data(
         monthly=monthly,
         features=features,
     ) as plotting:
-        # plotting.plot_rawdata_range()
         plotting.plot_features()
 
-        # if linear:
-        #     plotting.plot_mean_range()
-        #
-        # plotting.plot_rawdata()
-        #
-        # if reg_data is not None:
-        #     plotting.plot_regression()
-        #
-        # plotting.plot_anomalies()
-        # plotting.plot_finalize()
         #
         # if monthly:
         #     plotting.save_raw()

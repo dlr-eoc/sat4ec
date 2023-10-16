@@ -143,6 +143,8 @@ class PlotCollection:
                 monthly=self.monthly,
             )
 
+            feature_plot.plot_rawdata_range()
+
             if self.linear_dataframe is not None:
                 feature_plot.plot_mean_range()
 
@@ -193,6 +195,31 @@ class PlotData:
             label="raw mean",
             zorder=1,
             ax=self.ax,
+        )
+
+    def plot_rawdata_range(self):
+        plusminus = u"\u00B1"
+        upper_boundary = self.raw_dataframe[f"{self.fid}_mean"] + self.raw_dataframe[f"{self.fid}_std"]
+        lower_boundary = self.raw_dataframe[f"{self.fid}_mean"] - self.raw_dataframe[f"{self.fid}_std"]
+
+        # plot of baundaries
+        for boundary in [upper_boundary, lower_boundary]:
+            sns.lineplot(
+                data=self.raw_dataframe,
+                x=self.raw_dataframe.index,
+                y=boundary,
+                color="#d3d3d3",
+                alpha=0,
+                legend=False,
+            )
+
+        # fill space between boundaries
+        self.ax.fill_between(
+            self.raw_dataframe.index,
+            lower_boundary,
+            upper_boundary,
+            color="#ebebeb",
+            label=f"mean {plusminus} std"
         )
 
     def plot_regression(self):
