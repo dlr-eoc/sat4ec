@@ -112,9 +112,10 @@ class PlotCollection:
                 fid=feature.fid,
             )
 
-            feature_plot.plot_rawdata()
+            # feature_plot.plot_rawdata()
             feature_plot.plot_regression()
-            feature_plot.plot_mean_range()
+            # feature_plot.plot_mean_range()
+            feature_plot.plot_anomalies()
 
         plt.show()
 
@@ -187,9 +188,9 @@ class PlotData:
 
     def plot_anomalies(self):
         sns.scatterplot(
-            data=self.anomaly_dataframe.loc[self.anomaly_dataframe["anomaly"]],
-            x=self.anomaly_dataframe.loc[self.anomaly_dataframe["anomaly"]].index,
-            y=self.anomaly_dataframe.loc[self.anomaly_dataframe["anomaly"]]["mean"],
+            data=self.anomaly_dataframe.loc[self.anomaly_dataframe[f"{self.fid}_anomaly"]],
+            x=self.anomaly_dataframe.loc[self.anomaly_dataframe[f"{self.fid}_anomaly"]].index,
+            y=self.anomaly_dataframe.loc[self.anomaly_dataframe[f"{self.fid}_anomaly"]][f"{self.fid}_mean"],
             marker="o",
             s=25,
             zorder=3,
