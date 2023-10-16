@@ -110,12 +110,22 @@ class PlotCollection:
                 ],
                 axs=self.axs,
                 fid=feature.fid,
+                orbit=self.orbit,
+                pol=self.pol,
+                long_orbit=self.long_orbit,
+                monthly=self.monthly,
             )
 
-            # feature_plot.plot_rawdata()
-            feature_plot.plot_regression()
-            # feature_plot.plot_mean_range()
+            if self.linear_dataframe is not None:
+                feature_plot.plot_mean_range()
+
+            feature_plot.plot_rawdata()
+
+            if self.reg_dataframe is not None:
+                feature_plot.plot_regression()
+
             feature_plot.plot_anomalies()
+            feature_plot.plot_finalize()
 
         plt.show()
 
@@ -129,6 +139,10 @@ class PlotData:
         anomaly_data=None,
         axs=None,
         fid=None,
+        orbit=None,
+        pol=None,
+        long_orbit=None,
+        monthly=False,
     ):
         self.raw_dataframe = raw_data
         self.reg_dataframe = reg_data
@@ -136,6 +150,10 @@ class PlotData:
         self.anomaly_dataframe = anomaly_data
         self.axs = axs
         self.fid = fid
+        self.orbit = orbit
+        self.pol = pol
+        self.long_orbit = long_orbit
+        self.monthly = monthly
 
     def plot_rawdata(self):
         # plot of main line
@@ -201,26 +219,26 @@ class PlotData:
         )
 
     def plot_finalize(self, show=False):
-        plt.title(f"{self.name} {self.pol} polarization, {self.long_orbit} orbit")
+        plt.title(f"{self.pol} polarization, {self.long_orbit} orbit")
         plt.ylabel("Sentinel-1 backscatter [dB]")
         plt.xlabel("Timestamp")
 
         plt.ylim(
-            (self.raw_dataframe["mean"] - self.raw_dataframe["std"]).min() - 1,
-            (self.raw_dataframe["mean"] + self.raw_dataframe["std"]).max() + 1,
+            (self.raw_dataframe[f"{self.fid}_mean"] - self.raw_dataframe[f"{self.fid}_std"]).min() - 1,
+            (self.raw_dataframe[f"{self.fid}_mean"] + self.raw_dataframe[f"{self.fid}_std"]).max() + 1,
         )
 
-        if not self.monthly:
-            plt.xlim(
-                datetime.date(self.raw_dataframe.index[0]) - timedelta(days=7),
-                datetime.date(pd.to_datetime(self.raw_dataframe["interval_to"][-1]))
-                + timedelta(days=7),
-            )
+        # if not self.monthly:
+        #     plt.xlim(
+        #         datetime.date(self.raw_dataframe.index[0]) - timedelta(days=7),
+        #         datetime.date(pd.to_datetime(self.raw_dataframe["interval_to"][-1]))
+        #         + timedelta(days=7),
+        #     )
 
         self.axs.xaxis.set_minor_locator(mdates.MonthLocator())  # minor ticks display months
         self.axs.xaxis.set_minor_formatter(mdates.DateFormatter(""))  # minor ticks are not labelled
 
-        self.fig.legend(loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0))
+        # self.fig.legend(loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0))
         plt.tight_layout(pad=2.5)
 
         if show:  # for development
