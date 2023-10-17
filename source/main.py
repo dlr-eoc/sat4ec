@@ -30,6 +30,7 @@ def plot_data(
     linear_data=None,
     orbit="asc",
     monthly=False,
+    linear=False,
     features=None,
 ):
     with PlotCollection(
@@ -41,6 +42,7 @@ def plot_data(
         linear_data=linear_data,
         orbit=orbit,
         monthly=monthly,
+        linear=linear,
         features=features,
     ) as plotting:
         plotting.plot_features()
@@ -192,6 +194,7 @@ def main(
                 linear_data=subsets.linear_dataframe,
                 orbit=orbit,
                 monthly=monthly,
+                linear=linear,
                 features=subsets.features,
             )
 
@@ -206,6 +209,7 @@ def main(
                 linear_data=subsets.linear_dataframe,
                 orbit=orbit,
                 monthly=monthly,
+                linear=linear,
                 features=subsets.features,
             )
 

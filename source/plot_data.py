@@ -20,6 +20,7 @@ class PlotCollection:
         orbit="asc",
         pol="VH",
         monthly=False,
+        linear=False,
         features=None,
         max_cols=2,
     ):
@@ -28,6 +29,7 @@ class PlotCollection:
         self.orbit = orbit
         self.pol = pol
         self.monthly = monthly
+        self.linear = linear  # wether to plot linear regression and insensitive area or not
         self.features = features
         self.max_cols = max_cols
         self.raw_dataframe = self._get_data(data=raw_data)
@@ -156,7 +158,7 @@ class PlotCollection:
 
             feature_plot.plot_rawdata_range()
 
-            if self.linear_dataframe is not None:
+            if self.linear:
                 feature_plot.plot_mean_range()
 
             feature_plot.plot_rawdata()
