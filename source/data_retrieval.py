@@ -172,8 +172,6 @@ class SubsetCollection:
             self.add_regression_subset(df=regression.regression_dataframe)
             self.add_linear_subset(df=regression.linear_dataframe)
 
-        # self.total_regression()
-
         self.drop_columns()
 
     def save_regression(self, mode="spline"):

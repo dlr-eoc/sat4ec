@@ -1,9 +1,10 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
 import pandas as pd
 import matplotlib.dates as mdates
 from system.helper_functions import get_monthly_keyword
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 
 
@@ -63,7 +64,9 @@ class PlotCollection:
             nrows = 1
             ncols = len(self.features)
 
-        elif len(self.features[:-1]) == self.max_cols:  # features fill first row, total fills next row
+        elif (
+            len(self.features[:-1]) == self.max_cols
+        ):  # features fill first row, total fills next row
             nrows = 2
             ncols = self.max_cols
 
@@ -100,9 +103,13 @@ class PlotCollection:
         plt.close()
 
     def plot_rawdata_range(self, fid="total"):
-        plusminus = u"\u00B1"
-        upper_boundary = self.raw_dataframe[f"{fid}_mean"] + self.raw_dataframe[f"{fid}_std"]
-        lower_boundary = self.raw_dataframe[f"{fid}_mean"] - self.raw_dataframe[f"{fid}_std"]
+        plusminus = "\u00B1"
+        upper_boundary = (
+            self.raw_dataframe[f"{fid}_mean"] + self.raw_dataframe[f"{fid}_std"]
+        )
+        lower_boundary = (
+            self.raw_dataframe[f"{fid}_mean"] - self.raw_dataframe[f"{fid}_std"]
+        )
 
         # plot of baundaries
         for boundary in [upper_boundary, lower_boundary]:
@@ -121,7 +128,7 @@ class PlotCollection:
             lower_boundary,
             upper_boundary,
             color="#ebebeb",
-            label=f"mean {plusminus} std"
+            label=f"mean {plusminus} std",
         )
 
     def plot_features(self):
@@ -159,14 +166,17 @@ class PlotCollection:
 
             feature_plot.plot_anomalies()
 
-    def finalize(self, show=False):
+    def plot_annotations(self):
         plt.title(f"{self.name} {self.pol} polarization, {self.long_orbit} orbit")
         plt.ylabel("Sentinel-1 backscatter [dB]")
         plt.xlabel("Timestamp")
 
+    def axes_limits(self):
         plt.ylim(
-            (self.raw_dataframe["total_mean"] - self.raw_dataframe["total_std"]).min() - 1,
-            (self.raw_dataframe["total_mean"] + self.raw_dataframe["total_std"]).max() + 1,
+            (self.raw_dataframe["total_mean"] - self.raw_dataframe["total_std"]).min()
+            - 1,
+            (self.raw_dataframe["total_mean"] + self.raw_dataframe["total_std"]).max()
+            + 1,
         )
 
         if not self.monthly:
@@ -176,16 +186,67 @@ class PlotCollection:
                 + timedelta(days=7),
             )
 
+    def axes_ticks(self):
         for ax in self.axs.flatten():
-            ax.xaxis.set_minor_locator(mdates.MonthLocator())  # minor ticks display months
-            ax.xaxis.set_minor_formatter(mdates.DateFormatter(""))  # minor ticks are not labelled
+            ax.xaxis.set_minor_locator(
+                mdates.MonthLocator()
+            )  # minor ticks display months
+            ax.xaxis.set_minor_formatter(
+                mdates.DateFormatter("")
+            )  # minor ticks are not labelled
 
-        self.fig.legend(loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0))
-        plt.tight_layout(pad=2.5)
-
+    def unused_subplots(self):
         # delete unused subplots
-        for i in range(len(self.axs.flatten()) - len(self.features)):  # get count of empty subplots
+        for i in range(
+            len(self.axs.flatten()) - len(self.features)
+        ):  # get count of empty subplots
             self.fig.delaxes(self.axs.flatten()[len(self.axs.flatten()) - 1 - i])
+
+    @staticmethod
+    def delete_subplot_legend_items(handles=None, labels=None):
+        """
+        Figure legend has subplot labels like ["0_mean", "1_mean", "total_mean", "raw mean"].
+        Make general labels like ["mean", "raw mean"], i.e. truncate "0", "1" and "total".
+        """
+
+        label_candidates = [item for item in labels if "_" in item]  # get labels with _ sign
+        label_indices = [i for i, item in enumerate(labels) if "_" in item]  # get indices of labels with _ sign
+        labels[label_indices[-1]] = "interpol."  # alter last element to draw it in the legend
+        del label_candidates[-1]  # remove last element from list
+        del label_indices[-1]  # remove last element from list
+
+        # delete remaining handles and labels with _ sign
+        for i in reversed(label_indices):
+            handles = np.delete(handles, i)
+            labels = np.delete(labels, i)
+
+        return handles, labels
+
+    def plot_legend(self):
+        # get handles and labels from each subplot
+        handles = [ax.get_legend_handles_labels()[0] for ax in self.fig.axes]
+        labels = [ax.get_legend_handles_labels()[1] for ax in self.fig.axes]
+
+        # merge into broader lists, originals were like [[handle 1, handle 2], [handle 3, handle 4]]
+        handles = [item for sub in handles for item in sub]
+        labels = [item for sub in labels for item in sub]
+
+        uniques, indices = np.unique(labels, return_index=True)  # get unique labels and their indices
+        handles = np.array(handles)[np.array(indices)]  # get handles at unique indices
+        labels = np.array(labels)[np.array(indices)]  # get labels at unique indices
+        handles, labels = self.delete_subplot_legend_items(handles=handles, labels=labels)
+        uniques = [(h, l) for i, (h, l) in enumerate(zip(handles, labels))]  # arrange handles and labels as pairs
+
+        self.fig.legend(*zip(*uniques), loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0))
+
+    def finalize(self, show=False):
+        self.unused_subplots()
+        self.plot_annotations()
+        self.axes_limits()
+        self.axes_ticks()
+        self.plot_legend()
+
+        plt.tight_layout(pad=2.5)
 
         if show:  # for development
             plt.show()
@@ -256,9 +317,15 @@ class PlotData:
         )
 
     def plot_rawdata_range(self):
-        plusminus = u"\u00B1"
-        upper_boundary = self.raw_dataframe[f"{self.fid}_mean"] + self.raw_dataframe[f"{self.fid}_std"]
-        lower_boundary = self.raw_dataframe[f"{self.fid}_mean"] - self.raw_dataframe[f"{self.fid}_std"]
+        plusminus = "\u00B1"
+        upper_boundary = (
+            self.raw_dataframe[f"{self.fid}_mean"]
+            + self.raw_dataframe[f"{self.fid}_std"]
+        )
+        lower_boundary = (
+            self.raw_dataframe[f"{self.fid}_mean"]
+            - self.raw_dataframe[f"{self.fid}_std"]
+        )
 
         # plot of baundaries
         for boundary in [upper_boundary, lower_boundary]:
@@ -277,7 +344,7 @@ class PlotData:
             lower_boundary.tolist(),  # pandas series to list
             upper_boundary.tolist(),  # pandas series to list
             color="#ebebeb",
-            label=f"mean {plusminus} std"
+            label=f"mean {plusminus} std",
         )
 
     def plot_regression(self):
@@ -296,15 +363,21 @@ class PlotData:
         Plot a range of mean + std that defines an insensitive area where anomalies are less likely.
         """
 
-        upper_boundary = self.linear_dataframe[f"{self.fid}_mean"] + factor * self.linear_dataframe[f"{self.fid}_std"]
-        lower_boundary = self.linear_dataframe[f"{self.fid}_mean"] - factor * self.linear_dataframe[f"{self.fid}_std"]
+        upper_boundary = (
+            self.linear_dataframe[f"{self.fid}_mean"]
+            + factor * self.linear_dataframe[f"{self.fid}_std"]
+        )
+        lower_boundary = (
+            self.linear_dataframe[f"{self.fid}_mean"]
+            - factor * self.linear_dataframe[f"{self.fid}_std"]
+        )
 
         self.ax.fill_between(
             x=self.linear_dataframe.index,
             y1=lower_boundary.tolist(),  # pandas series to list
             y2=upper_boundary.tolist(),  # pandas series to list
             color="#dba8e5",
-            alpha=0.25
+            alpha=0.25,
         )
 
         sns.lineplot(
@@ -319,9 +392,15 @@ class PlotData:
 
     def plot_anomalies(self):
         sns.scatterplot(
-            data=self.anomaly_dataframe.loc[self.anomaly_dataframe[f"{self.fid}_anomaly"]],
-            x=self.anomaly_dataframe.loc[self.anomaly_dataframe[f"{self.fid}_anomaly"]].index,
-            y=self.anomaly_dataframe.loc[self.anomaly_dataframe[f"{self.fid}_anomaly"]][f"{self.fid}_mean"],
+            data=self.anomaly_dataframe.loc[
+                self.anomaly_dataframe[f"{self.fid}_anomaly"]
+            ],
+            x=self.anomaly_dataframe.loc[
+                self.anomaly_dataframe[f"{self.fid}_anomaly"]
+            ].index,
+            y=self.anomaly_dataframe.loc[self.anomaly_dataframe[f"{self.fid}_anomaly"]][
+                f"{self.fid}_mean"
+            ],
             marker="o",
             s=25,
             zorder=3,
@@ -330,55 +409,3 @@ class PlotData:
             legend=False,
             ax=self.ax,
         )
-
-    def plot_finalize(self, show=False):
-        plt.title(f"{self.pol} polarization, {self.long_orbit} orbit")
-        plt.ylabel("Sentinel-1 backscatter [dB]")
-        plt.xlabel("Timestamp")
-
-        plt.ylim(
-            (self.raw_dataframe[f"{self.fid}_mean"] - self.raw_dataframe[f"{self.fid}_std"]).min() - 1,
-            (self.raw_dataframe[f"{self.fid}_mean"] + self.raw_dataframe[f"{self.fid}_std"]).max() + 1,
-        )
-
-        # if not self.monthly:
-        #     plt.xlim(
-        #         datetime.date(self.raw_dataframe.index[0]) - timedelta(days=7),
-        #         datetime.date(pd.to_datetime(self.raw_dataframe["interval_to"][-1]))
-        #         + timedelta(days=7),
-        #     )
-
-        self.ax.xaxis.set_minor_locator(mdates.MonthLocator())  # minor ticks display months
-        self.ax.xaxis.set_minor_formatter(mdates.DateFormatter(""))  # minor ticks are not labelled
-
-        # self.fig.legend(loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0))
-        plt.tight_layout(pad=2.5)
-
-        if show:  # for development
-            plt.show()
-
-    def correct_name(self):
-        self.name = self.name.lower()
-
-        if " " in self.name:
-            self.name = "_".join(self.name.split(" "))
-
-    def save_regression(self, dpi=96):
-        self.correct_name()
-
-        out_file = self.out_dir.joinpath(
-            "plot",
-            f"indicator_1_{self.name}_interpolated_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.png",
-        )
-
-        self.fig.savefig(out_file, dpi=dpi)
-
-    def save_raw(self, dpi=96):
-        self.correct_name()
-
-        out_file = self.out_dir.joinpath(
-            "plot",
-            f"indicator_1_{self.name}_rawdata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.png",
-        )
-
-        self.fig.savefig(out_file, dpi=dpi)

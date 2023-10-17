@@ -46,12 +46,11 @@ def plot_data(
         plotting.plot_features()
         plotting.finalize(show=True)
 
-        #
-        # if monthly:
-        #     plotting.save_raw()
-        #
-        # else:
-        #     plotting.save_regression()
+        if monthly:
+            plotting.save_raw()
+
+        else:
+            plotting.save_regression()
 
 
 def compute_raw_data(
