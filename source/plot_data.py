@@ -59,17 +59,21 @@ class PlotCollection:
         return df
 
     def _get_subplots(self):
-        if len(self.features) <= self.max_cols-1:
+        if len(self.features[:-1]) < self.max_cols:
             nrows = 1
-            ncols = len(self.features) + 1
+            ncols = len(self.features)
 
-        else:  # len(self.features) > max_cols-1
+        elif len(self.features[:-1]) == self.max_cols:  # features fill first row, total fills next row
+            nrows = 2
+            ncols = self.max_cols
+
+        else:  # len(self.features) > max_cols
             if len(self.features) % self.max_cols == 0:  # e.g. 8 % 4 = 0
-                nrows = len(self.features) / self.max_cols + 1
+                nrows = len(self.features) / self.max_cols
                 ncols = self.max_cols
 
             else:
-                nrows = len(self.features) // self.max_cols + 1
+                nrows = len(self.features) // self.max_cols
                 ncols = self.max_cols
 
         self.fig, self.axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(20, 10))
@@ -81,7 +85,7 @@ class PlotCollection:
         row = index // self.max_cols
         col = index % self.max_cols
 
-        if self.axs.shape == (4,):
+        if self.axs.shape == (self.max_cols,):
             ax = self.axs[col]
 
         else:
@@ -154,9 +158,63 @@ class PlotCollection:
                 feature_plot.plot_regression()
 
             feature_plot.plot_anomalies()
-            feature_plot.plot_finalize()
 
-        plt.show()
+    def finalize(self, show=False):
+        plt.title(f"{self.name} {self.pol} polarization, {self.long_orbit} orbit")
+        plt.ylabel("Sentinel-1 backscatter [dB]")
+        plt.xlabel("Timestamp")
+
+        plt.ylim(
+            (self.raw_dataframe["total_mean"] - self.raw_dataframe["total_std"]).min() - 1,
+            (self.raw_dataframe["total_mean"] + self.raw_dataframe["total_std"]).max() + 1,
+        )
+
+        if not self.monthly:
+            plt.xlim(
+                self.raw_dataframe.index[0].to_pydatetime() - timedelta(days=7),
+                pd.to_datetime(self.raw_dataframe["interval_to"][-1]).to_pydatetime()
+                + timedelta(days=7),
+            )
+
+        for ax in self.axs.flatten():
+            ax.xaxis.set_minor_locator(mdates.MonthLocator())  # minor ticks display months
+            ax.xaxis.set_minor_formatter(mdates.DateFormatter(""))  # minor ticks are not labelled
+
+        self.fig.legend(loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0))
+        plt.tight_layout(pad=2.5)
+
+        # delete unused subplots
+        for i in range(len(self.axs.flatten()) - len(self.features)):  # get count of empty subplots
+            self.fig.delaxes(self.axs.flatten()[len(self.axs.flatten()) - 1 - i])
+
+        if show:  # for development
+            plt.show()
+
+    def correct_name(self):
+        self.name = self.name.lower()
+
+        if " " in self.name:
+            self.name = "_".join(self.name.split(" "))
+
+    def save_regression(self, dpi=96):
+        self.correct_name()
+
+        out_file = self.out_dir.joinpath(
+            "plot",
+            f"indicator_1_{self.name}_interpolated_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.png",
+        )
+
+        self.fig.savefig(out_file, dpi=dpi)
+
+    def save_raw(self, dpi=96):
+        self.correct_name()
+
+        out_file = self.out_dir.joinpath(
+            "plot",
+            f"indicator_1_{self.name}_rawdata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.png",
+        )
+
+        self.fig.savefig(out_file, dpi=dpi)
 
 
 class PlotData:
@@ -216,8 +274,8 @@ class PlotData:
         # fill space between boundaries
         self.ax.fill_between(
             self.raw_dataframe.index,
-            lower_boundary,
-            upper_boundary,
+            lower_boundary.tolist(),  # pandas series to list
+            upper_boundary.tolist(),  # pandas series to list
             color="#ebebeb",
             label=f"mean {plusminus} std"
         )
@@ -256,6 +314,7 @@ class PlotData:
             linestyle="--",
             color="#ab84b3",
             legend=False,
+            ax=self.ax,
         )
 
     def plot_anomalies(self):

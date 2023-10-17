@@ -135,6 +135,7 @@ class SubsetCollection:
         self.add_feature(feature=total_feature)
 
     def drop_columns(self):
+        self.dataframe = self.dataframe.T.drop_duplicates().T
         self.regression_dataframe = self.regression_dataframe.T.drop_duplicates().T
         self.linear_dataframe = self.linear_dataframe.T.drop_duplicates().T
 

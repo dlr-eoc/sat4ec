@@ -44,6 +44,7 @@ def plot_data(
         features=features,
     ) as plotting:
         plotting.plot_features()
+        plotting.finalize(show=True)
 
         #
         # if monthly:
