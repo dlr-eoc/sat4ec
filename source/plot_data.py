@@ -29,7 +29,9 @@ class PlotCollection:
         self.orbit = orbit
         self.pol = pol
         self.monthly = monthly
-        self.linear = linear  # wether to plot linear regression and insensitive area or not
+        self.linear = (
+            linear  # wether to plot linear regression and insensitive area or not
+        )
         self.features = features
         self.max_cols = max_cols
         self.raw_dataframe = self._get_data(data=raw_data)
@@ -74,11 +76,11 @@ class PlotCollection:
 
         else:  # len(self.features) > max_cols
             if len(self.features) % self.max_cols == 0:  # e.g. 8 % 4 = 0
-                nrows = len(self.features) / self.max_cols
+                nrows = int(len(self.features) / self.max_cols)
                 ncols = self.max_cols
 
             else:
-                nrows = len(self.features) // self.max_cols
+                nrows = int(len(self.features) // self.max_cols)
                 ncols = self.max_cols
 
         self.fig, self.axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(20, 10))
@@ -90,11 +92,15 @@ class PlotCollection:
         row = index // self.max_cols
         col = index % self.max_cols
 
-        if self.axs.shape == (self.max_cols,):
-            ax = self.axs[col]
+        if isinstance(self.axs, plt.Axes):
+            ax = self.axs
 
         else:
-            ax = self.axs[row][col]
+            if self.axs.shape == (self.max_cols,):
+                ax = self.axs[col]
+
+            else:
+                ax = self.axs[row][col]
 
         return ax
 
@@ -169,15 +175,32 @@ class PlotCollection:
             feature_plot.plot_anomalies()
 
     def plot_annotations(self):
-        plt.title(f"{self.name} {self.pol} polarization, {self.long_orbit} orbit")
-        plt.ylabel("Sentinel-1 backscatter [dB]")
-        plt.xlabel("Timestamp")
+        self.fig.suptitle(f"{self.name}, {self.pol} polarization, {self.long_orbit} orbit")
+
+        for index, ax in enumerate(self.fig.axes):
+            ax.set_ylabel("Sentinel-1 backscatter [dB]")
+            # ax.set_xlabel("Timestamp")
+            ax.set_xlabel("")
+
+            if index == (len(self.fig.axes) - 1):
+                ax.set_title("All features")
+
+            else:
+                ax.set_title(f"Feature {self.features[index].fid}")
 
     def axes_limits(self):
+        if len(self.features) > 1:
+            mean_col = "total_mean"
+            std_col = "total_std"
+
+        else:
+            mean_col = "0_mean"
+            std_col = "0_std"
+
         plt.ylim(
-            (self.raw_dataframe["total_mean"] - self.raw_dataframe["total_std"]).min()
+            (self.raw_dataframe[mean_col] - self.raw_dataframe[std_col]).min()
             - 1,
-            (self.raw_dataframe["total_mean"] + self.raw_dataframe["total_std"]).max()
+            (self.raw_dataframe[mean_col] + self.raw_dataframe[std_col]).max()
             + 1,
         )
 
@@ -189,7 +212,7 @@ class PlotCollection:
             )
 
     def axes_ticks(self):
-        for ax in self.axs.flatten():
+        for ax in self.fig.axes:
             ax.xaxis.set_minor_locator(
                 mdates.MonthLocator()
             )  # minor ticks display months
@@ -199,10 +222,12 @@ class PlotCollection:
 
     def unused_subplots(self):
         # delete unused subplots
-        for i in range(
-            len(self.axs.flatten()) - len(self.features)
-        ):  # get count of empty subplots
-            self.fig.delaxes(self.axs.flatten()[len(self.axs.flatten()) - 1 - i])
+
+        if isinstance(self.axs, np.ndarray):
+            for i in reversed(
+                range(len(self.axs.flatten()) - len(self.features))
+            ):  # get count of empty subplots
+                self.fig.delaxes(self.axs.flatten()[len(self.axs.flatten()) - 1 - i])
 
     @staticmethod
     def delete_subplot_legend_items(handles=None, labels=None):
@@ -211,9 +236,15 @@ class PlotCollection:
         Make general labels like ["mean", "raw mean"], i.e. truncate "0", "1" and "total".
         """
 
-        label_candidates = [item for item in labels if "_" in item]  # get labels with _ sign
-        label_indices = [i for i, item in enumerate(labels) if "_" in item]  # get indices of labels with _ sign
-        labels[label_indices[-1]] = "interpol."  # alter last element to draw it in the legend
+        label_candidates = [
+            item for item in labels if "_" in item
+        ]  # get labels with _ sign
+        label_indices = [
+            i for i, item in enumerate(labels) if "_" in item
+        ]  # get indices of labels with _ sign
+        labels[
+            label_indices[-1]
+        ] = "interpol."  # alter last element to draw it in the legend
         del label_candidates[-1]  # remove last element from list
         del label_indices[-1]  # remove last element from list
 
@@ -233,13 +264,21 @@ class PlotCollection:
         handles = [item for sub in handles for item in sub]
         labels = [item for sub in labels for item in sub]
 
-        uniques, indices = np.unique(labels, return_index=True)  # get unique labels and their indices
+        uniques, indices = np.unique(
+            labels, return_index=True
+        )  # get unique labels and their indices
         handles = np.array(handles)[np.array(indices)]  # get handles at unique indices
         labels = np.array(labels)[np.array(indices)]  # get labels at unique indices
-        handles, labels = self.delete_subplot_legend_items(handles=handles, labels=labels)
-        uniques = [(h, l) for i, (h, l) in enumerate(zip(handles, labels))]  # arrange handles and labels as pairs
+        handles, labels = self.delete_subplot_legend_items(
+            handles=handles, labels=labels
+        )
+        uniques = [
+            (h, l) for i, (h, l) in enumerate(zip(handles, labels))
+        ]  # arrange handles and labels as pairs
 
-        self.fig.legend(*zip(*uniques), loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0))
+        self.fig.legend(
+            *zip(*uniques), loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0)
+        )
 
     def finalize(self, show=False):
         self.unused_subplots()

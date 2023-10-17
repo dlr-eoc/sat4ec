@@ -144,7 +144,9 @@ def main(
             subsets.add_subset(df=indicator.dataframe)
             subsets.add_feature(feature)
 
-        subsets.aggregate_columns()
+        if len(subsets.features) > 1:
+            subsets.aggregate_columns()
+
         subsets.save_raw()  # save raw data
 
         if monthly:
@@ -187,7 +189,7 @@ def main(
             # plot anomalies on raw data
             plot_data(
                 out_dir=subsets.out_dir,
-                name=f"{name}_{index}",
+                name=name,
                 raw_data=subsets.dataframe,
                 reg_data=subsets.dataframe,
                 anomaly_data=raw_anomalies.dataframe,
@@ -202,7 +204,7 @@ def main(
             # plot anomalies on regression data
             plot_data(
                 out_dir=subsets.out_dir,
-                name=f"{name}_{index}",
+                name=name,
                 raw_data=subsets.dataframe,
                 anomaly_data=reg_anomalies.dataframe,
                 reg_data=subsets.regression_dataframe,

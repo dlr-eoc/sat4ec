@@ -16,16 +16,11 @@ class TestPlotting(unittest.TestCase):
         aoi.get_features()
         self.aoi = aoi.geometry
         self.out_dir = TEST_DIR.joinpath("vw_wolfsburg")
-        self.name = "BMW Regensburg"
-        self.start_date = "2022-01-01"
+        self.name = "VW Wolfsburg"
+        self.start_date = "2016-01-01"
         self.end_date = "2022-12-31"
         self.orbit = "asc"
         self.pol = "VH"
-        self.anomaly_options = {
-            "invert": False,
-            "normalize": False,
-            "plot": False,
-        }
 
         self.indicator = IData(
             aoi=self.aoi,
