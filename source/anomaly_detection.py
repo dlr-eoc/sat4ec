@@ -69,6 +69,7 @@ class AnomalyCollection:
                     :,
                     self.linear_regression_df.columns.str.startswith(f"{feature.fid}_"),
                 ],
+
                 fid=feature.fid,
                 anomaly_column=self.column,
             )
@@ -110,6 +111,7 @@ class Anomaly:
         self.column = f"{self.fid}_{anomaly_column}"  # dataframe column containing the anomaly data
         self.ad = None
         self.dataframe = data
+        self.dataframe_bak = self.dataframe.copy()
         self.linear_regression_df = linear_data
         self.factor = (
             factor  # factor representing sensitive/insensitive standard deviation
@@ -269,6 +271,6 @@ class Anomaly:
     def find_minima(self):
         self.flip_data()  # flip data to make original minima to maximas that can be detected
         self.find_maxima()  # find maxima (originally minima) on dataframe
-        # self.dataframe[self.column] = self.indicator_df[
-        #     self.column
-        # ]  # revert flipped data column to original state
+        self.dataframe[self.column] = self.dataframe_bak[
+            self.column
+        ]  # revert flipped data column to original state
