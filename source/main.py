@@ -46,13 +46,15 @@ def plot_data(
         features=features,
     ) as plotting:
         plotting.plot_features()
-        plotting.finalize(show=True)
+        plotting.finalize()
 
         if monthly:
             plotting.save_raw()
 
         else:
-            plotting.save_regression()
+            plotting.save_regression(svg=True)
+
+        plotting.show_plot()
 
 
 def compute_raw_data(

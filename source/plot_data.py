@@ -63,7 +63,7 @@ class PlotCollection:
 
         return df
 
-    def _get_subplots(self):
+    def _get_rows_cols(self):
         if len(self.features[:-1]) < self.max_cols:
             nrows = 1
             ncols = len(self.features)
@@ -83,7 +83,11 @@ class PlotCollection:
                 nrows = int(len(self.features) // self.max_cols)
                 ncols = self.max_cols
 
-        self.fig, self.axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(20, 10))
+        return nrows, ncols
+
+    def _get_subplots(self, width=16, height=9):
+        nrows, ncols = self._get_rows_cols()
+        self.fig, self.axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(width * ncols, height * nrows))
 
     def _get_long_orbit(self):
         self.long_orbit = "ascending" if self.orbit == "asc" else "descending"
@@ -280,7 +284,7 @@ class PlotCollection:
             *zip(*uniques), loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0)
         )
 
-    def finalize(self, show=False):
+    def finalize(self):
         self.unused_subplots()
         self.plot_annotations()
         self.axes_limits()
@@ -289,34 +293,48 @@ class PlotCollection:
 
         plt.tight_layout(pad=2.5)
 
-        if show:  # for development
-            plt.show()
-
     def correct_name(self):
         self.name = self.name.lower()
 
         if " " in self.name:
             self.name = "_".join(self.name.split(" "))
 
-    def save_regression(self, dpi=96):
+    @staticmethod
+    def get_extensions(svg=False):
+        exts = ["png"]
+
+        if svg:
+            exts.append("svg")
+
+        return exts
+
+    def save_regression(self, dpi=150, svg=False):
         self.correct_name()
+        exts = self.get_extensions(svg=svg)
 
-        out_file = self.out_dir.joinpath(
-            "plot",
-            f"indicator_1_{self.name}_interpolated_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.png",
-        )
+        for ext in exts:
+            out_file = self.out_dir.joinpath(
+                "plot",
+                f"indicator_1_{self.name}_interpolated_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.{ext}",
+            )
 
-        self.fig.savefig(out_file, dpi=dpi)
+            self.fig.savefig(out_file, dpi=dpi)
 
-    def save_raw(self, dpi=96):
+    def save_raw(self, dpi=150, svg=False):
         self.correct_name()
+        exts = self.get_extensions(svg=svg)
 
-        out_file = self.out_dir.joinpath(
-            "plot",
-            f"indicator_1_{self.name}_rawdata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.png",
-        )
+        for ext in exts:
+            out_file = self.out_dir.joinpath(
+                "plot",
+                f"indicator_1_{self.name}_rawdata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.{ext}",
+            )
 
-        self.fig.savefig(out_file, dpi=dpi)
+            self.fig.savefig(out_file, dpi=dpi)
+
+    @staticmethod
+    def show_plot():
+        plt.show()
 
 
 class PlotData:
