@@ -163,7 +163,6 @@ class PlotCollection:
                 orbit=self.orbit,
                 pol=self.pol,
                 long_orbit=self.long_orbit,
-                monthly=self.monthly,
             )
 
             feature_plot.plot_rawdata_range()
@@ -239,13 +238,13 @@ class PlotCollection:
         Figure legend has subplot labels like ["0_mean", "1_mean", "total_mean", "raw mean"].
         Make general labels like ["mean", "raw mean"], i.e. truncate "0", "1" and "total".
         """
-
         label_candidates = [
             item for item in labels if "_" in item
         ]  # get labels with _ sign
         label_indices = [
             i for i, item in enumerate(labels) if "_" in item
         ]  # get indices of labels with _ sign
+
         labels[
             label_indices[-1]
         ] = "interpol."  # alter last element to draw it in the legend
@@ -273,9 +272,13 @@ class PlotCollection:
         )  # get unique labels and their indices
         handles = np.array(handles)[np.array(indices)]  # get handles at unique indices
         labels = np.array(labels)[np.array(indices)]  # get labels at unique indices
-        handles, labels = self.delete_subplot_legend_items(
-            handles=handles, labels=labels
-        )
+
+        # only reduce legend items further if having the _ sign, i.e. for several features like 0_mean, 1_mean
+        if any("_" in item for item in labels):
+            handles, labels = self.delete_subplot_legend_items(
+                handles=handles, labels=labels
+            )
+
         uniques = [
             (h, l) for i, (h, l) in enumerate(zip(handles, labels))
         ]  # arrange handles and labels as pairs
@@ -345,11 +348,10 @@ class PlotData:
         linear_data=None,
         anomaly_data=None,
         ax=None,
-        fid=None,
+        fid="total",
         orbit=None,
         pol=None,
         long_orbit=None,
-        monthly=False,
     ):
         self.raw_dataframe = raw_data
         self.reg_dataframe = reg_data
@@ -360,7 +362,6 @@ class PlotData:
         self.orbit = orbit
         self.pol = pol
         self.long_orbit = long_orbit
-        self.monthly = monthly
 
     def plot_rawdata(self):
         # plot of main line

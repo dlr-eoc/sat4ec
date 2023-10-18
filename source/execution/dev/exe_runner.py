@@ -8,15 +8,15 @@ if __name__ == "__main__":
         aoi_dir=Path(r"input/AOIs"),
         working_dir=Path(r"/mnt/data1/gitlab/sat4ec/data"),  # Path.home().joinpath("sat4ec"),
         out_dir=Path(r"output"),
-        orbit="des",  # ascending or descending orbit
+        orbit="asc",  # ascending or descending orbit
         pol="VH",  # only use VH polarization
-        aoi="vw_wolfsburg",
+        aoi="vw_wolfsburg2subfeatures",
         ext="geojson",
         start="2016-01-01",
-        monthly=False,
+        monthly=True,
         regression="spline",
         linear=True,
-        aoi_split=False,
+        aoi_split=True,
     )
     prod = Production(config=conf)
     prod.workflow(_path=r"/mnt/data1/gitlab/sat4ec/source")

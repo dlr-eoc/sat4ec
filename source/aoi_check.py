@@ -14,9 +14,9 @@ import fiona
 
 
 class Feature:
-    def __init__(self, feature=None):
+    def __init__(self, feature=None, fid=None):
         self.feature = feature
-        self.fid = None
+        self.fid = fid
         self.azimuth_group = None
         self.geometry = None
 
