@@ -19,23 +19,25 @@ TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
 class TestGetData(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestGetData, self).__init__(*args, **kwargs)
-        aoi = AOI(TEST_DIR.joinpath("AOIs", "vw_wolfsburg.geojson"))
-        aoi.get_features()
-        self.aoi = aoi.geometry
-        self.out_dir = TEST_DIR.joinpath("vw_wolfsburg")
-        self.start_date = "2016-01-01"
+        self.data_dir = TEST_DIR.joinpath("vw_wolfsburg2subfeatures")
+        self.aoi_collection = AOI(data=TEST_DIR.joinpath("AOIs", "vw_wolfsburg2subfeatures.geojson"))
+        self.feature = [feature for feature in self.aoi_collection.get_feature()][0]
+        self.start_date = "2020-01-01"
         self.end_date = "2022-12-31"
         self.orbit = "asc"
         self.pol = "VH"
+        self.monthly = False
 
     def test_class_init(self):
         indicator = IData(
-            aoi=self.aoi,
-            out_dir=self.out_dir,
+            aoi=self.feature.geometry,
+            fid=self.feature.fid,
+            out_dir=self.data_dir,
             start_date=self.start_date,
             end_date=self.end_date,
             orbit=self.orbit,
             pol=self.pol,
+            monthly=self.monthly,
         )
 
         self.assertTrue(isinstance(indicator.geometry, Geometry))

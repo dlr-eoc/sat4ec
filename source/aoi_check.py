@@ -56,15 +56,11 @@ class AOI:
         if isinstance(data, Path):
             self.filename = data
             self.load_aoi()
+            self.get_features()
 
-        elif isinstance(Path(data), PurePath):  # path can be resolved to a pathlib object
-            if Path(data).exists():
-                self.filename = Path(data)
-                self.load_aoi()
-                self.get_features()
-
-            else:
-                raise FileNotFoundError(f"The provided path {data} does not exist.")
+        elif isinstance(data, Polygon):
+            self.geometry = data
+            self.build_aoi(geometry_type="Polygon", geometry=self.geometry)
 
         elif isinstance(data, str):
             if "POLYGON" in data:  # wkt string
@@ -74,9 +70,14 @@ class AOI:
             else:
                 raise AttributeError(f"The provided data {data} misses the keyword POLYGON.")
 
-        elif isinstance(data, Polygon):
-            self.geometry = data
-            self.build_aoi(geometry_type="Polygon", geometry=self.geometry)
+        elif isinstance(Path(data), PurePath):  # path can be resolved to a pathlib object
+            if Path(data).exists():
+                self.filename = Path(data)
+                self.load_aoi()
+                self.get_features()
+
+            else:
+                raise FileNotFoundError(f"The provided path {data} does not exist.")
 
         else:
             raise TypeError(f"The provided data {data} is of unsupported type {type(data)}.")

@@ -12,7 +12,6 @@ TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
 class TestPlotting(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestPlotting, self).__init__(*args, **kwargs)
-
         self.data_dir = TEST_DIR.joinpath("vw_wolfsburg2subfeatures")
         self._prepare_dataframes()
 
@@ -26,23 +25,51 @@ class TestPlotting(unittest.TestCase):
             orbit="asc",
             monthly=False,
             linear=True,
-            features=[Feature(fid="1"), Feature(fid="2"), Feature(fid="total")]
+            features=[Feature(fid="1"), Feature(fid="2"), Feature(fid="total")],
         )
 
     def _prepare_dataframes(self):
-        self.raw_data = pd.read_csv(self.data_dir.joinpath("raw", "indicator_1_rawdata_asc_VH.csv"))
-        self.raw_monthly_data = pd.read_csv(self.data_dir.joinpath("raw", "indicator_1_rawdata_monthly_asc_VH.csv"))
-        self.reg_data = pd.read_csv(self.data_dir.joinpath("regression", "indicator_1_spline_asc_VH.csv"))
-        self.reg_anomaly_data = pd.read_csv(self.data_dir.joinpath("anomalies", "indicator_1_anomalies_interpolated_asc_VH.csv"))
-        self.raw_anomaly_data = pd.read_csv(self.data_dir.joinpath("anomalies", "indicator_1_anomalies_raw_monthly_asc_VH.csv"))
-        self.linear_data = pd.read_csv(self.data_dir.joinpath("regression", "indicator_1_linear_asc_VH.csv"))
+        self.raw_data = pd.read_csv(
+            self.data_dir.joinpath("raw", "indicator_1_rawdata_asc_VH.csv")
+        )
+        self.raw_monthly_data = pd.read_csv(
+            self.data_dir.joinpath("raw", "indicator_1_rawdata_monthly_asc_VH.csv")
+        )
+        self.reg_data = pd.read_csv(
+            self.data_dir.joinpath("regression", "indicator_1_spline_asc_VH.csv")
+        )
+        self.reg_anomaly_data = pd.read_csv(
+            self.data_dir.joinpath(
+                "anomalies", "indicator_1_anomalies_interpolated_asc_VH.csv"
+            )
+        )
+        self.raw_anomaly_data = pd.read_csv(
+            self.data_dir.joinpath(
+                "anomalies", "indicator_1_anomalies_raw_monthly_asc_VH.csv"
+            )
+        )
+        self.linear_data = pd.read_csv(
+            self.data_dir.joinpath("regression", "indicator_1_linear_asc_VH.csv")
+        )
 
-        self.raw_data.loc[:, "interval_from"] = pd.to_datetime(self.raw_data["interval_from"])
-        self.raw_monthly_data.loc[:, "interval_from"] = pd.to_datetime(self.raw_monthly_data["interval_from"])
-        self.reg_data.loc[:, "interval_from"] = pd.to_datetime(self.reg_data["interval_from"])
-        self.reg_anomaly_data.loc[:, "interval_from"] = pd.to_datetime(self.reg_anomaly_data["interval_from"])
-        self.raw_anomaly_data.loc[:, "interval_from"] = pd.to_datetime(self.raw_anomaly_data["interval_from"])
-        self.linear_data.loc[:, "interval_from"] = pd.to_datetime(self.linear_data["interval_from"])
+        self.raw_data.loc[:, "interval_from"] = pd.to_datetime(
+            self.raw_data["interval_from"]
+        )
+        self.raw_monthly_data.loc[:, "interval_from"] = pd.to_datetime(
+            self.raw_monthly_data["interval_from"]
+        )
+        self.reg_data.loc[:, "interval_from"] = pd.to_datetime(
+            self.reg_data["interval_from"]
+        )
+        self.reg_anomaly_data.loc[:, "interval_from"] = pd.to_datetime(
+            self.reg_anomaly_data["interval_from"]
+        )
+        self.raw_anomaly_data.loc[:, "interval_from"] = pd.to_datetime(
+            self.raw_anomaly_data["interval_from"]
+        )
+        self.linear_data.loc[:, "interval_from"] = pd.to_datetime(
+            self.linear_data["interval_from"]
+        )
 
         self.raw_data = self.raw_data.set_index("interval_from")
         self.raw_monthly_data = self.raw_monthly_data.set_index("interval_from")
@@ -55,7 +82,7 @@ class TestPlotting(unittest.TestCase):
         for index, feature in enumerate(self.collection.features):
             plotting = PlotData(
                 raw_data=self.collection.raw_dataframe,
-                ax=self.collection._get_plot_axis(index=index)
+                ax=self.collection._get_plot_axis(index=index),
             )
             plotting.plot_rawdata()
 
@@ -66,7 +93,7 @@ class TestPlotting(unittest.TestCase):
         for index, feature in enumerate(self.collection.features):
             plotting = PlotData(
                 raw_data=self.collection.raw_dataframe,
-                ax=self.collection._get_plot_axis(index=index)
+                ax=self.collection._get_plot_axis(index=index),
             )
             plotting.plot_rawdata_range()
 
@@ -77,7 +104,7 @@ class TestPlotting(unittest.TestCase):
         for index, feature in enumerate(self.collection.features):
             plotting = PlotData(
                 reg_data=self.collection.reg_dataframe,
-                ax=self.collection._get_plot_axis(index=index)
+                ax=self.collection._get_plot_axis(index=index),
             )
             plotting.plot_regression()
 
@@ -89,7 +116,7 @@ class TestPlotting(unittest.TestCase):
             plotting = PlotData(
                 raw_data=self.collection.raw_dataframe,
                 reg_data=self.collection.reg_dataframe,
-                ax=self.collection._get_plot_axis(index=index)
+                ax=self.collection._get_plot_axis(index=index),
             )
             plotting.plot_rawdata_range()
             plotting.plot_rawdata()
@@ -104,7 +131,7 @@ class TestPlotting(unittest.TestCase):
                 raw_data=self.collection.raw_dataframe,
                 reg_data=self.collection.reg_dataframe,
                 linear_data=self.collection.linear_dataframe,
-                ax=self.collection._get_plot_axis(index=index)
+                ax=self.collection._get_plot_axis(index=index),
             )
             plotting.plot_rawdata_range()
             plotting.plot_rawdata()
@@ -120,7 +147,7 @@ class TestPlotting(unittest.TestCase):
                 raw_data=self.collection.raw_dataframe,
                 reg_data=self.collection.reg_dataframe,
                 anomaly_data=self.collection.anomaly_dataframe,
-                ax=self.collection._get_plot_axis(index=index)
+                ax=self.collection._get_plot_axis(index=index),
             )
             plotting.plot_rawdata()
             plotting.plot_regression()
@@ -136,7 +163,7 @@ class TestPlotting(unittest.TestCase):
                 reg_data=self.collection.reg_dataframe,
                 linear_data=self.collection.linear_dataframe,
                 anomaly_data=self.collection.anomaly_dataframe,
-                ax=self.collection._get_plot_axis(index=index)
+                ax=self.collection._get_plot_axis(index=index),
             )
             plotting.plot_regression()
             plotting.plot_mean_range()
@@ -154,7 +181,7 @@ class TestPlotting(unittest.TestCase):
             plotting = PlotData(
                 raw_data=self.collection.raw_dataframe,
                 anomaly_data=self.collection.anomaly_dataframe,
-                ax=self.collection._get_plot_axis(index=index)
+                ax=self.collection._get_plot_axis(index=index),
             )
             plotting.plot_rawdata()
             plotting.plot_anomalies()
@@ -169,7 +196,7 @@ class TestPlotting(unittest.TestCase):
                 reg_data=self.collection.reg_dataframe,
                 linear_data=self.collection.linear_dataframe,
                 anomaly_data=self.collection.anomaly_dataframe,
-                ax=self.collection._get_plot_axis(index=index)
+                ax=self.collection._get_plot_axis(index=index),
             )
             plotting.plot_rawdata_range()
             plotting.plot_rawdata()
@@ -191,7 +218,7 @@ class TestPlotting(unittest.TestCase):
                 raw_data=self.collection.raw_dataframe,
                 linear_data=self.collection.linear_dataframe,
                 anomaly_data=self.collection.anomaly_dataframe,
-                ax=self.collection._get_plot_axis(index=index)
+                ax=self.collection._get_plot_axis(index=index),
             )
             plotting.plot_rawdata_range()
             plotting.plot_rawdata()
