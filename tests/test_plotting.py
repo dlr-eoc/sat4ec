@@ -1,9 +1,9 @@
 import unittest
 import matplotlib.pyplot as plt
-import pandas as pd
 
 from source.plot_data import PlotCollection, PlotData
 from source.aoi_check import Feature
+from test_helper_functions import prepare_test_dataframes
 from pathlib import Path
 
 TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
@@ -13,7 +13,15 @@ class TestPlotting(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestPlotting, self).__init__(*args, **kwargs)
         self.data_dir = TEST_DIR.joinpath("vw_wolfsburg2subfeatures")
-        self._prepare_dataframes()
+        (
+            self.raw_data,
+            self.raw_monthly_data,
+            self.reg_data,
+            self.reg_anomaly_data,
+            self.raw_anomaly_data,
+            self.linear_data,
+            self.linear_monthly_data,
+        ) = prepare_test_dataframes(data_dir=self.data_dir)
 
         self.collection = PlotCollection(
             out_dir=TEST_DIR.joinpath("vw_wolfsburg2subfeatures"),
@@ -27,56 +35,6 @@ class TestPlotting(unittest.TestCase):
             linear=True,
             features=[Feature(fid="1"), Feature(fid="2"), Feature(fid="total")],
         )
-
-    def _prepare_dataframes(self):
-        self.raw_data = pd.read_csv(
-            self.data_dir.joinpath("raw", "indicator_1_rawdata_asc_VH.csv")
-        )
-        self.raw_monthly_data = pd.read_csv(
-            self.data_dir.joinpath("raw", "indicator_1_rawdata_monthly_asc_VH.csv")
-        )
-        self.reg_data = pd.read_csv(
-            self.data_dir.joinpath("regression", "indicator_1_spline_asc_VH.csv")
-        )
-        self.reg_anomaly_data = pd.read_csv(
-            self.data_dir.joinpath(
-                "anomalies", "indicator_1_anomalies_interpolated_asc_VH.csv"
-            )
-        )
-        self.raw_anomaly_data = pd.read_csv(
-            self.data_dir.joinpath(
-                "anomalies", "indicator_1_anomalies_raw_monthly_asc_VH.csv"
-            )
-        )
-        self.linear_data = pd.read_csv(
-            self.data_dir.joinpath("regression", "indicator_1_linear_asc_VH.csv")
-        )
-
-        self.raw_data.loc[:, "interval_from"] = pd.to_datetime(
-            self.raw_data["interval_from"]
-        )
-        self.raw_monthly_data.loc[:, "interval_from"] = pd.to_datetime(
-            self.raw_monthly_data["interval_from"]
-        )
-        self.reg_data.loc[:, "interval_from"] = pd.to_datetime(
-            self.reg_data["interval_from"]
-        )
-        self.reg_anomaly_data.loc[:, "interval_from"] = pd.to_datetime(
-            self.reg_anomaly_data["interval_from"]
-        )
-        self.raw_anomaly_data.loc[:, "interval_from"] = pd.to_datetime(
-            self.raw_anomaly_data["interval_from"]
-        )
-        self.linear_data.loc[:, "interval_from"] = pd.to_datetime(
-            self.linear_data["interval_from"]
-        )
-
-        self.raw_data = self.raw_data.set_index("interval_from")
-        self.raw_monthly_data = self.raw_monthly_data.set_index("interval_from")
-        self.reg_data = self.reg_data.set_index("interval_from")
-        self.reg_anomaly_data = self.reg_anomaly_data.set_index("interval_from")
-        self.raw_anomaly_data = self.raw_anomaly_data.set_index("interval_from")
-        self.linear_data = self.linear_data.set_index("interval_from")
 
     def test_raw_plot(self):
         for index, feature in enumerate(self.collection.features):

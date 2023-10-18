@@ -69,7 +69,6 @@ class AnomalyCollection:
                     :,
                     self.linear_regression_df.columns.str.startswith(f"{feature.fid}_"),
                 ],
-
                 fid=feature.fid,
                 anomaly_column=self.column,
             )
@@ -91,7 +90,7 @@ class AnomalyCollection:
     def save_regression(self):
         out_file = self.out_dir.joinpath(
             "anomalies",
-            f"indicator_1_anomalies_interpolated_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+            f"indicator_1_anomalies_regression_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
         self.dataframe.to_csv(out_file)
 
@@ -189,7 +188,6 @@ class Anomaly:
         # -16.34
         # 3.04 * 0.2 = 0.608
         # delete extrema if not significantly deviating from the global mean
-
         upper_df = self.dataframe.loc[
             (
                 self.dataframe[self.column]
@@ -255,8 +253,7 @@ class Anomaly:
         ].add(negative[self.column].subtract(self.global_mean).abs().mul(2))
 
         self.dataframe.loc[
-            :,  # all rows
-            f"{self.fid}_anomaly"  # index of column
+            :, f"{self.fid}_anomaly"  # all rows  # index of column
         ] = False  # boolean values were overwritten before and must be reset
         self.dataframe.loc[
             init_bloolean.index, f"{self.fid}_anomaly"

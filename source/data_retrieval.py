@@ -38,30 +38,46 @@ class Regression:
             self.regression_dataframe[f"{self.fid}_mean"] = self.apply_polynomial()
 
         else:
-            raise ValueError(f"The provided mode {self.mode} is not supported. Please choose from [rolling, spline, poly].")
+            raise ValueError(
+                f"The provided mode {self.mode} is not supported. Please choose from [rolling, spline, poly]."
+            )
 
         self.dataframe = self.dataframe.drop("interval_diff", axis=1, inplace=False)
 
     def apply_pandas_rolling(self):
-        return self.dataframe[f"{self.fid}_mean"].rolling(
-            5,
-            center=True,
-            closed="both",
-            win_type="cosine",
-        ).mean(5)  # cosine
+        return (
+            self.dataframe[f"{self.fid}_mean"]
+            .rolling(
+                5,
+                center=True,
+                closed="both",
+                win_type="cosine",
+            )
+            .mean(5)
+        )  # cosine
 
     def prepare_regression(self):
-        time_diff = (self.dataframe.index[0] - self.dataframe.index).days * (-1)  # date difference
-        date_range = pd.date_range(freq="1D", start=self.dataframe.index[0], end=self.dataframe.index[-1])
+        time_diff = (self.dataframe.index[0] - self.dataframe.index).days * (
+            -1
+        )  # date difference
+        date_range = pd.date_range(
+            freq="1D", start=self.dataframe.index[0], end=self.dataframe.index[-1]
+        )
 
-        self.regression_dataframe = pd.DataFrame({"interval_from": self.dataframe.index}, index=self.dataframe.index)
+        self.regression_dataframe = pd.DataFrame(
+            {"interval_from": self.dataframe.index}, index=self.dataframe.index
+        )
         self.dataframe.loc[:, "interval_diff"] = time_diff  # temporary
-        self.linear_dataframe = pd.DataFrame({"interval_diff": np.arange(time_diff[-1]+1)}, index=date_range)
+        self.linear_dataframe = pd.DataFrame(
+            {"interval_diff": np.arange(time_diff[-1] + 1)}, index=date_range
+        )
 
     def apply_polynomial(self):
         poly_reg_model = LinearRegression()
         poly = PolynomialFeatures(degree=5, include_bias=False)
-        poly_features = poly.fit_transform(self.dataframe["interval_diff"].values.reshape(-1, 1))
+        poly_features = poly.fit_transform(
+            self.dataframe["interval_diff"].values.reshape(-1, 1)
+        )
         poly_reg_model.fit(poly_features, self.dataframe[f"{self.fid}_mean"])
 
         return poly_reg_model.predict(poly_features)
@@ -70,7 +86,11 @@ class Regression:
         model = LinearRegression(fit_intercept=True)
         model.fit(self.dataframe[["interval_diff"]], self.dataframe[column])
 
-        return model.predict(self.linear_dataframe.loc[self.linear_dataframe.index.intersection(self.dataframe.index)])
+        return model.predict(
+            self.linear_dataframe.loc[
+                self.linear_dataframe.index.intersection(self.dataframe.index)
+            ]
+        )
 
     def apply_spline(self):
         # apply spline with weights: data point mean / global mean
@@ -80,7 +100,10 @@ class Regression:
         tck = splrep(
             np.arange(len(self.dataframe)),  # numerical index on dataframe.index
             self.dataframe[f"{self.fid}_mean"].to_numpy(),  # variable to interpolate
-            w=(self.dataframe[f"{self.fid}_mean"] / self.dataframe[f"{self.fid}_mean"].mean()).to_numpy(),  # weights
+            w=(
+                self.dataframe[f"{self.fid}_mean"]
+                / self.dataframe[f"{self.fid}_mean"].mean()
+            ).to_numpy(),  # weights
             s=0.25 * len(self.dataframe),
         )
 
@@ -110,25 +133,33 @@ class SubsetCollection:
         self.features = []
 
     def add_subset(self, df=None):
-        self.dataframe = pd.concat([self.dataframe, df], axis=1).sort_index()  # merge arrays
+        self.dataframe = pd.concat(
+            [self.dataframe, df], axis=1
+        ).sort_index()  # merge arrays
 
     def add_feature(self, feature=None):
         self.features.append(feature)
 
     def add_regression_subset(self, df=None):
-        self.regression_dataframe = pd.concat([self.regression_dataframe, df], axis=1).sort_index()  # merge arrays
+        self.regression_dataframe = pd.concat(
+            [self.regression_dataframe, df], axis=1
+        ).sort_index()  # merge arrays
 
     def add_linear_subset(self, df=None):
-        self.linear_dataframe = pd.concat([self.linear_dataframe, df], axis=1).sort_index()  # merge arrays
+        self.linear_dataframe = pd.concat(
+            [self.linear_dataframe, df], axis=1
+        ).sort_index()  # merge arrays
 
     def aggregate_columns(self):
         for col in ["mean", "std", "min", "max"]:
-            self.dataframe[f"total_{col}"] = self.dataframe.loc[:, self.dataframe.columns.str.endswith(col)].mean(
-                axis=1)
+            self.dataframe[f"total_{col}"] = self.dataframe.loc[
+                :, self.dataframe.columns.str.endswith(col)
+            ].mean(axis=1)
 
         for col in ["sample_count", "nodata_count"]:
-            self.dataframe[f"total_{col}"] = self.dataframe.loc[:, self.dataframe.columns.str.endswith(col)].sum(
-                axis=1)
+            self.dataframe[f"total_{col}"] = self.dataframe.loc[
+                :, self.dataframe.columns.str.endswith(col)
+            ].sum(axis=1)
 
         total_feature = Feature()
         total_feature.fid = "total"
@@ -148,12 +179,23 @@ class SubsetCollection:
     def monthly_aggregate(self):
         self.dataframe["year"] = self.dataframe.index.year
         self.dataframe["month"] = self.dataframe.index.month
-        self.dataframe = self.dataframe.groupby(by=["year", "month"], as_index=False).mean()
-        self.dataframe["interval_from"] = pd.to_datetime(self.dataframe[["year", "month"]].assign(DAY=15))
+        self.dataframe = self.dataframe.groupby(
+            by=["year", "month"], as_index=False
+        ).mean()
+        self.dataframe["interval_from"] = pd.to_datetime(
+            self.dataframe[["year", "month"]].assign(DAY=15)
+        )
         self.dataframe = self.dataframe.set_index("interval_from")
         self.dataframe.drop(["year", "month"], axis=1, inplace=True)
 
     def save_raw(self):
+        out_file = self.out_dir.joinpath(
+            "raw",
+            f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv",
+        )
+        self.dataframe.to_csv(out_file)
+
+    def save_monthly_raw(self):
         out_file = self.out_dir.joinpath(
             "raw",
             f"indicator_1_rawdata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
@@ -164,8 +206,10 @@ class SubsetCollection:
         for feature in self.features:
             regression = Regression(
                 fid=feature.fid,
-                df=self.dataframe.loc[:, self.dataframe.columns.str.startswith(f"{feature.fid}_")],
-                mode=mode
+                df=self.dataframe.loc[
+                    :, self.dataframe.columns.str.startswith(f"{feature.fid}_")
+                ],
+                mode=mode,
             )
 
             regression.apply_feature_regression()
@@ -200,7 +244,7 @@ class IndicatorData(Config):
         resolution=5,
         orbit="asc",
         pol="VH",
-        monthly=False
+        monthly=False,
     ):
         super().__init__()
         self.aoi = aoi

@@ -153,31 +153,32 @@ def main(
 
         if monthly:
             subsets.monthly_aggregate()
-            subsets.save_raw()  # save raw mothly data
+            subsets.save_monthly_raw()  # save monthly raw data
 
-        # TODO: regression on monthly data? Currently linear and spline regression are computed
         subsets.apply_regression(mode=regression)
         subsets.save_regression(mode=regression)  # save spline data
 
-        raw_anomalies = compute_anomaly(
-            df=subsets.dataframe,
-            linear_data=subsets.linear_dataframe,
-            out_dir=subsets.out_dir,
-            orbit=orbit,
-            pol=pol,
-            monthly=monthly,
-            features=subsets.features,
-        )
+        if monthly:
+            raw_anomalies = compute_anomaly(
+                df=subsets.dataframe,
+                linear_data=subsets.linear_dataframe,
+                out_dir=subsets.out_dir,
+                orbit=orbit,
+                pol=pol,
+                monthly=monthly,
+                features=subsets.features,
+            )
 
-        reg_anomalies = compute_anomaly(
-            df=subsets.regression_dataframe,
-            linear_data=subsets.linear_dataframe,
-            out_dir=subsets.out_dir,
-            orbit=orbit,
-            pol=pol,
-            monthly=monthly,
-            features=subsets.features,
-        )
+        else:
+            reg_anomalies = compute_anomaly(
+                df=subsets.regression_dataframe,
+                linear_data=subsets.linear_dataframe,
+                out_dir=subsets.out_dir,
+                orbit=orbit,
+                pol=pol,
+                monthly=monthly,
+                features=subsets.features,
+            )
 
         # stac = StacItems(
         #     data=reg_anomalies.dataframe,

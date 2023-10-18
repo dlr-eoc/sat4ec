@@ -97,7 +97,7 @@ class TestGetData(unittest.TestCase):
         self.assertTrue(self.subsets.dataframe.index.inferred_type, pd.DatetimeIndex)
         self.assertTrue(len(self.subsets.dataframe) < len(daily_dataframe))
 
-    def test_regression(self):
+    def test_regression_raw(self):
         self.indicator.dataframe = pd.read_csv(
             self.data_dir.joinpath("raw", "indicator_1_rawdata_asc_VH.csv")
         )
@@ -124,7 +124,36 @@ class TestGetData(unittest.TestCase):
             ).exists()
         )
 
-    def test_save_df(self):
+    def test_regression_monthly(self):
+        self.indicator.dataframe = pd.read_csv(
+            self.data_dir.joinpath("raw", "indicator_1_rawdata_asc_VH.csv")
+        )
+        self.indicator.dataframe["interval_from"] = pd.to_datetime(
+            self.indicator.dataframe["interval_from"]
+        )
+        self.indicator.dataframe = self.indicator.dataframe.set_index("interval_from")
+        self.subsets.dataframe = self.indicator.dataframe
+        self.subsets.features = self.features
+        self.subsets.monthly = True
+
+        self.subsets.monthly_aggregate()
+        self.subsets.apply_regression(mode="spline")
+        self.subsets.save_regression(mode="spline")
+
+        self.assertTrue(
+            self.indicator.out_dir.joinpath(
+                "regression",
+                f"indicator_1_spline_{self.indicator.orbit}_{self.indicator.pol}.csv",
+            ).exists()
+        )
+        self.assertTrue(
+            self.indicator.out_dir.joinpath(
+                "regression",
+                f"indicator_1_linear_{self.indicator.orbit}_{self.indicator.pol}.csv",
+            ).exists()
+        )
+
+    def test_save_df_raw(self):  # pure raw data
         self.indicator.get_request_grd()
         self.indicator.get_data()
         self.indicator.stats_to_df()
@@ -135,5 +164,21 @@ class TestGetData(unittest.TestCase):
             self.indicator.out_dir.joinpath(
                 "raw",
                 f"indicator_1_rawdata_{self.indicator.orbit}_{self.indicator.pol}.csv",
+            ).exists()
+        )
+
+    def test_save_df_monthly(self):  # monthly raw data
+        self.indicator.get_request_grd()
+        self.indicator.get_data()
+        self.indicator.stats_to_df()
+        self.subsets.dataframe = self.indicator.dataframe
+        self.subsets.monthly = True
+        self.subsets.monthly_aggregate()
+        self.subsets.save_monthly_raw()
+
+        self.assertTrue(
+            self.indicator.out_dir.joinpath(
+                "raw",
+                f"indicator_1_rawdata_monthly_{self.indicator.orbit}_{self.indicator.pol}.csv",
             ).exists()
         )
