@@ -12,8 +12,9 @@ if __name__ == "__main__":
         pol="VH",  # only use VH polarization
         aoi="vw_wolfsburg2subfeatures",
         ext="geojson",
-        start="2016-01-01",
-        monthly=True,
+        start="2020-01-01",
+        end="2022-12-31",
+        monthly=False,
         regression="spline",
         linear=True,
         aoi_split=True,

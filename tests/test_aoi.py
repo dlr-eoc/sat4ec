@@ -33,7 +33,7 @@ class TestAOI(unittest.TestCase):
             with AOI(data=TEST_DIR.joinpath("AOIs", "MISSING.geojson")) as aoi_collection:
                 pass
 
-        with self.assertRaises(FileNotFoundError):
+        with self.assertRaises(TypeError):
             with AOI(data=str(TEST_DIR.joinpath("AOIs", "MISSING.geojson").absolute())) as aoi_collection:
                 pass
 
@@ -79,10 +79,10 @@ class TestAOI(unittest.TestCase):
 
         with self.assertRaises(errors.GEOSException):
             with AOI(data=pol) as aoi_collection:
-                self.assertTrue(isinstance(aoi_collection.record, dict))
+                pass
 
         pol = "polygon((11, 48), (12, 48), (12, 49), (11, 49), (11, 48))"
 
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(TypeError):
             with AOI(data=pol) as aoi_collection:
-                self.assertTrue(isinstance(aoi_collection.record, dict))
+                pass

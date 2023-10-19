@@ -318,7 +318,7 @@ class PlotCollection:
         for ext in exts:
             out_file = self.out_dir.joinpath(
                 "plot",
-                f"indicator_1_{self.name}_interpolated_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.{ext}",
+                f"indicator_1_{self.name}_regression_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.{ext}",
             )
 
             self.fig.savefig(out_file, dpi=dpi)

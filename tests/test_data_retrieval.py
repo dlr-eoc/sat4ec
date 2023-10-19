@@ -2,6 +2,7 @@ import unittest
 from pathlib import Path
 
 import pandas as pd
+import shutil
 
 from source.data_retrieval import IndicatorData as IData
 from data_retrieval import SubsetCollection as Subsets
@@ -20,9 +21,9 @@ TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
 class TestGetData(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestGetData, self).__init__(*args, **kwargs)
-        self.data_dir = TEST_DIR.joinpath("vw_wolfsburg2subfeatures")
+        self.out_dir = TEST_DIR.joinpath("output", "vw_wolfsburg")
         self.aoi_collection = AOI(
-            data=TEST_DIR.joinpath("AOIs", "vw_wolfsburg2subfeatures.geojson")
+            data=TEST_DIR.joinpath("input", "AOIs", "vw_wolfsburg_aoi_split.geojson")
         )
         self.features = [feature for feature in self.aoi_collection.get_feature()]
         self.feature = self.features[0]
@@ -30,7 +31,7 @@ class TestGetData(unittest.TestCase):
         self.indicator = IData(
             aoi=self.feature.geometry,
             fid=self.feature.fid,
-            out_dir=self.data_dir,
+            out_dir=self.out_dir,
             start_date="2020-01-01",
             end_date="2022-12-31",
             orbit="asc",
@@ -43,6 +44,10 @@ class TestGetData(unittest.TestCase):
             orbit=self.indicator.orbit,
             pol=self.indicator.pol,
         )
+
+    def tearDown(self):
+        if self.out_dir.exists():
+            shutil.rmtree(self.out_dir)
 
     def test_class_init(self):
         self.assertTrue(isinstance(self.indicator.geometry, Geometry))
@@ -99,7 +104,7 @@ class TestGetData(unittest.TestCase):
 
     def test_regression_raw(self):
         self.indicator.dataframe = pd.read_csv(
-            self.data_dir.joinpath("raw", "indicator_1_rawdata_asc_VH.csv")
+            self.out_dir.joinpath("raw", "indicator_1_rawdata_asc_VH.csv")
         )
         self.indicator.dataframe["interval_from"] = pd.to_datetime(
             self.indicator.dataframe["interval_from"]
@@ -126,7 +131,7 @@ class TestGetData(unittest.TestCase):
 
     def test_regression_monthly(self):
         self.indicator.dataframe = pd.read_csv(
-            self.data_dir.joinpath("raw", "indicator_1_rawdata_asc_VH.csv")
+            self.out_dir.joinpath("raw", "indicator_1_rawdata_asc_VH.csv")
         )
         self.indicator.dataframe["interval_from"] = pd.to_datetime(
             self.indicator.dataframe["interval_from"]

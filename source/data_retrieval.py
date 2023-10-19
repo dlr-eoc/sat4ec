@@ -17,8 +17,9 @@ from sentinelhub import (
 
 
 class Regression:
-    def __init__(self, fid=None, df=None, mode="spline"):
+    def __init__(self, fid=None, df=None, mode="spline", monthly=False):
         self.mode = mode
+        self.monthly = monthly
         self.fid = fid
         self.dataframe = df
         self.linear_dataframe = None
@@ -28,19 +29,20 @@ class Regression:
         self.prepare_regression()
         self.linear_regression()
 
-        if self.mode == "rolling":
-            self.regression_dataframe[f"{self.fid}_mean"] = self.apply_pandas_rolling()
+        if not self.monthly:  # apply regression on daily data, not monthly
+            if self.mode == "rolling":
+                self.regression_dataframe[f"{self.fid}_mean"] = self.apply_pandas_rolling()
 
-        elif self.mode == "spline":
-            self.regression_dataframe[f"{self.fid}_mean"] = self.apply_spline()
+            elif self.mode == "spline":
+                self.regression_dataframe[f"{self.fid}_mean"] = self.apply_spline()
 
-        elif self.mode == "poly":
-            self.regression_dataframe[f"{self.fid}_mean"] = self.apply_polynomial()
+            elif self.mode == "poly":
+                self.regression_dataframe[f"{self.fid}_mean"] = self.apply_polynomial()
 
-        else:
-            raise ValueError(
-                f"The provided mode {self.mode} is not supported. Please choose from [rolling, spline, poly]."
-            )
+            else:
+                raise ValueError(
+                    f"The provided mode {self.mode} is not supported. Please choose from [rolling, spline, poly]."
+                )
 
         self.dataframe = self.dataframe.drop("interval_diff", axis=1, inplace=False)
 
@@ -206,6 +208,7 @@ class SubsetCollection:
         for feature in self.features:
             regression = Regression(
                 fid=feature.fid,
+                monthly=self.monthly,
                 df=self.dataframe.loc[
                     :, self.dataframe.columns.str.startswith(f"{feature.fid}_")
                 ],
@@ -219,11 +222,12 @@ class SubsetCollection:
         self.drop_columns()
 
     def save_regression(self, mode="spline"):
-        reg_out_file = self.out_dir.joinpath(
-            "regression",
-            f"indicator_1_{mode}_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
-        )
-        self.regression_dataframe.to_csv(reg_out_file)
+        if not self.monthly:  # regression is not saved for monthly data
+            reg_out_file = self.out_dir.joinpath(
+                "regression",
+                f"indicator_1_{mode}_{self.orbit}_{self.pol}.csv",
+            )
+            self.regression_dataframe.to_csv(reg_out_file)
 
         lin_out_file = self.out_dir.joinpath(
             "regression",

@@ -1,4 +1,5 @@
 import unittest
+import shutil
 
 import pandas as pd
 from source.anomaly_detection import Anomaly, AnomalyCollection
@@ -12,21 +13,29 @@ TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
 class TestAD(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestAD, self).__init__(*args, **kwargs)
-        self.data_dir = TEST_DIR.joinpath("vw_wolfsburg2subfeatures")
+        self.out_dir = TEST_DIR.joinpath("output", "vw_wolfsburg")
         (
             self.raw_data,
             self.raw_monthly_data,
             self.reg_data,
             self.reg_anomaly_data,
-            self.raw_anomaly_data,
+            self.raw_monthly_anomaly_data,
             self.linear_data,
             self.linear_monthly_data,
-        ) = prepare_test_dataframes(data_dir=self.data_dir)
+        ) = prepare_test_dataframes(data_dir=TEST_DIR.joinpath("input"))
+
+    def create_output_dir(self):
+        if not self.out_dir.joinpath("anomalies").exists():
+            self.out_dir.joinpath("anomalies").mkdir(parents=True)
+
+    def tearDown(self):
+        if self.out_dir.exists():
+            shutil.rmtree(self.out_dir)
 
     def test_dataframe_from_file(self):
         anomaly_collection = AnomalyCollection(
-            data=self.data_dir.joinpath("raw", "indicator_1_rawdata_asc_VH.csv"),
-            features=[Feature(fid="1"), Feature(fid="2"), Feature(fid="total")],
+            data=TEST_DIR.joinpath("input", "raw", "indicator_1_rawdata_daily_asc_VH.csv"),
+            features=[Feature(fid="0")],
         )
 
         self.assertTrue(isinstance(anomaly_collection.indicator_df, pd.DataFrame))
@@ -37,7 +46,7 @@ class TestAD(unittest.TestCase):
     def test_dataframe_from_dataframe(self):
         anomaly_collection = AnomalyCollection(
             data=self.raw_data,
-            features=[Feature(fid="1"), Feature(fid="2"), Feature(fid="total")],
+            features=[Feature(fid="0")],
         )
 
         self.assertTrue(isinstance(anomaly_collection.indicator_df, pd.DataFrame))
@@ -48,11 +57,11 @@ class TestAD(unittest.TestCase):
     def test_dataframe_from_filestring(self):
         anomaly_collection = AnomalyCollection(
             data=str(
-                self.data_dir.joinpath(
-                    "raw", "indicator_1_rawdata_asc_VH.csv"
+                TEST_DIR.joinpath(
+                    "input", "raw", "indicator_1_rawdata_daily_asc_VH.csv"
                 ).absolute()
             ),
-            features=[Feature(fid="1"), Feature(fid="2"), Feature(fid="total")],
+            features=[Feature(fid="0")],
         )
 
         self.assertTrue(isinstance(anomaly_collection.indicator_df, pd.DataFrame))
@@ -109,7 +118,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_maxima()
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 55)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 25)
 
     def test_find_minima_regression(self):
         anomaly_collection = AnomalyCollection(
@@ -136,7 +145,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_minima()
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 53)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 24)
 
     def test_find_extrema_regression(self):
         anomaly_collection = AnomalyCollection(
@@ -163,7 +172,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_feature_extrema()
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 102)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 43)
 
     def test_find_uncorrected_extrema(self):
         anomaly_collection = AnomalyCollection(
@@ -191,7 +200,7 @@ class TestAD(unittest.TestCase):
 
         anomaly.find_maxima()  # find maxima on dataframe
         anomaly.find_minima()  # find minima on dataframe
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 108)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 49)
 
     def test_find_extrema_monthly(self):
         anomaly_collection = AnomalyCollection(
@@ -218,7 +227,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_feature_extrema()
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 5)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 6)
 
     def test_anomaly_save_monthly(self):
         anomaly_collection = AnomalyCollection(
@@ -226,9 +235,11 @@ class TestAD(unittest.TestCase):
             linear_data=self.linear_monthly_data,
             features=[Feature(fid="0")],
             anomaly_column="mean",
-            out_dir=self.data_dir,
+            out_dir=self.out_dir,
+            monthly=True
         )
         feature = anomaly_collection.features[0]
+        self.create_output_dir()
 
         anomaly = Anomaly(
             data=anomaly_collection.dataframe.loc[
@@ -261,9 +272,10 @@ class TestAD(unittest.TestCase):
             linear_data=self.linear_data,
             features=[Feature(fid="0")],
             anomaly_column="mean",
-            out_dir=self.data_dir,
+            out_dir=self.out_dir,
         )
         feature = anomaly_collection.features[0]
+        self.create_output_dir()
 
         anomaly = Anomaly(
             data=anomaly_collection.dataframe.loc[

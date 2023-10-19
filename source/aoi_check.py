@@ -53,7 +53,20 @@ class AOI:
         self.aoi = None
         self.aoi_split = aoi_split
 
-        if isinstance(data, Path):
+        if isinstance(data, str):
+            if "POLYGON" in data:  # wkt string
+                self.geometry = from_wkt(data)
+                self.build_aoi(geometry_type="Polygon", geometry=self.geometry)
+
+            elif Path(data).exists():
+                self.filename = Path(data)
+                self.load_aoi()
+                self.get_features()
+
+            else:
+                raise TypeError(f"The provided data {data} cannot be resolved to WKT or to a path.")
+
+        elif isinstance(data, Path):
             self.filename = data
             self.load_aoi()
             self.get_features()
@@ -61,23 +74,6 @@ class AOI:
         elif isinstance(data, Polygon):
             self.geometry = data
             self.build_aoi(geometry_type="Polygon", geometry=self.geometry)
-
-        elif isinstance(data, str):
-            if "POLYGON" in data:  # wkt string
-                self.geometry = from_wkt(data)
-                self.build_aoi(geometry_type="Polygon", geometry=self.geometry)
-
-            else:
-                raise AttributeError(f"The provided data {data} misses the keyword POLYGON.")
-
-        elif isinstance(Path(data), PurePath):  # path can be resolved to a pathlib object
-            if Path(data).exists():
-                self.filename = Path(data)
-                self.load_aoi()
-                self.get_features()
-
-            else:
-                raise FileNotFoundError(f"The provided path {data} does not exist.")
 
         else:
             raise TypeError(f"The provided data {data} is of unsupported type {type(data)}.")
