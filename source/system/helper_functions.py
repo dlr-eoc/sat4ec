@@ -27,11 +27,15 @@ class Regression:
         self.linear_regression()
 
         if self.monthly:
-            self.regression_dataframe[f"{self.fid}_mean"] = self.dataframe[f"{self.fid}_mean"]
+            self.regression_dataframe[f"{self.fid}_mean"] = self.dataframe[
+                f"{self.fid}_mean"
+            ]
 
         else:  # apply regression on daily data, not monthly
             if self.mode == "rolling":
-                self.regression_dataframe[f"{self.fid}_mean"] = self.apply_pandas_rolling()
+                self.regression_dataframe[
+                    f"{self.fid}_mean"
+                ] = self.apply_pandas_rolling()
 
             elif self.mode == "spline":
                 self.regression_dataframe[f"{self.fid}_mean"] = self.apply_spline()
@@ -123,6 +127,30 @@ class Regression:
         self.regression_dataframe.drop(f"{self.fid}_std", axis=1)
 
 
+def mutliple_orbits_raw_range(feature=None, orbit_collection=None):
+    subsets_df = pd.DataFrame()
+
+    for orbit in orbit_collection.orbits:
+        if orbit == "asc":
+            subsets_df["asc_mean"] = orbit_collection.asc_subsets.dataframe.loc[:, f"{feature.fid}_mean"]
+            subsets_df["asc_std"] = orbit_collection.asc_subsets.dataframe.loc[:, f"{feature.fid}_std"]
+
+        else:
+            subsets_df["des_mean"] = orbit_collection.des_subsets.dataframe.loc[:, f"{feature.fid}_mean"]
+            subsets_df["des_std"] = orbit_collection.des_subsets.dataframe.loc[:, f"{feature.fid}_std"]
+
+    if len(orbit_collection.orbits) == 2:
+        subsets_df[f"{feature.fid}_mean"] = subsets_df[["asc_mean", "des_mean"]].mean(axis=1)
+        subsets_df[f"{feature.fid}_std"] = subsets_df[["asc_std", "des_std"]].mean(axis=1)
+
+    else:
+        orbit = orbit_collection.orbits[0]
+        subsets_df[f"{feature.fid}_mean"] = subsets_df.loc[:, f"{orbit}_mean"]
+        subsets_df[f"{feature.fid}_std"] = subsets_df.loc[:, f"{orbit}_std"]
+
+    return subsets_df
+
+
 def get_monthly_keyword(monthly=False):
     if monthly:
         return "monthly_"
@@ -133,7 +161,9 @@ def get_monthly_keyword(monthly=False):
 
 def get_last_month():
     current_date = datetime.now()
-    last_month = datetime(current_date.year, current_date.month, 1) + relativedelta(days=-1)
+    last_month = datetime(current_date.year, current_date.month, 1) + relativedelta(
+        days=-1
+    )
 
     return datetime.strftime(last_month, "%Y-%m-%d")
 
@@ -148,12 +178,7 @@ def load_yaml(yaml_path):
         return yaml.safe_load(f)
 
 
-def get_logger(
-        name,
-        out_dir=None,
-        level=logging.INFO,
-        also_log_to_stdout=True
-):
+def get_logger(name, out_dir=None, level=logging.INFO, also_log_to_stdout=True):
     log_file = Path(out_dir).joinpath("log_sat4ec.json")
 
     logger = logging.getLogger(name)

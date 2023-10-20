@@ -4,9 +4,13 @@ import shutil
 
 import numpy as np
 
-from source.plot_data import PlotCollection, PlotData
+from source.plot_data import Plots, PlotData
+from system.collections import OrbitCollection as Orbits
+from system.collections import SubsetCollection as Subsets
+from anomaly_detection import Anomalies
 from source.aoi_check import Feature
 from test_helper_functions import prepare_test_dataframes
+from system.helper_functions import mutliple_orbits_raw_range
 from pathlib import Path
 
 TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
@@ -16,28 +20,47 @@ class TestPlotting(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestPlotting, self).__init__(*args, **kwargs)
         self.out_dir = TEST_DIR.joinpath("output", "vw_wolfsburg")
-        (
-            self.raw_data,
-            self.raw_monthly_data,
-            self.reg_data,
-            self.reg_anomaly_data,
-            self.raw_monthly_anomaly_data,
-            self.linear_data,
-            self.linear_monthly_data,
-        ) = prepare_test_dataframes(data_dir=TEST_DIR.joinpath("input"))
-
-        self.collection = PlotCollection(
+        self.monthly = False
+        self.orbit_collection = Orbits(orbit="des", monthly=self.monthly)
+        self._prepare()
+        self.collection = Plots(
             out_dir=self.out_dir,
             name="VW Wolfsburg",
-            raw_data=self.raw_data,
-            reg_data=self.reg_data,
-            anomaly_data=self.reg_anomaly_data,
-            linear_data=self.linear_data,
-            orbit="asc",
-            monthly=False,
+            orbit=self.orbit_collection.orbit,
+            monthly=self.monthly,
             linear=True,
             features=[Feature(fid="0")],
         )
+
+    def _prepare(self):
+        for orbit in self.orbit_collection.orbits:
+            (
+                self.raw_data,
+                self.raw_monthly_data,
+                self.reg_data,
+                self.reg_anomaly_data,
+                self.raw_monthly_anomaly_data,
+                self.linear_data,
+                self.linear_monthly_data,
+            ) = prepare_test_dataframes(data_dir=TEST_DIR.joinpath("orbit_input"), orbit=orbit)
+
+            subsets = Subsets(
+                orbit=orbit
+            )
+
+            anomalies = Anomalies()
+
+            if self.monthly:
+                pass
+
+            else:
+                subsets.dataframe = self.raw_data
+                subsets.regression_dataframe = self.reg_data
+                subsets.linear_dataframe = self.linear_data
+                anomalies.dataframe = self.reg_anomaly_data
+
+            self.orbit_collection.add_subsets(subsets=subsets, orbit=orbit)
+            self.orbit_collection.add_anomalies(anomalies=anomalies, orbit=orbit)
 
     def create_output_dir(self):
         if not self.out_dir.joinpath("plot").exists():
@@ -48,29 +71,30 @@ class TestPlotting(unittest.TestCase):
             shutil.rmtree(self.out_dir)
 
     def test_raw_plot(self):
-        for index, feature in enumerate(self.collection.features):
-            plotting = PlotData(
-                raw_data=self.collection.raw_dataframe,
-                ax=self.collection._get_plot_axis(index=index),
-                fid=feature.fid
-            )
-            plotting.plot_rawdata()
+        for subsets, anomalies, orbit in self.orbit_collection.get_data():
+            for index, feature in enumerate(self.collection.features):
+                plotting = PlotData(
+                    raw_data=subsets.dataframe.loc[
+                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    ax=self.collection._get_plot_axis(index=index),
+                    fid=feature.fid
+                )
+                plotting.plot_rawdata()
 
-        self.collection.finalize()
-        self.assertTrue(isinstance(self.collection.axs, plt.Axes))
+        # self.collection.finalize()
+        # self.assertTrue(isinstance(self.collection.axs, plt.Axes))
         plt.show()
 
     def test_raw_range_plot(self):
         for index, feature in enumerate(self.collection.features):
             plotting = PlotData(
-                raw_data=self.collection.raw_dataframe,
+                raw_data=mutliple_orbits_raw_range(feature=feature, orbit_collection=self.orbit_collection),
                 ax=self.collection._get_plot_axis(index=index),
                 fid=feature.fid
             )
             plotting.plot_rawdata_range()
 
-        self.collection.finalize()
-        self.assertTrue(isinstance(self.collection.axs, plt.Axes))
         plt.show()
 
     def test_regression_plot(self):

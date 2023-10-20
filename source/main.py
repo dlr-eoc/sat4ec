@@ -117,9 +117,9 @@ def main(
     linear=False,
     aoi_split=False,
 ):
-    orbits = Orbits(orbit=in_orbit, monthly=monthly)
+    orbit_collection = Orbits(orbit=in_orbit, monthly=monthly)
 
-    for orbit in orbits.orbits:
+    for orbit in orbit_collection.orbits:
         with AOI(data=aoi_data, aoi_split=aoi_split) as aoi_collection:
             subsets = Subsets(out_dir=out_dir, monthly=monthly, orbit=orbit, pol=pol)
 
@@ -148,7 +148,7 @@ def main(
 
         subsets.apply_regression(mode=regression)
         subsets.save_regression(mode=regression)  # save spline data
-        orbits.add_subsets(subsets=subsets, orbit=orbit)
+        orbit_collection.add_subsets(subsets=subsets, orbit=orbit)
 
         if monthly:
             raw_anomalies = compute_anomaly(
@@ -160,7 +160,7 @@ def main(
                 monthly=monthly,
                 features=subsets.features,
             )
-            orbits.add_anomalies(anomalies=raw_anomalies, orbit=orbit)
+            orbit_collection.add_anomalies(anomalies=raw_anomalies, orbit=orbit)
 
         else:
             reg_anomalies = compute_anomaly(
@@ -172,7 +172,7 @@ def main(
                 monthly=monthly,
                 features=subsets.features,
             )
-            orbits.add_anomalies(anomalies=reg_anomalies, orbit=orbit)
+            orbit_collection.add_anomalies(anomalies=reg_anomalies, orbit=orbit)
 
         # stac = StacItems(
         #     data=reg_anomalies.dataframe,
@@ -183,7 +183,7 @@ def main(
         # )
 
     plot_data(
-        orbits=orbits,
+        orbits=orbit_collection,
         out_dir=subsets.out_dir,
         name=name,
         monthly=monthly,

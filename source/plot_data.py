@@ -12,10 +12,6 @@ class Plots:
     def __init__(
         self,
         name=None,
-        raw_data=None,
-        reg_data=None,
-        linear_data=None,
-        anomaly_data=None,
         out_dir=None,
         orbit="asc",
         pol="VH",
@@ -34,10 +30,6 @@ class Plots:
         )
         self.features = features
         self.max_cols = max_cols
-        # self.raw_dataframe = self._get_data(data=raw_data)
-        # self.reg_dataframe = self._get_data(data=reg_data)
-        # self.linear_dataframe = self._get_data(data=linear_data)
-        # self.anomaly_dataframe = self._get_data(data=anomaly_data)
         self._get_subplots()
         self._get_long_orbit()
 
@@ -87,10 +79,16 @@ class Plots:
 
     def _get_subplots(self, width=16, height=9):
         nrows, ncols = self._get_rows_cols()
-        self.fig, self.axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(width * ncols, height * nrows))
+        self.fig, self.axs = plt.subplots(
+            nrows=nrows, ncols=ncols, figsize=(width * ncols, height * nrows)
+        )
 
     def _get_long_orbit(self):
-        self.long_orbit = "ascending" if self.orbit == "asc" else "descending"
+        if self.orbit == "both":
+            self.long_orbit = ""
+
+        else:
+            self.long_orbit = "ascending" if self.orbit == "asc" else "descending"
 
     def _get_plot_axis(self, index=0):
         row = index // self.max_cols
@@ -151,13 +149,19 @@ class Plots:
                         :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
                     ],
                     reg_data=subsets.regression_dataframe.loc[
-                        :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
+                        :,
+                        subsets.regression_dataframe.columns.str.startswith(
+                            f"{feature.fid}_"
+                        ),
                     ],
                     anomaly_data=anomalies.dataframe.loc[  # name dataframe applies regardless of monthly or not
                         :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
                     ],
                     linear_data=subsets.linear_dataframe.loc[
-                        :, subsets.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
+                        :,
+                        subsets.linear_dataframe.columns.str.startswith(
+                            f"{feature.fid}_"
+                        ),
                     ],
                     ax=self._get_plot_axis(index=index),
                     fid=feature.fid,
@@ -180,7 +184,9 @@ class Plots:
                 feature_plot.plot_anomalies()
 
     def plot_annotations(self):
-        self.fig.suptitle(f"{self.name}, {self.pol} polarization, {self.long_orbit} orbit")
+        self.fig.suptitle(
+            f"{self.name}, {self.pol} polarization, {self.long_orbit} orbit"
+        )
 
         for index, ax in enumerate(self.fig.axes):
             ax.set_ylabel("Sentinel-1 backscatter [dB]")
@@ -203,10 +209,8 @@ class Plots:
             std_col = "0_std"
 
         plt.ylim(
-            (self.raw_dataframe[mean_col] - self.raw_dataframe[std_col]).min()
-            - 1,
-            (self.raw_dataframe[mean_col] + self.raw_dataframe[std_col]).max()
-            + 1,
+            (self.raw_dataframe[mean_col] - self.raw_dataframe[std_col]).min() - 1,
+            (self.raw_dataframe[mean_col] + self.raw_dataframe[std_col]).max() + 1,
         )
 
         if not self.monthly:

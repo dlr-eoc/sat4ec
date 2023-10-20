@@ -50,14 +50,15 @@ class Anomalies:
         return df
 
     def _prepare_dataframe(self):
-        self.dataframe = self.indicator_df.copy()  # create target dataframe
+        if self.indicator_df is not None:
+            self.dataframe = self.indicator_df.copy()  # create target dataframe
 
-        for feature in self.features:
-            self.dataframe[
-                f"{feature.fid}_anomaly"
-            ] = False  # create new column storing anomaly state [boolean]
+            for feature in self.features:
+                self.dataframe[
+                    f"{feature.fid}_anomaly"
+                ] = False  # create new column storing anomaly state [boolean]
 
-        self.dataframe = self.dataframe[sorted(self.dataframe.columns)]
+            self.dataframe = self.dataframe[sorted(self.dataframe.columns)]
 
     def find_extrema(self):
         for feature in self.features:
