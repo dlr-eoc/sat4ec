@@ -8,7 +8,7 @@ from datetime import timedelta
 from pathlib import Path
 
 
-class PlotCollection:
+class Plots:
     def __init__(
         self,
         name=None,
@@ -34,10 +34,10 @@ class PlotCollection:
         )
         self.features = features
         self.max_cols = max_cols
-        self.raw_dataframe = self._get_data(data=raw_data)
-        self.reg_dataframe = self._get_data(data=reg_data)
-        self.linear_dataframe = self._get_data(data=linear_data)
-        self.anomaly_dataframe = self._get_data(data=anomaly_data)
+        # self.raw_dataframe = self._get_data(data=raw_data)
+        # self.reg_dataframe = self._get_data(data=reg_data)
+        # self.linear_dataframe = self._get_data(data=linear_data)
+        # self.anomaly_dataframe = self._get_data(data=anomaly_data)
         self._get_subplots()
         self._get_long_orbit()
 
@@ -143,39 +143,41 @@ class PlotCollection:
             label=f"mean {plusminus} std",
         )
 
-    def plot_features(self):
-        for index, feature in enumerate(self.features):
-            feature_plot = PlotData(
-                raw_data=self.raw_dataframe.loc[
-                    :, self.raw_dataframe.columns.str.startswith(f"{feature.fid}_")
-                ],
-                reg_data=self.reg_dataframe.loc[
-                    :, self.reg_dataframe.columns.str.startswith(f"{feature.fid}_")
-                ],
-                anomaly_data=self.anomaly_dataframe.loc[
-                    :, self.anomaly_dataframe.columns.str.startswith(f"{feature.fid}_")
-                ],
-                linear_data=self.linear_dataframe.loc[
-                    :, self.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
-                ],
-                ax=self._get_plot_axis(index=index),
-                fid=feature.fid,
-                orbit=self.orbit,
-                pol=self.pol,
-                long_orbit=self.long_orbit,
-            )
+    def plot_features(self, orbit_collection=None):
+        for subsets, anomalies, orbit in orbit_collection.get_data():
+            for index, feature in enumerate(self.features):
+                feature_plot = PlotData(
+                    raw_data=subsets.dataframe.loc[
+                        :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
+                    reg_data=subsets.regression_dataframe.loc[
+                        :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
+                    anomaly_data=anomalies.dataframe.loc[  # name dataframe applies regardless of monthly or not
+                        :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
+                    linear_data=subsets.linear_dataframe.loc[
+                        :, subsets.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
+                    ax=self._get_plot_axis(index=index),
+                    fid=feature.fid,
+                    orbit=self.orbit,
+                    pol=self.pol,
+                    long_orbit=self.long_orbit,
+                )
 
-            feature_plot.plot_rawdata_range()
+                feature_plot.plot_rawdata_range()
 
-            if self.linear:
-                feature_plot.plot_mean_range()
+                if self.linear:
+                    feature_plot.plot_mean_range()
 
-            feature_plot.plot_rawdata()
+                feature_plot.plot_rawdata()
 
-            if self.reg_dataframe is not None:
-                feature_plot.plot_regression()
+                # TODO: was None if plotting daily
+                # if self.reg_dataframe is not None:
+                #     feature_plot.plot_regression()
 
-            feature_plot.plot_anomalies()
+                feature_plot.plot_anomalies()
 
     def plot_annotations(self):
         self.fig.suptitle(f"{self.name}, {self.pol} polarization, {self.long_orbit} orbit")
