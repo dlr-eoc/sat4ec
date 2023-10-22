@@ -1,4 +1,5 @@
 *.jpg
+*.png
 .idea/
 *.qmd
 .ipynb_checkpoints
@@ -7,6 +8,7 @@ source/__pycache__
 source/execution/__pycache__
 source/system/__pycache__
 source/system/credentials.yaml
+NOTES.txt
 results
 credentials
 obsolete

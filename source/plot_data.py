@@ -3,7 +3,7 @@ import numpy as np
 import seaborn as sns
 import pandas as pd
 import matplotlib.dates as mdates
-from system.helper_functions import get_monthly_keyword
+from system.helper_functions import get_monthly_keyword, mutliple_orbits_raw_range
 from datetime import timedelta
 from pathlib import Path
 
@@ -11,6 +11,7 @@ from pathlib import Path
 class Plots:
     def __init__(
         self,
+        raw_range=None,
         name=None,
         out_dir=None,
         orbit="asc",
@@ -20,6 +21,7 @@ class Plots:
         features=None,
         max_cols=2,
     ):
+        self.raw_range_dataframe = raw_range
         self.name = name
         self.out_dir = out_dir
         self.orbit = orbit
@@ -148,6 +150,7 @@ class Plots:
                     raw_data=subsets.dataframe.loc[
                         :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
                     ],
+                    raw_range=mutliple_orbits_raw_range(feature=feature, orbit_collection=orbit_collection),
                     reg_data=subsets.regression_dataframe.loc[
                         :,
                         subsets.regression_dataframe.columns.str.startswith(
@@ -209,14 +212,14 @@ class Plots:
             std_col = "0_std"
 
         plt.ylim(
-            (self.raw_dataframe[mean_col] - self.raw_dataframe[std_col]).min() - 1,
-            (self.raw_dataframe[mean_col] + self.raw_dataframe[std_col]).max() + 1,
+            (self.raw_range_dataframe[mean_col] - self.raw_range_dataframe[std_col]).min() - 1,
+            (self.raw_range_dataframe[mean_col] + self.raw_range_dataframe[std_col]).max() + 1,
         )
 
         if not self.monthly:
             plt.xlim(
-                self.raw_dataframe.index[0].to_pydatetime() - timedelta(days=7),
-                pd.to_datetime(self.raw_dataframe["interval_to"][-1]).to_pydatetime()
+                self.raw_range_dataframe.index[0].to_pydatetime() - timedelta(days=7),
+                self.raw_range_dataframe.index[-1].to_pydatetime()
                 + timedelta(days=7),
             )
 
@@ -350,6 +353,7 @@ class PlotData:
     def __init__(
         self,
         raw_data=None,
+        raw_range=None,
         reg_data=None,
         linear_data=None,
         anomaly_data=None,
@@ -360,6 +364,7 @@ class PlotData:
         long_orbit=None,
     ):
         self.raw_dataframe = raw_data
+        self.raw_range_dataframe = raw_range
         self.reg_dataframe = reg_data
         self.linear_dataframe = linear_data
         self.anomaly_dataframe = anomaly_data
@@ -385,28 +390,28 @@ class PlotData:
     def plot_rawdata_range(self):
         plusminus = "\u00B1"
         upper_boundary = (
-            self.raw_dataframe[f"{self.fid}_mean"]
-            + self.raw_dataframe[f"{self.fid}_std"]
+            self.raw_range_dataframe[f"{self.fid}_mean"]
+            + self.raw_range_dataframe[f"{self.fid}_std"]
         )
         lower_boundary = (
-            self.raw_dataframe[f"{self.fid}_mean"]
-            - self.raw_dataframe[f"{self.fid}_std"]
+            self.raw_range_dataframe[f"{self.fid}_mean"]
+            - self.raw_range_dataframe[f"{self.fid}_std"]
         )
 
         # plot of baundaries
         for boundary in [upper_boundary, lower_boundary]:
             sns.lineplot(
-                data=self.raw_dataframe,
-                x=self.raw_dataframe.index,
+                data=self.raw_range_dataframe,
+                x=self.raw_range_dataframe.index,
                 y=boundary,
                 color="#d3d3d3",
-                alpha=0,
+                # alpha=0,
                 legend=False,
             )
 
         # fill space between boundaries
         self.ax.fill_between(
-            self.raw_dataframe.index,
+            self.raw_range_dataframe.index,
             lower_boundary.tolist(),  # pandas series to list
             upper_boundary.tolist(),  # pandas series to list
             color="#ebebeb",

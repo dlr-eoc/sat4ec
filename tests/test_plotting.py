@@ -21,7 +21,7 @@ class TestPlotting(unittest.TestCase):
         super(TestPlotting, self).__init__(*args, **kwargs)
         self.out_dir = TEST_DIR.joinpath("output", "vw_wolfsburg")
         self.monthly = False
-        self.orbit_collection = Orbits(orbit="des", monthly=self.monthly)
+        self.orbit_collection = Orbits(orbit="both", monthly=self.monthly)
         self._prepare()
         self.collection = Plots(
             out_dir=self.out_dir,
@@ -30,6 +30,7 @@ class TestPlotting(unittest.TestCase):
             monthly=self.monthly,
             linear=True,
             features=[Feature(fid="0")],
+            raw_range=mutliple_orbits_raw_range(fid="0", orbit_collection=self.orbit_collection),
         )
 
     def _prepare(self):
@@ -89,12 +90,13 @@ class TestPlotting(unittest.TestCase):
     def test_raw_range_plot(self):
         for index, feature in enumerate(self.collection.features):
             plotting = PlotData(
-                raw_data=mutliple_orbits_raw_range(feature=feature, orbit_collection=self.orbit_collection),
+                raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
                 ax=self.collection._get_plot_axis(index=index),
                 fid=feature.fid
             )
             plotting.plot_rawdata_range()
 
+        self.collection.finalize()
         plt.show()
 
     def test_regression_plot(self):

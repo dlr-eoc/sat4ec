@@ -127,26 +127,29 @@ class Regression:
         self.regression_dataframe.drop(f"{self.fid}_std", axis=1)
 
 
-def mutliple_orbits_raw_range(feature=None, orbit_collection=None):
+def mutliple_orbits_raw_range(fid="total", orbit_collection=None):
     subsets_df = pd.DataFrame()
+    asc_df = pd.DataFrame()
+    des_df = pd.DataFrame()
 
     for orbit in orbit_collection.orbits:
         if orbit == "asc":
-            subsets_df["asc_mean"] = orbit_collection.asc_subsets.dataframe.loc[:, f"{feature.fid}_mean"]
-            subsets_df["asc_std"] = orbit_collection.asc_subsets.dataframe.loc[:, f"{feature.fid}_std"]
+            asc_df["asc_mean"] = orbit_collection.asc_subsets.dataframe.loc[:, f"{fid}_mean"]
+            asc_df["asc_std"] = orbit_collection.asc_subsets.dataframe.loc[:, f"{fid}_std"]
 
         else:
-            subsets_df["des_mean"] = orbit_collection.des_subsets.dataframe.loc[:, f"{feature.fid}_mean"]
-            subsets_df["des_std"] = orbit_collection.des_subsets.dataframe.loc[:, f"{feature.fid}_std"]
+            des_df["des_mean"] = orbit_collection.des_subsets.dataframe.loc[:, f"{fid}_mean"]
+            des_df["des_std"] = orbit_collection.des_subsets.dataframe.loc[:, f"{fid}_std"]
 
     if len(orbit_collection.orbits) == 2:
-        subsets_df[f"{feature.fid}_mean"] = subsets_df[["asc_mean", "des_mean"]].mean(axis=1)
-        subsets_df[f"{feature.fid}_std"] = subsets_df[["asc_std", "des_std"]].mean(axis=1)
+        subsets_df = pd.concat([asc_df, des_df], axis=1)
+        subsets_df[f"{fid}_mean"] = subsets_df[["asc_mean", "des_mean"]].mean(axis=1)
+        subsets_df[f"{fid}_std"] = subsets_df[["asc_std", "des_std"]].mean(axis=1)
 
     else:
         orbit = orbit_collection.orbits[0]
-        subsets_df[f"{feature.fid}_mean"] = subsets_df.loc[:, f"{orbit}_mean"]
-        subsets_df[f"{feature.fid}_std"] = subsets_df.loc[:, f"{orbit}_std"]
+        subsets_df[f"{fid}_mean"] = subsets_df.loc[:, f"{orbit}_mean"]
+        subsets_df[f"{fid}_std"] = subsets_df.loc[:, f"{orbit}_std"]
 
     return subsets_df
 
