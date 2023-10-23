@@ -92,7 +92,7 @@ class Plots:
         else:
             self.long_orbit = "ascending" if self.orbit == "asc" else "descending"
 
-    def _get_plot_axis(self, index=0):
+    def _get_plot_axis(self, index=0, single_axis=True):
         row = index // self.max_cols
         col = index % self.max_cols
 
@@ -105,6 +105,10 @@ class Plots:
 
             else:
                 ax = self.axs[row][col]
+
+        if not single_axis:  # create a secondary y-axis
+            ax = ax.twinx()
+            ax.set(ylabel="2nd_des")
 
         return ax
 
@@ -150,7 +154,9 @@ class Plots:
                     raw_data=subsets.dataframe.loc[
                         :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
                     ],
-                    raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=orbit_collection),
+                    raw_range=mutliple_orbits_raw_range(
+                        fid=feature.fid, orbit_collection=orbit_collection
+                    ),
                     reg_data=subsets.regression_dataframe.loc[
                         :,
                         subsets.regression_dataframe.columns.str.startswith(
@@ -191,15 +197,19 @@ class Plots:
         )
 
         for index, ax in enumerate(self.fig.axes):
-            ax.set_ylabel("Sentinel-1 backscatter [dB]")
-            # ax.set_xlabel("Timestamp")
-            ax.set_xlabel("")
+            if ax.get_ylabel() != "2nd_des":  # apply following annotations to left axis
+                ax.set_ylabel("Sentinel-1 backscatter [dB]")
+                # ax.set_xlabel("Timestamp")
+                ax.set_xlabel("")
 
-            if index == (len(self.fig.axes) - 1):
-                ax.set_title("All features")
+                if index == (len(self.fig.axes) - 1):
+                    ax.set_title("All features")
 
-            else:
-                ax.set_title(f"Feature {self.features[index].fid}")
+                else:
+                    ax.set_title(f"Feature {self.features[index].fid}")
+
+            else:  # if having secondary axis, do not label it
+                ax.set_ylabel("")
 
     def axes_limits(self):
         if len(self.features) > 1:
@@ -211,19 +221,37 @@ class Plots:
             std_col = "0_std"
 
         plt.ylim(
-            (self.raw_range_dataframe[mean_col] - self.raw_range_dataframe[std_col]).min() - 1,
-            (self.raw_range_dataframe[mean_col] + self.raw_range_dataframe[std_col]).max() + 1,
+            (
+                self.raw_range_dataframe[mean_col] - self.raw_range_dataframe[std_col]
+            ).min()
+            - 1,
+            (
+                self.raw_range_dataframe[mean_col] + self.raw_range_dataframe[std_col]
+            ).max()
+            + 1,
         )
 
         if not self.monthly:
             plt.xlim(
                 self.raw_range_dataframe.index[0].to_pydatetime() - timedelta(days=7),
-                self.raw_range_dataframe.index[-1].to_pydatetime()
-                + timedelta(days=7),
+                self.raw_range_dataframe.index[-1].to_pydatetime() + timedelta(days=7),
             )
+
+        # reset limits for all y axes
+        min_y_limits = [ax.get_ylim()[0] for ax in self.fig.axes]
+        max_y_limits = [ax.get_ylim()[1] for ax in self.fig.axes]
+
+        for ax in self.fig.axes:
+            ax.set_ylim([min(min_y_limits), max(max_y_limits)])
 
     def axes_ticks(self):
         for ax in self.fig.axes:
+            if ax.get_ylabel() != "":  # apply following annotations to left axis
+                ax.tick_params(colors=sns.color_palette()[0], which='both', axis="y")  # ascending orbit always blue
+
+            else:  # if having secondary axis
+                ax.tick_params(colors=sns.color_palette()[3], which='both', axis="y")  # descending orbit red if on secondary y-axis
+
             ax.xaxis.set_minor_locator(
                 mdates.MonthLocator()
             )  # minor ticks display months
@@ -240,32 +268,6 @@ class Plots:
             ):  # get count of empty subplots
                 self.fig.delaxes(self.axs.flatten()[len(self.axs.flatten()) - 1 - i])
 
-    @staticmethod
-    def delete_subplot_legend_items(handles=None, labels=None):
-        """
-        Figure legend has subplot labels like ["0_mean", "1_mean", "total_mean", "raw mean"].
-        Make general labels like ["mean", "raw mean"], i.e. truncate "0", "1" and "total".
-        """
-        label_candidates = [
-            item for item in labels if "_" in item
-        ]  # get labels with _ sign
-        label_indices = [
-            i for i, item in enumerate(labels) if "_" in item
-        ]  # get indices of labels with _ sign
-
-        labels[
-            label_indices[-1]
-        ] = "interpol."  # alter last element to draw it in the legend
-        del label_candidates[-1]  # remove last element from list
-        del label_indices[-1]  # remove last element from list
-
-        # delete remaining handles and labels with _ sign
-        for i in reversed(label_indices):
-            handles = np.delete(handles, i)
-            labels = np.delete(labels, i)
-
-        return handles, labels
-
     def plot_legend(self):
         # get handles and labels from each subplot
         handles = [ax.get_legend_handles_labels()[0] for ax in self.fig.axes]
@@ -280,12 +282,6 @@ class Plots:
         )  # get unique labels and their indices
         handles = np.array(handles)[np.array(indices)]  # get handles at unique indices
         labels = np.array(labels)[np.array(indices)]  # get labels at unique indices
-
-        # only reduce legend items further if having the _ sign, i.e. for several features like 0_mean, 1_mean
-        if any("_" in item for item in labels):
-            handles, labels = self.delete_subplot_legend_items(
-                handles=handles, labels=labels
-            )
 
         uniques = [
             (h, l) for i, (h, l) in enumerate(zip(handles, labels))
@@ -428,10 +424,13 @@ class PlotData:
             data=self.reg_dataframe,
             x=self.reg_dataframe.index,
             y=self.reg_dataframe[f"{self.fid}_mean"],
-            label=f"{self.fid}_mean",
+            label=f"{self.orbit}_regression",
             legend=False,
             zorder=zorder,
             ax=self.ax,
+            color=sns.color_palette()[3]
+            if self.ax.get_ylabel() == "2nd_des"  # descending orbit in red, if on secondary y-axis
+            else sns.color_palette()[0],  # ascending orbit always blue
         )
 
     def plot_mean_range(self, factor=0.2, zorder=15):
@@ -452,9 +451,11 @@ class PlotData:
             x=self.linear_dataframe.index,
             y1=lower_boundary.tolist(),  # pandas series to list
             y2=upper_boundary.tolist(),  # pandas series to list
-            color="#dba8e5",
-            alpha=0.25,
+            alpha=0.2,  # use 0.25 if desired to have the +/- std range visible
             zorder=zorder,
+            color=sns.color_palette()[3]  # alternate violet "#ab84b3"
+            if self.ax.get_ylabel() == "2nd_des"  # descending orbit in red, if on secondary y-axis
+            else sns.color_palette()[0],  # ascending orbit always blue
         )
 
         sns.lineplot(
@@ -462,10 +463,14 @@ class PlotData:
             x=self.linear_dataframe.index,
             y=self.linear_dataframe[f"{self.fid}_mean"],
             linestyle="--",
-            color="#ab84b3",
             legend=False,
             ax=self.ax,
+            label=f"{self.orbit}_linear_mean",
             zorder=zorder,
+            alpha=0.5,
+            color=sns.color_palette()[3]  # alternate violet "#ab84b3"
+            if self.ax.get_ylabel() == "2nd_des"  # descending orbit in red, if on secondary y-axis
+            else sns.color_palette()[0],  # ascending orbit always blue
         )
 
     def plot_anomalies(self, zorder=20):
@@ -479,11 +484,13 @@ class PlotData:
             y=self.anomaly_dataframe.loc[self.anomaly_dataframe[f"{self.fid}_anomaly"]][
                 f"{self.fid}_mean"
             ],
-            marker="o",
-            s=25,
+            marker="v",
+            s=80,
             zorder=zorder,
-            color="red",
-            label="anomaly",
+            label=f"{self.orbit}_anomaly",
             legend=False,
             ax=self.ax,
+            color=sns.color_palette()[3]  # alternate red
+            if self.ax.get_ylabel() == "2nd_des"  # descending orbit in red, if on secondary y-axis
+            else sns.color_palette()[0],  # ascending orbit always blue
         )

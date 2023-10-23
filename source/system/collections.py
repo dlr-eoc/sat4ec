@@ -2,7 +2,6 @@ import pandas as pd
 from aoi_check import Feature
 from system.helper_functions import get_monthly_keyword
 from system.helper_functions import Regression
-from plot_data import Plots
 
 
 class SubsetCollection:
@@ -159,7 +158,11 @@ class OrbitCollection:
     def get_data(self):
         for orbit in self.orbits:
             if orbit == "asc":
-                yield self.asc_subsets, self.asc_anomalies, orbit
+                yield self.asc_subsets, self.asc_anomalies, orbit, True  # True for left axis
 
             else:
-                yield self.des_subsets, self.des_anomalies, orbit
+                if len(self.orbits) == 2:
+                    yield self.des_subsets, self.des_anomalies, orbit, False  # False, to plot DES on right axis
+
+                else:
+                    yield self.des_subsets, self.des_anomalies, orbit, True  # True for left axis
