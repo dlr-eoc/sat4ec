@@ -87,7 +87,7 @@ class Plots:
 
     def _get_long_orbit(self):
         if self.orbit == "both":
-            self.long_orbit = ""
+            self.long_orbit = "ascending & descending"
 
         else:
             self.long_orbit = "ascending" if self.orbit == "asc" else "descending"
@@ -150,7 +150,7 @@ class Plots:
                     raw_data=subsets.dataframe.loc[
                         :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
                     ],
-                    raw_range=mutliple_orbits_raw_range(feature=feature, orbit_collection=orbit_collection),
+                    raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=orbit_collection),
                     reg_data=subsets.regression_dataframe.loc[
                         :,
                         subsets.regression_dataframe.columns.str.startswith(
@@ -170,7 +170,6 @@ class Plots:
                     fid=feature.fid,
                     orbit=self.orbit,
                     pol=self.pol,
-                    long_orbit=self.long_orbit,
                 )
 
                 feature_plot.plot_rawdata_range()
@@ -311,6 +310,10 @@ class Plots:
         if " " in self.name:
             self.name = "_".join(self.name.split(" "))
 
+    def get_save_orbit(self):
+        if self.orbit == "both":
+            self.orbit = "asc_des"
+
     @staticmethod
     def get_extensions(svg=False):
         exts = ["png"]
@@ -322,6 +325,7 @@ class Plots:
 
     def save_regression(self, dpi=150, svg=False):
         self.correct_name()
+        self.get_save_orbit()
         exts = self.get_extensions(svg=svg)
 
         for ext in exts:
@@ -334,6 +338,7 @@ class Plots:
 
     def save_raw(self, dpi=150, svg=False):
         self.correct_name()
+        self.get_save_orbit()
         exts = self.get_extensions(svg=svg)
 
         for ext in exts:
@@ -361,7 +366,6 @@ class PlotData:
         fid="total",
         orbit=None,
         pol=None,
-        long_orbit=None,
     ):
         self.raw_dataframe = raw_data
         self.raw_range_dataframe = raw_range
@@ -372,9 +376,8 @@ class PlotData:
         self.fid = fid
         self.orbit = orbit
         self.pol = pol
-        self.long_orbit = long_orbit
 
-    def plot_rawdata(self):
+    def plot_rawdata(self, zorder=5):
         # plot of main line
         sns.lineplot(
             data=self.raw_dataframe,
@@ -383,11 +386,11 @@ class PlotData:
             legend=False,
             color="#bbbbbb",
             label="raw mean",
-            zorder=1,
+            zorder=zorder,
             ax=self.ax,
         )
 
-    def plot_rawdata_range(self):
+    def plot_rawdata_range(self, zorder=0):
         plusminus = "\u00B1"
         upper_boundary = (
             self.raw_range_dataframe[f"{self.fid}_mean"]
@@ -405,8 +408,9 @@ class PlotData:
                 x=self.raw_range_dataframe.index,
                 y=boundary,
                 color="#d3d3d3",
-                # alpha=0,
+                alpha=0,
                 legend=False,
+                zorder=zorder,
             )
 
         # fill space between boundaries
@@ -416,20 +420,21 @@ class PlotData:
             upper_boundary.tolist(),  # pandas series to list
             color="#ebebeb",
             label=f"mean {plusminus} std",
+            zorder=zorder,
         )
 
-    def plot_regression(self):
+    def plot_regression(self, zorder=10):
         sns.lineplot(
             data=self.reg_dataframe,
             x=self.reg_dataframe.index,
             y=self.reg_dataframe[f"{self.fid}_mean"],
             label=f"{self.fid}_mean",
             legend=False,
-            zorder=2,
+            zorder=zorder,
             ax=self.ax,
         )
 
-    def plot_mean_range(self, factor=0.2):
+    def plot_mean_range(self, factor=0.2, zorder=15):
         """
         Plot a range of mean + std that defines an insensitive area where anomalies are less likely.
         """
@@ -449,6 +454,7 @@ class PlotData:
             y2=upper_boundary.tolist(),  # pandas series to list
             color="#dba8e5",
             alpha=0.25,
+            zorder=zorder,
         )
 
         sns.lineplot(
@@ -459,9 +465,10 @@ class PlotData:
             color="#ab84b3",
             legend=False,
             ax=self.ax,
+            zorder=zorder,
         )
 
-    def plot_anomalies(self):
+    def plot_anomalies(self, zorder=20):
         sns.scatterplot(
             data=self.anomaly_dataframe.loc[
                 self.anomaly_dataframe[f"{self.fid}_anomaly"]
@@ -474,7 +481,7 @@ class PlotData:
             ],
             marker="o",
             s=25,
-            zorder=3,
+            zorder=zorder,
             color="red",
             label="anomaly",
             legend=False,

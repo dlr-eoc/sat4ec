@@ -8,7 +8,7 @@ source/__pycache__
 source/execution/__pycache__
 source/system/__pycache__
 source/system/credentials.yaml
-NOTES.txt
+source/NOTES.txt
 results
 credentials
 obsolete

@@ -128,7 +128,6 @@ class Regression:
 
 
 def mutliple_orbits_raw_range(fid="total", orbit_collection=None):
-    subsets_df = pd.DataFrame()
     asc_df = pd.DataFrame()
     des_df = pd.DataFrame()
 
@@ -148,6 +147,13 @@ def mutliple_orbits_raw_range(fid="total", orbit_collection=None):
 
     else:
         orbit = orbit_collection.orbits[0]
+
+        if orbit == "asc":
+            subsets_df = asc_df
+
+        else:
+            subsets_df = des_df
+
         subsets_df[f"{fid}_mean"] = subsets_df.loc[:, f"{orbit}_mean"]
         subsets_df[f"{fid}_std"] = subsets_df.loc[:, f"{orbit}_std"]
 

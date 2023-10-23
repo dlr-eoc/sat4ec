@@ -33,7 +33,7 @@ class TestPlotting(unittest.TestCase):
             raw_range=mutliple_orbits_raw_range(fid="0", orbit_collection=self.orbit_collection),
         )
 
-    def _prepare(self):
+    def _prepare(self, aoi_split=False):
         for orbit in self.orbit_collection.orbits:
             (
                 self.raw_data,
@@ -43,7 +43,7 @@ class TestPlotting(unittest.TestCase):
                 self.raw_monthly_anomaly_data,
                 self.linear_data,
                 self.linear_monthly_data,
-            ) = prepare_test_dataframes(data_dir=TEST_DIR.joinpath("orbit_input"), orbit=orbit)
+            ) = prepare_test_dataframes(data_dir=TEST_DIR.joinpath("orbit_input"), orbit=orbit, aoi_split=aoi_split)
 
             subsets = Subsets(
                 orbit=orbit
@@ -52,7 +52,10 @@ class TestPlotting(unittest.TestCase):
             anomalies = Anomalies()
 
             if self.monthly:
-                pass
+                subsets.dataframe = self.raw_monthly_data
+                subsets.regression_dataframe = self.reg_data
+                subsets.linear_dataframe = self.linear_monthly_data
+                anomalies.dataframe = self.raw_monthly_anomaly_data
 
             else:
                 subsets.dataframe = self.raw_data
@@ -83,8 +86,8 @@ class TestPlotting(unittest.TestCase):
                 )
                 plotting.plot_rawdata()
 
-        # self.collection.finalize()
-        # self.assertTrue(isinstance(self.collection.axs, plt.Axes))
+        self.collection.finalize()
+        self.assertTrue(isinstance(self.collection.axs, plt.Axes))
         plt.show()
 
     def test_raw_range_plot(self):
@@ -97,125 +100,187 @@ class TestPlotting(unittest.TestCase):
             plotting.plot_rawdata_range()
 
         self.collection.finalize()
+        self.assertTrue(isinstance(self.collection.axs, plt.Axes))
         plt.show()
 
-    def test_regression_plot(self):
+    def test_monthly_raw_range_plot(self):
+        self.monthly = True
+        self._prepare()
+
+        self.collection = Plots(
+            out_dir=self.out_dir,
+            name="VW Wolfsburg",
+            orbit=self.orbit_collection.orbit,
+            monthly=self.monthly,
+            linear=True,
+            features=[Feature(fid="0")],
+            raw_range=mutliple_orbits_raw_range(fid="0", orbit_collection=self.orbit_collection),
+        )
+
         for index, feature in enumerate(self.collection.features):
             plotting = PlotData(
-                reg_data=self.collection.reg_dataframe,
+                raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
                 ax=self.collection._get_plot_axis(index=index),
                 fid=feature.fid
             )
-            plotting.plot_regression()
+            plotting.plot_rawdata_range()
+
+        self.collection.finalize()
+        self.assertTrue(isinstance(self.collection.axs, plt.Axes))
+        plt.show()
+
+    def test_regression_plot(self):
+        for subsets, anomalies, orbit in self.orbit_collection.get_data():
+            for index, feature in enumerate(self.collection.features):
+                plotting = PlotData(
+                    reg_data=subsets.regression_dataframe.loc[
+                             :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    ax=self.collection._get_plot_axis(index=index),
+                    fid=feature.fid
+                )
+                plotting.plot_regression()
 
         self.collection.finalize()
         self.assertTrue(isinstance(self.collection.axs, plt.Axes))
         plt.show()
 
     def test_raw_regression_overlay(self):
-        for index, feature in enumerate(self.collection.features):
-            plotting = PlotData(
-                raw_data=self.collection.raw_dataframe,
-                reg_data=self.collection.reg_dataframe,
-                ax=self.collection._get_plot_axis(index=index),
-                fid=feature.fid
-            )
-            plotting.plot_rawdata_range()
-            plotting.plot_rawdata()
-            plotting.plot_regression()
+        for subsets, anomalies, orbit in self.orbit_collection.get_data():
+            for index, feature in enumerate(self.collection.features):
+                plotting = PlotData(
+                    raw_data=subsets.dataframe.loc[
+                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
+                    reg_data=subsets.regression_dataframe.loc[
+                             :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    ax=self.collection._get_plot_axis(index=index),
+                    fid=feature.fid
+                )
+
+                plotting.plot_rawdata_range()
+                plotting.plot_rawdata()
+                plotting.plot_regression()
 
         self.collection.finalize()
         self.assertTrue(isinstance(self.collection.axs, plt.Axes))
         plt.show()
 
     def test_raw_regression_linear_overlay(self):
-        for index, feature in enumerate(self.collection.features):
-            plotting = PlotData(
-                raw_data=self.collection.raw_dataframe,
-                reg_data=self.collection.reg_dataframe,
-                linear_data=self.collection.linear_dataframe,
-                ax=self.collection._get_plot_axis(index=index),
-                fid=feature.fid
-            )
-            plotting.plot_rawdata_range()
-            plotting.plot_rawdata()
-            plotting.plot_mean_range()
-            plotting.plot_regression()
+        for subsets, anomalies, orbit in self.orbit_collection.get_data():
+            for index, feature in enumerate(self.collection.features):
+                plotting = PlotData(
+                    raw_data=subsets.dataframe.loc[
+                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
+                    reg_data=subsets.regression_dataframe.loc[
+                             :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    linear_data=subsets.linear_dataframe.loc[
+                             :, subsets.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    ax=self.collection._get_plot_axis(index=index),
+                    fid=feature.fid
+                )
+                plotting.plot_rawdata_range()
+                plotting.plot_rawdata()
+                plotting.plot_mean_range()
+                plotting.plot_regression()
 
         self.collection.finalize()
         self.assertTrue(isinstance(self.collection.axs, plt.Axes))
         plt.show()
 
     def test_plot_anomalies_regression(self):
-        for index, feature in enumerate(self.collection.features):
-            plotting = PlotData(
-                raw_data=self.collection.raw_dataframe,
-                reg_data=self.collection.reg_dataframe,
-                anomaly_data=self.collection.anomaly_dataframe,
-                ax=self.collection._get_plot_axis(index=index),
-                fid=feature.fid
-            )
-            plotting.plot_rawdata()
-            plotting.plot_regression()
-            plotting.plot_anomalies()
+        for subsets, anomalies, orbit in self.orbit_collection.get_data():
+            for index, feature in enumerate(self.collection.features):
+                plotting = PlotData(
+                    raw_data=subsets.dataframe.loc[
+                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    reg_data=subsets.regression_dataframe.loc[
+                             :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    anomaly_data=anomalies.dataframe.loc[
+                             :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    ax=self.collection._get_plot_axis(index=index),
+                    fid=feature.fid
+                )
+                plotting.plot_rawdata()
+                plotting.plot_regression()
+                plotting.plot_anomalies()
 
         self.collection.finalize()
         self.assertTrue(isinstance(self.collection.axs, plt.Axes))
         plt.show()
 
     def test_plot_anomalies_reg_std(self):
-        for index, feature in enumerate(self.collection.features):
-            plotting = PlotData(
-                raw_data=self.collection.raw_dataframe,
-                reg_data=self.collection.reg_dataframe,
-                linear_data=self.collection.linear_dataframe,
-                anomaly_data=self.collection.anomaly_dataframe,
-                ax=self.collection._get_plot_axis(index=index),
-                fid=feature.fid
-            )
-            plotting.plot_regression()
-            plotting.plot_mean_range()
-            plotting.plot_anomalies()
+        for subsets, anomalies, orbit in self.orbit_collection.get_data():
+            for index, feature in enumerate(self.collection.features):
+                plotting = PlotData(
+                    raw_data=subsets.dataframe.loc[
+                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    reg_data=subsets.regression_dataframe.loc[
+                             :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    linear_data=subsets.linear_dataframe.loc[
+                             :, subsets.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    anomaly_data=anomalies.dataframe.loc[
+                             :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    ax=self.collection._get_plot_axis(index=index),
+                    fid=feature.fid
+                )
+                plotting.plot_regression()
+                plotting.plot_mean_range()
+                plotting.plot_anomalies()
 
         self.collection.finalize()
         self.assertTrue(isinstance(self.collection.axs, plt.Axes))
         plt.show()
 
     def test_plot_aoi_split_anomalies_reg_std(self):
-        (
-            self.raw_data,
-            self.raw_monthly_data,
-            self.reg_data,
-            self.reg_anomaly_data,
-            self.raw_monthly_anomaly_data,
-            self.linear_data,
-            self.linear_monthly_data,
-        ) = prepare_test_dataframes(data_dir=TEST_DIR.joinpath("input"), aoi_split=True)
+        self._prepare(aoi_split=True)
 
-        self.collection = PlotCollection(
+        self.collection = Plots(
+            out_dir=self.out_dir,
             name="VW Wolfsburg",
-            raw_data=self.raw_data,
-            reg_data=self.reg_data,
-            anomaly_data=self.reg_anomaly_data,
-            linear_data=self.linear_data,
-            orbit="asc",
+            orbit=self.orbit_collection.orbit,
+            monthly=self.monthly,
             linear=True,
             features=[Feature(fid="0"), Feature(fid="1"), Feature(fid="total")],
+            raw_range=mutliple_orbits_raw_range(fid="total", orbit_collection=self.orbit_collection),
         )
 
-        for index, feature in enumerate(self.collection.features):
-            plotting = PlotData(
-                raw_data=self.raw_data.loc[:, self.raw_data.columns.str.startswith(f"{feature.fid}_")],
-                reg_data=self.reg_data.loc[:, self.reg_data.columns.str.startswith(f"{feature.fid}_")],
-                linear_data=self.linear_data.loc[:, self.linear_data.columns.str.startswith(f"{feature.fid}_")],
-                anomaly_data=self.reg_anomaly_data.loc[:, self.reg_anomaly_data.columns.str.startswith(f"{feature.fid}_")],
-                ax=self.collection._get_plot_axis(index=index),
-                fid=feature.fid
-            )
-            plotting.plot_rawdata_range()
-            plotting.plot_regression()
-            plotting.plot_mean_range()
-            plotting.plot_anomalies()
+        for subsets, anomalies, orbit in self.orbit_collection.get_data():
+            for index, feature in enumerate(self.collection.features):
+                plotting = PlotData(
+                    raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
+                    raw_data=subsets.dataframe.loc[
+                                 :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                                 ],
+                    reg_data=subsets.regression_dataframe.loc[
+                             :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    linear_data=subsets.linear_dataframe.loc[
+                             :, subsets.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    anomaly_data=anomalies.dataframe.loc[
+                             :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    ax=self.collection._get_plot_axis(index=index),
+                    fid=feature.fid
+                )
+                plotting.plot_rawdata_range()
+                plotting.plot_regression()
+                plotting.plot_mean_range()
+                plotting.plot_anomalies()
 
         self.collection.finalize()
         self.collection.show_plot()
@@ -225,39 +290,39 @@ class TestPlotting(unittest.TestCase):
         self.assertEqual(len(self.collection.axs.flatten()), 4)
 
     def test_plot_monthly_aoi_split_anomalies_reg_std(self):
-        (
-            self.raw_data,
-            self.raw_monthly_data,
-            self.reg_data,
-            self.reg_anomaly_data,
-            self.raw_monthly_anomaly_data,
-            self.linear_data,
-            self.linear_monthly_data,
-        ) = prepare_test_dataframes(data_dir=TEST_DIR.joinpath("input"), aoi_split=True)
+        self.monthly = True
+        self._prepare(aoi_split=True)
 
-        self.collection = PlotCollection(
+        self.collection = Plots(
+            out_dir=self.out_dir,
             name="VW Wolfsburg",
-            raw_data=self.raw_monthly_data,
-            anomaly_data=self.raw_monthly_anomaly_data,
-            linear_data=self.linear_monthly_data,
-            orbit="asc",
+            orbit=self.orbit_collection.orbit,
+            monthly=self.monthly,
             linear=True,
-            monthly=True,
             features=[Feature(fid="0"), Feature(fid="1"), Feature(fid="total")],
+            raw_range=mutliple_orbits_raw_range(fid="total", orbit_collection=self.orbit_collection),
         )
 
-        for index, feature in enumerate(self.collection.features):
-            plotting = PlotData(
-                raw_data=self.raw_monthly_data.loc[:, self.raw_monthly_data.columns.str.startswith(f"{feature.fid}_")],
-                linear_data=self.linear_monthly_data.loc[:, self.linear_monthly_data.columns.str.startswith(f"{feature.fid}_")],
-                anomaly_data=self.raw_monthly_anomaly_data.loc[:, self.raw_monthly_anomaly_data.columns.str.startswith(f"{feature.fid}_")],
-                ax=self.collection._get_plot_axis(index=index),
-                fid=feature.fid
-            )
-            plotting.plot_rawdata_range()
-            plotting.plot_rawdata()
-            plotting.plot_mean_range()
-            plotting.plot_anomalies()
+        for subsets, anomalies, orbit in self.orbit_collection.get_data():
+            for index, feature in enumerate(self.collection.features):
+                plotting = PlotData(
+                    raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
+                    raw_data=subsets.dataframe.loc[
+                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    linear_data=subsets.linear_dataframe.loc[
+                                :, subsets.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
+                                ],
+                    anomaly_data=anomalies.dataframe.loc[
+                                 :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
+                                 ],
+                    ax=self.collection._get_plot_axis(index=index),
+                    fid=feature.fid
+                )
+                plotting.plot_rawdata_range()
+                plotting.plot_rawdata()
+                plotting.plot_mean_range()
+                plotting.plot_anomalies()
 
         self.collection.finalize()
         self.collection.show_plot()
@@ -267,68 +332,101 @@ class TestPlotting(unittest.TestCase):
         self.assertEqual(len(self.collection.axs.flatten()), 4)
 
     def test_plot_anomalies_monthly_raw(self):
+        self.monthly = True
+        self._prepare()
         self.collection.raw_dataframe = self.raw_monthly_data
         self.collection.anomaly_dataframe = self.raw_monthly_anomaly_data
         self.collection.monthly = True
 
-        for index, feature in enumerate(self.collection.features):
-            plotting = PlotData(
-                raw_data=self.collection.raw_dataframe,
-                anomaly_data=self.collection.anomaly_dataframe,
-                ax=self.collection._get_plot_axis(index=index),
-                fid=feature.fid
-            )
-            plotting.plot_rawdata()
-            plotting.plot_anomalies()
+        for subsets, anomalies, orbit in self.orbit_collection.get_data():
+            for index, feature in enumerate(self.collection.features):
+                plotting = PlotData(
+                    raw_data=subsets.dataframe.loc[
+                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    anomaly_data=anomalies.dataframe.loc[
+                                 :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
+                                 ],
+                    ax=self.collection._get_plot_axis(index=index),
+                    fid=feature.fid
+                )
+                plotting.plot_rawdata()
+                plotting.plot_anomalies()
 
         self.collection.finalize()
         self.assertTrue(isinstance(self.collection.axs, plt.Axes))
         plt.show()
 
     def test_save_plot_regression(self):
-        for index, feature in enumerate(self.collection.features):
-            plotting = PlotData(
-                raw_data=self.collection.raw_dataframe,
-                reg_data=self.collection.reg_dataframe,
-                linear_data=self.collection.linear_dataframe,
-                anomaly_data=self.collection.anomaly_dataframe,
-                ax=self.collection._get_plot_axis(index=index),
-                fid=feature.fid
-            )
-            plotting.plot_rawdata_range()
-            plotting.plot_rawdata()
-            plotting.plot_mean_range()
-            plotting.plot_regression()
-            plotting.plot_anomalies()
+        for subsets, anomalies, orbit in self.orbit_collection.get_data():
+            for index, feature in enumerate(self.collection.features):
+                plotting = PlotData(
+                    raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
+                    raw_data=subsets.dataframe.loc[
+                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    linear_data=subsets.linear_dataframe.loc[
+                                :, subsets.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
+                                ],
+                    reg_data=subsets.regression_dataframe.loc[
+                             :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    anomaly_data=anomalies.dataframe.loc[
+                                 :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
+                                 ],
+                    ax=self.collection._get_plot_axis(index=index),
+                    fid=feature.fid
+                )
+                plotting.plot_rawdata_range()
+                plotting.plot_rawdata()
+                plotting.plot_mean_range()
+                plotting.plot_regression()
+                plotting.plot_anomalies()
 
         self.create_output_dir()
         self.collection.finalize()
         self.collection.save_regression()
 
-        self.assertTrue(self.out_dir.joinpath("plot", "indicator_1_vw_wolfsburg_regression_asc_VH.png").exists())
-        # plt.show()
+        if self.orbit_collection.orbit == "both":
+            self.assertTrue(self.out_dir.joinpath("plot", "indicator_1_vw_wolfsburg_regression_asc_des_VH.png").exists())
+
+        else:
+            self.assertTrue(self.out_dir.joinpath("plot", f"indicator_1_vw_wolfsburg_regression_{self.orbit_collection.orbit}_VH.png").exists())
 
     def test_save_plot_monthly(self):
+        self.monthly = True
+        self._prepare()
         self.collection.raw_dataframe = self.raw_monthly_data
         self.collection.anomaly_dataframe = self.raw_monthly_anomaly_data
         self.collection.monthly = True
 
-        for index, feature in enumerate(self.collection.features):
-            plotting = PlotData(
-                raw_data=self.collection.raw_dataframe,
-                linear_data=self.collection.linear_dataframe,
-                anomaly_data=self.collection.anomaly_dataframe,
-                ax=self.collection._get_plot_axis(index=index),
-                fid=feature.fid
-            )
-            plotting.plot_rawdata_range()
-            plotting.plot_rawdata()
-            plotting.plot_mean_range()
-            plotting.plot_anomalies()
+        for subsets, anomalies, orbit in self.orbit_collection.get_data():
+            for index, feature in enumerate(self.collection.features):
+                plotting = PlotData(
+                    raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
+                    raw_data=subsets.dataframe.loc[
+                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                             ],
+                    linear_data=subsets.linear_dataframe.loc[
+                                :, subsets.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
+                                ],
+                    anomaly_data=anomalies.dataframe.loc[
+                                 :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
+                                 ],
+                    ax=self.collection._get_plot_axis(index=index),
+                    fid=feature.fid
+                )
+                plotting.plot_rawdata_range()
+                plotting.plot_rawdata()
+                plotting.plot_mean_range()
+                plotting.plot_anomalies()
 
         self.create_output_dir()
         self.collection.finalize()
         self.collection.save_raw()
 
-        self.assertTrue(self.out_dir.joinpath("plot", "indicator_1_vw_wolfsburg_rawdata_monthly_asc_VH.png").exists())
-        # plt.show()
+        if self.orbit_collection.orbit == "both":
+            self.assertTrue(self.out_dir.joinpath("plot", "indicator_1_vw_wolfsburg_rawdata_monthly_asc_des_VH.png").exists())
+
+        else:
+            self.assertTrue(self.out_dir.joinpath("plot", f"indicator_1_vw_wolfsburg_rawdata_monthly_{self.orbit_collection.orbit}_VH.png").exists())
