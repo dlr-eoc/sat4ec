@@ -17,6 +17,7 @@ class Plots:
         pol="VH",
         monthly=False,
         linear=False,
+        linear_fill=False,
         features=None,
         max_cols=2,
     ):
@@ -26,9 +27,8 @@ class Plots:
         self.orbit = orbit
         self.pol = pol
         self.monthly = monthly
-        self.linear = (
-            linear  # wether to plot linear regression and insensitive area or not
-        )
+        self.linear = linear  # wether to plot linear regression or not
+        self.linear_fill = linear_fill  # wether to plot linear insensitive area or not
         self.features = features
         self.max_cols = max_cols
         self._get_subplots()
@@ -124,6 +124,7 @@ class Plots:
                     fid=feature.fid,
                     orbit=orbit,
                     pol=self.pol,
+                    linear_fill=self.linear_fill,
                 )
 
                 # only plot raw range on left axis
@@ -322,6 +323,7 @@ class PlotData:
         fid="total",
         orbit=None,
         pol=None,
+        linear_fill=False,
     ):
         self.raw_dataframe = raw_data
         self.raw_range_dataframe = raw_range
@@ -332,6 +334,7 @@ class PlotData:
         self.fid = fid
         self.orbit = orbit
         self.pol = pol
+        self.linear_fill = linear_fill
 
     def plot_rawdata(self, zorder=5):
         # plot of main line
@@ -399,26 +402,27 @@ class PlotData:
         Plot a range of mean + std that defines an insensitive area where anomalies are less likely.
         """
 
-        upper_boundary = (
-            self.linear_dataframe[f"{self.fid}_mean"]
-            + factor * self.linear_dataframe[f"{self.fid}_std"]
-        )
-        lower_boundary = (
-            self.linear_dataframe[f"{self.fid}_mean"]
-            - factor * self.linear_dataframe[f"{self.fid}_std"]
-        )
+        if self.linear_fill:
+            upper_boundary = (
+                self.linear_dataframe[f"{self.fid}_mean"]
+                + factor * self.linear_dataframe[f"{self.fid}_std"]
+            )
+            lower_boundary = (
+                self.linear_dataframe[f"{self.fid}_mean"]
+                - factor * self.linear_dataframe[f"{self.fid}_std"]
+            )
 
-        self.ax.fill_between(
-            x=self.linear_dataframe.index,
-            y1=lower_boundary.tolist(),  # pandas series to list
-            y2=upper_boundary.tolist(),  # pandas series to list
-            alpha=0.2,  # use 0.25 if desired to have the +/- std range visible
-            zorder=zorder,
-            color=sns.color_palette()[3]  # alternate violet "#ab84b3"
-            if self.ax.get_ylabel()
-            == "2nd_des"  # descending orbit in red, if on secondary y-axis
-            else sns.color_palette()[0],  # ascending orbit always blue
-        )
+            self.ax.fill_between(
+                x=self.linear_dataframe.index,
+                y1=lower_boundary.tolist(),  # pandas series to list
+                y2=upper_boundary.tolist(),  # pandas series to list
+                alpha=0.2,  # use 0.25 if desired to have the +/- std range visible
+                zorder=zorder,
+                color=sns.color_palette()[3]  # alternate violet "#ab84b3"
+                if self.ax.get_ylabel()
+                == "2nd_des"  # descending orbit in red, if on secondary y-axis
+                else sns.color_palette()[0],  # ascending orbit always blue
+            )
 
         sns.lineplot(
             data=self.linear_dataframe,
@@ -448,7 +452,7 @@ class PlotData:
                 f"{self.fid}_mean"
             ],
             marker="v",
-            s=80,
+            s=40,
             zorder=zorder,
             label=f"{self.orbit}_anomaly",
             legend=False,

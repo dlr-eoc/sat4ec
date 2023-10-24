@@ -29,6 +29,7 @@ def plot_data(
     monthly=False,
     linear=False,
     features=None,
+    linear_fill=False,
 ):
     with Plots(
         out_dir=out_dir,
@@ -36,6 +37,7 @@ def plot_data(
         monthly=monthly,
         orbit=orbit_collection.orbit,
         linear=linear,
+        linear_fill=linear_fill,
         features=features,
         raw_range=mutliple_orbits_raw_range(  # only for adjusting the plot space, not actually plotted here
             fid="0" if len(features) == 1 else "total",
@@ -121,6 +123,7 @@ def main(
     regression="spline",
     linear=False,
     aoi_split=False,
+    linear_fill=False,
 ):
     orbit_collection = Orbits(orbit=in_orbit, monthly=monthly)
 
@@ -194,11 +197,24 @@ def main(
         monthly=monthly,
         linear=linear,
         features=subsets.features,
+        linear_fill=linear_fill,
     )
 
     # stac.scenes_to_df()
     # stac.join_with_anomalies()
     # stac.save()
+
+
+def parse_boolean(param=None, literal=None):
+    if param[0].lower() == "true":
+        return True
+
+    elif param[0].lower() == "false":
+        return False
+
+    else:
+        raise ValueError(f"The provided value {param[0]} for --{literal} is not supported. "
+                         f"Choose from [true, false].")
 
 
 def run():
@@ -226,25 +242,9 @@ def run():
     else:
         pol = args.polarization.upper()
 
-    if args.linear[0].lower() == "true":
-        linear = True
-
-    elif args.linear[0].lower() == "false":
-        linear = False
-
-    else:
-        raise ValueError(f"The provided value {args.linear[0]} for --linear is not supported. "
-                         f"Choose from [true, false].")
-
-    if args.aoi_split[0].lower() == "true":
-        aoi_split = True
-
-    elif args.aoi_split[0].lower() == "false":
-        aoi_split = False
-
-    else:
-        raise ValueError(f"The provided value {args.aoi_split[0]} for --aoi_split is not supported. "
-                         f"Choose from [true, false].")
+    linear = parse_boolean(param=args.linear, literal="linear")
+    linear_fill = parse_boolean(param=args.linear_fill, literal="linear_fill")
+    aoi_split = parse_boolean(param=args.aoi_split, literal="aoi_split")
 
     if args.aggregate[0] == "daily":
         aggregate = False
@@ -268,7 +268,8 @@ def run():
         monthly=aggregate,
         regression=args.regression[0],
         linear=linear,
-        aoi_split=aoi_split
+        aoi_split=aoi_split,
+        linear_fill=linear_fill,
     )
 
 
@@ -346,6 +347,13 @@ def create_parser():
         "--linear",
         nargs=1,
         help="Wether to plot the linear regression with insensitive range or not, default: false.",
+        choices=["true", "false"],
+        default="false"
+    )
+    parser.add_argument(
+        "--linear_fill",
+        nargs=1,
+        help="Wether to fill the linear insensitive range or not, default: false.",
         choices=["true", "false"],
         default="false"
     )

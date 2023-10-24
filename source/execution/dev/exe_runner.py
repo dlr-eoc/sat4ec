@@ -10,13 +10,14 @@ if __name__ == "__main__":
         out_dir=Path(r"output"),
         orbit="both",  # ascending or descending orbit
         pol="VH",  # only use VH polarization
-        aoi="vw_wolfsburg2subfeatures",
+        aoi="vw_wolfsburgnnw",
         ext="geojson",
-        start="2020-01-01",
+        start="2014-05-01",
         end="2022-12-31",
-        monthly=False,
+        monthly=True,
         regression="spline",
         linear=True,
+        linear_fill=False,
         aoi_split=True,
     )
     prod = Production(config=conf)

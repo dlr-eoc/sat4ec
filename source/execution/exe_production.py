@@ -32,6 +32,8 @@ class Production:
                 self.config.regression,
                 "--linear",
                 "true" if self.config.linear else "false",
+                "--linear_fill",
+                "true" if self.config.linear_fill else "false",
                 "--aoi_split",
                 "true" if self.config.aoi_split else "false",
             ],
