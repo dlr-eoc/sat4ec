@@ -11,7 +11,7 @@ from datetime import datetime
 
 from data_retrieval import IndicatorData as IData
 from stac import StacItems
-from system.helper_functions import get_logger, get_last_month
+from system.helper_functions import get_logger, get_last_month, mutliple_orbits_raw_range
 
 # clean output directory
 # for item in Path(OUT_DIR).glob("*"):
@@ -25,7 +25,7 @@ from system.helper_functions import get_logger, get_last_month
 def plot_data(
     out_dir=None,
     name=None,
-    orbits=None,
+    orbit_collection=None,
     monthly=False,
     linear=False,
     features=None,
@@ -36,9 +36,13 @@ def plot_data(
         monthly=monthly,
         linear=linear,
         features=features,
+        raw_range=mutliple_orbits_raw_range(  # only for adjusting the plot space, not actually plotted here
+            fid="0" if len(features) == 1 else "total",
+            orbit_collection=orbit_collection
+        ),
     ) as plotting:
-        plotting.plot_features(orbit_collection=orbits)
-        # plotting.finalize()
+        plotting.plot_features(orbit_collection=orbit_collection)
+        plotting.finalize()
 
         if monthly:
             plotting.save_raw()
@@ -183,7 +187,7 @@ def main(
         # )
 
     plot_data(
-        orbits=orbit_collection,
+        orbit_collection=orbit_collection,
         out_dir=subsets.out_dir,
         name=name,
         monthly=monthly,

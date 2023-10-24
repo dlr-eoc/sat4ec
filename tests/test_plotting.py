@@ -30,7 +30,9 @@ class TestPlotting(unittest.TestCase):
             monthly=self.monthly,
             linear=True,
             features=[Feature(fid="0")],
-            raw_range=mutliple_orbits_raw_range(fid="0", orbit_collection=self.orbit_collection),
+            raw_range=mutliple_orbits_raw_range(
+                fid="0", orbit_collection=self.orbit_collection
+            ),
         )
 
     def _prepare(self, aoi_split=False):
@@ -43,11 +45,13 @@ class TestPlotting(unittest.TestCase):
                 self.raw_monthly_anomaly_data,
                 self.linear_data,
                 self.linear_monthly_data,
-            ) = prepare_test_dataframes(data_dir=TEST_DIR.joinpath("orbit_input"), orbit=orbit, aoi_split=aoi_split)
-
-            subsets = Subsets(
-                orbit=orbit
+            ) = prepare_test_dataframes(
+                data_dir=TEST_DIR.joinpath("orbit_input"),
+                orbit=orbit,
+                aoi_split=aoi_split,
             )
+
+            subsets = Subsets(orbit=orbit)
 
             anomalies = Anomalies()
 
@@ -79,10 +83,12 @@ class TestPlotting(unittest.TestCase):
             for index, feature in enumerate(self.collection.features):
                 plotting = PlotData(
                     raw_data=subsets.dataframe.loc[
-                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
-                    ax=self.collection._get_plot_axis(index=index, single_axis=single_axis),
-                    fid=feature.fid
+                        :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
+                    ax=self.collection._get_plot_axis(
+                        index=index, single_axis=single_axis
+                    ),
+                    fid=feature.fid,
                 )
                 plotting.plot_rawdata()
 
@@ -93,9 +99,11 @@ class TestPlotting(unittest.TestCase):
     def test_raw_range_plot(self):
         for index, feature in enumerate(self.collection.features):
             plotting = PlotData(
-                raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
+                raw_range=mutliple_orbits_raw_range(
+                    fid=feature.fid, orbit_collection=self.orbit_collection
+                ),
                 ax=self.collection._get_plot_axis(index=index),
-                fid=feature.fid
+                fid=feature.fid,
             )
             # only plot raw range on left axis
             if plotting.ax.get_ylabel() != "2nd_des":
@@ -116,14 +124,18 @@ class TestPlotting(unittest.TestCase):
             monthly=self.monthly,
             linear=True,
             features=[Feature(fid="0")],
-            raw_range=mutliple_orbits_raw_range(fid="0", orbit_collection=self.orbit_collection),
+            raw_range=mutliple_orbits_raw_range(
+                fid="0", orbit_collection=self.orbit_collection
+            ),
         )
 
         for index, feature in enumerate(self.collection.features):
             plotting = PlotData(
-                raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
+                raw_range=mutliple_orbits_raw_range(
+                    fid=feature.fid, orbit_collection=self.orbit_collection
+                ),
                 ax=self.collection._get_plot_axis(index=index),
-                fid=feature.fid
+                fid=feature.fid,
             )
             # only plot raw range on left axis
             if plotting.ax.get_ylabel() != "2nd_des":
@@ -138,10 +150,15 @@ class TestPlotting(unittest.TestCase):
             for index, feature in enumerate(self.collection.features):
                 plotting = PlotData(
                     reg_data=subsets.regression_dataframe.loc[
-                             :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
-                    ax=self.collection._get_plot_axis(index=index, single_axis=single_axis),
-                    fid=feature.fid
+                        :,
+                        subsets.regression_dataframe.columns.str.startswith(
+                            f"{feature.fid}_"
+                        ),
+                    ],
+                    ax=self.collection._get_plot_axis(
+                        index=index, single_axis=single_axis
+                    ),
+                    fid=feature.fid,
                 )
                 plotting.plot_regression()
 
@@ -154,15 +171,22 @@ class TestPlotting(unittest.TestCase):
             for index, feature in enumerate(self.collection.features):
                 plotting = PlotData(
                     raw_data=subsets.dataframe.loc[
-                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
-                    raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
+                        :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
+                    raw_range=mutliple_orbits_raw_range(
+                        fid=feature.fid, orbit_collection=self.orbit_collection
+                    ),
                     reg_data=subsets.regression_dataframe.loc[
-                             :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
-                    ax=self.collection._get_plot_axis(index=index, single_axis=single_axis),
+                        :,
+                        subsets.regression_dataframe.columns.str.startswith(
+                            f"{feature.fid}_"
+                        ),
+                    ],
+                    ax=self.collection._get_plot_axis(
+                        index=index, single_axis=single_axis
+                    ),
                     orbit=orbit,
-                    fid=feature.fid
+                    fid=feature.fid,
                 )
 
                 # only plot raw range on left axis
@@ -181,18 +205,28 @@ class TestPlotting(unittest.TestCase):
             for index, feature in enumerate(self.collection.features):
                 plotting = PlotData(
                     raw_data=subsets.dataframe.loc[
-                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
-                    raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
+                        :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
+                    raw_range=mutliple_orbits_raw_range(
+                        fid=feature.fid, orbit_collection=self.orbit_collection
+                    ),
                     reg_data=subsets.regression_dataframe.loc[
-                             :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
+                        :,
+                        subsets.regression_dataframe.columns.str.startswith(
+                            f"{feature.fid}_"
+                        ),
+                    ],
                     linear_data=subsets.linear_dataframe.loc[
-                             :, subsets.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
-                    ax=self.collection._get_plot_axis(index=index, single_axis=single_axis),
+                        :,
+                        subsets.linear_dataframe.columns.str.startswith(
+                            f"{feature.fid}_"
+                        ),
+                    ],
+                    ax=self.collection._get_plot_axis(
+                        index=index, single_axis=single_axis
+                    ),
                     orbit=orbit,
-                    fid=feature.fid
+                    fid=feature.fid,
                 )
                 # only plot raw range on left axis
                 if plotting.ax.get_ylabel() != "2nd_des":
@@ -211,17 +245,22 @@ class TestPlotting(unittest.TestCase):
             for index, feature in enumerate(self.collection.features):
                 plotting = PlotData(
                     raw_data=subsets.dataframe.loc[
-                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
+                        :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
                     reg_data=subsets.regression_dataframe.loc[
-                             :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
+                        :,
+                        subsets.regression_dataframe.columns.str.startswith(
+                            f"{feature.fid}_"
+                        ),
+                    ],
                     anomaly_data=anomalies.dataframe.loc[
-                             :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
-                    ax=self.collection._get_plot_axis(index=index, single_axis=single_axis),
+                        :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
+                    ax=self.collection._get_plot_axis(
+                        index=index, single_axis=single_axis
+                    ),
                     orbit=orbit,
-                    fid=feature.fid
+                    fid=feature.fid,
                 )
                 plotting.plot_rawdata()
                 plotting.plot_regression()
@@ -236,20 +275,28 @@ class TestPlotting(unittest.TestCase):
             for index, feature in enumerate(self.collection.features):
                 plotting = PlotData(
                     raw_data=subsets.dataframe.loc[
-                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
+                        :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
                     reg_data=subsets.regression_dataframe.loc[
-                             :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
+                        :,
+                        subsets.regression_dataframe.columns.str.startswith(
+                            f"{feature.fid}_"
+                        ),
+                    ],
                     linear_data=subsets.linear_dataframe.loc[
-                             :, subsets.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
+                        :,
+                        subsets.linear_dataframe.columns.str.startswith(
+                            f"{feature.fid}_"
+                        ),
+                    ],
                     anomaly_data=anomalies.dataframe.loc[
-                             :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
-                    ax=self.collection._get_plot_axis(index=index, single_axis=single_axis),
+                        :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
+                    ax=self.collection._get_plot_axis(
+                        index=index, single_axis=single_axis
+                    ),
                     orbit=orbit,
-                    fid=feature.fid
+                    fid=feature.fid,
                 )
                 plotting.plot_regression()
                 plotting.plot_mean_range()
@@ -269,28 +316,40 @@ class TestPlotting(unittest.TestCase):
             monthly=self.monthly,
             linear=True,
             features=[Feature(fid="0"), Feature(fid="1"), Feature(fid="total")],
-            raw_range=mutliple_orbits_raw_range(fid="total", orbit_collection=self.orbit_collection),
+            raw_range=mutliple_orbits_raw_range(
+                fid="total", orbit_collection=self.orbit_collection
+            ),
         )
 
         for subsets, anomalies, orbit, single_axis in self.orbit_collection.get_data():
             for index, feature in enumerate(self.collection.features):
                 plotting = PlotData(
-                    raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
+                    raw_range=mutliple_orbits_raw_range(
+                        fid=feature.fid, orbit_collection=self.orbit_collection
+                    ),
                     raw_data=subsets.dataframe.loc[
-                                 :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
-                                 ],
+                        :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
                     reg_data=subsets.regression_dataframe.loc[
-                             :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
+                        :,
+                        subsets.regression_dataframe.columns.str.startswith(
+                            f"{feature.fid}_"
+                        ),
+                    ],
                     linear_data=subsets.linear_dataframe.loc[
-                             :, subsets.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
+                        :,
+                        subsets.linear_dataframe.columns.str.startswith(
+                            f"{feature.fid}_"
+                        ),
+                    ],
                     anomaly_data=anomalies.dataframe.loc[
-                             :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
-                    ax=self.collection._get_plot_axis(index=index, single_axis=single_axis),
+                        :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
+                    ax=self.collection._get_plot_axis(
+                        index=index, single_axis=single_axis
+                    ),
                     orbit=orbit,
-                    fid=feature.fid
+                    fid=feature.fid,
                 )
                 # only plot raw range on left axis
                 if plotting.ax.get_ylabel() != "2nd_des":
@@ -318,25 +377,34 @@ class TestPlotting(unittest.TestCase):
             monthly=self.monthly,
             linear=True,
             features=[Feature(fid="0"), Feature(fid="1"), Feature(fid="total")],
-            raw_range=mutliple_orbits_raw_range(fid="total", orbit_collection=self.orbit_collection),
+            raw_range=mutliple_orbits_raw_range(
+                fid="total", orbit_collection=self.orbit_collection
+            ),
         )
 
         for subsets, anomalies, orbit, single_axis in self.orbit_collection.get_data():
             for index, feature in enumerate(self.collection.features):
                 plotting = PlotData(
-                    raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
+                    raw_range=mutliple_orbits_raw_range(
+                        fid=feature.fid, orbit_collection=self.orbit_collection
+                    ),
                     raw_data=subsets.dataframe.loc[
-                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
+                        :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
                     linear_data=subsets.linear_dataframe.loc[
-                                :, subsets.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
-                                ],
+                        :,
+                        subsets.linear_dataframe.columns.str.startswith(
+                            f"{feature.fid}_"
+                        ),
+                    ],
                     anomaly_data=anomalies.dataframe.loc[
-                                 :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
-                                 ],
-                    ax=self.collection._get_plot_axis(index=index, single_axis=single_axis),
+                        :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
+                    ax=self.collection._get_plot_axis(
+                        index=index, single_axis=single_axis
+                    ),
                     orbit=orbit,
-                    fid=feature.fid
+                    fid=feature.fid,
                 )
                 # only plot raw range on left axis
                 if plotting.ax.get_ylabel() != "2nd_des":
@@ -364,14 +432,16 @@ class TestPlotting(unittest.TestCase):
             for index, feature in enumerate(self.collection.features):
                 plotting = PlotData(
                     raw_data=subsets.dataframe.loc[
-                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
+                        :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
                     anomaly_data=anomalies.dataframe.loc[
-                                 :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
-                                 ],
-                    ax=self.collection._get_plot_axis(index=index, single_axis=single_axis),
+                        :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
+                    ax=self.collection._get_plot_axis(
+                        index=index, single_axis=single_axis
+                    ),
                     orbit=orbit,
-                    fid=feature.fid
+                    fid=feature.fid,
                 )
                 plotting.plot_rawdata()
                 plotting.plot_anomalies()
@@ -384,22 +454,32 @@ class TestPlotting(unittest.TestCase):
         for subsets, anomalies, orbit, single_axis in self.orbit_collection.get_data():
             for index, feature in enumerate(self.collection.features):
                 plotting = PlotData(
-                    raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
+                    raw_range=mutliple_orbits_raw_range(
+                        fid=feature.fid, orbit_collection=self.orbit_collection
+                    ),
                     raw_data=subsets.dataframe.loc[
-                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
+                        :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
                     linear_data=subsets.linear_dataframe.loc[
-                                :, subsets.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
-                                ],
+                        :,
+                        subsets.linear_dataframe.columns.str.startswith(
+                            f"{feature.fid}_"
+                        ),
+                    ],
                     reg_data=subsets.regression_dataframe.loc[
-                             :, subsets.regression_dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
+                        :,
+                        subsets.regression_dataframe.columns.str.startswith(
+                            f"{feature.fid}_"
+                        ),
+                    ],
                     anomaly_data=anomalies.dataframe.loc[
-                                 :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
-                                 ],
-                    ax=self.collection._get_plot_axis(index=index, single_axis=single_axis),
+                        :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
+                    ax=self.collection._get_plot_axis(
+                        index=index, single_axis=single_axis
+                    ),
                     orbit=orbit,
-                    fid=feature.fid
+                    fid=feature.fid,
                 )
                 # only plot raw range on left axis
                 if plotting.ax.get_ylabel() != "2nd_des":
@@ -415,10 +495,19 @@ class TestPlotting(unittest.TestCase):
         self.collection.save_regression()
 
         if self.orbit_collection.orbit == "both":
-            self.assertTrue(self.out_dir.joinpath("plot", "indicator_1_vw_wolfsburg_regression_asc_des_VH.png").exists())
+            self.assertTrue(
+                self.out_dir.joinpath(
+                    "plot", "indicator_1_vw_wolfsburg_regression_asc_des_VH.png"
+                ).exists()
+            )
 
         else:
-            self.assertTrue(self.out_dir.joinpath("plot", f"indicator_1_vw_wolfsburg_regression_{self.orbit_collection.orbit}_VH.png").exists())
+            self.assertTrue(
+                self.out_dir.joinpath(
+                    "plot",
+                    f"indicator_1_vw_wolfsburg_regression_{self.orbit_collection.orbit}_VH.png",
+                ).exists()
+            )
 
     def test_save_plot_monthly(self):
         self.monthly = True
@@ -430,19 +519,26 @@ class TestPlotting(unittest.TestCase):
         for subsets, anomalies, orbit, single_axis in self.orbit_collection.get_data():
             for index, feature in enumerate(self.collection.features):
                 plotting = PlotData(
-                    raw_range=mutliple_orbits_raw_range(fid=feature.fid, orbit_collection=self.orbit_collection),
+                    raw_range=mutliple_orbits_raw_range(
+                        fid=feature.fid, orbit_collection=self.orbit_collection
+                    ),
                     raw_data=subsets.dataframe.loc[
-                             :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
-                             ],
+                        :, subsets.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
                     linear_data=subsets.linear_dataframe.loc[
-                                :, subsets.linear_dataframe.columns.str.startswith(f"{feature.fid}_")
-                                ],
+                        :,
+                        subsets.linear_dataframe.columns.str.startswith(
+                            f"{feature.fid}_"
+                        ),
+                    ],
                     anomaly_data=anomalies.dataframe.loc[
-                                 :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
-                                 ],
-                    ax=self.collection._get_plot_axis(index=index, single_axis=single_axis),
+                        :, anomalies.dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
+                    ax=self.collection._get_plot_axis(
+                        index=index, single_axis=single_axis
+                    ),
                     orbit=orbit,
-                    fid=feature.fid
+                    fid=feature.fid,
                 )
                 # only plot raw range on left axis
                 if plotting.ax.get_ylabel() != "2nd_des":
@@ -457,7 +553,16 @@ class TestPlotting(unittest.TestCase):
         self.collection.save_raw()
 
         if self.orbit_collection.orbit == "both":
-            self.assertTrue(self.out_dir.joinpath("plot", "indicator_1_vw_wolfsburg_rawdata_monthly_asc_des_VH.png").exists())
+            self.assertTrue(
+                self.out_dir.joinpath(
+                    "plot", "indicator_1_vw_wolfsburg_rawdata_monthly_asc_des_VH.png"
+                ).exists()
+            )
 
         else:
-            self.assertTrue(self.out_dir.joinpath("plot", f"indicator_1_vw_wolfsburg_rawdata_monthly_{self.orbit_collection.orbit}_VH.png").exists())
+            self.assertTrue(
+                self.out_dir.joinpath(
+                    "plot",
+                    f"indicator_1_vw_wolfsburg_rawdata_monthly_{self.orbit_collection.orbit}_VH.png",
+                ).exists()
+            )

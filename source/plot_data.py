@@ -5,7 +5,6 @@ import pandas as pd
 import matplotlib.dates as mdates
 from system.helper_functions import get_monthly_keyword, mutliple_orbits_raw_range
 from datetime import timedelta
-from pathlib import Path
 
 
 class Plots:
@@ -34,20 +33,6 @@ class Plots:
         self.max_cols = max_cols
         self._get_subplots()
         self._get_long_orbit()
-
-    def _get_data(self, data):
-        if isinstance(data, Path):
-            return self._load_df(data)
-
-        elif isinstance(data, str):
-            if Path(data).exists():
-                return self._load_df(Path(data))
-
-        elif isinstance(data, pd.DataFrame):
-            return data
-
-        else:
-            return None
 
     @staticmethod
     def _load_df(filename):
@@ -118,37 +103,8 @@ class Plots:
     def __exit__(self, exc_type, exc_val, exc_tb):
         plt.close()
 
-    def plot_rawdata_range(self, fid="total"):
-        plusminus = "\u00B1"
-        upper_boundary = (
-            self.raw_dataframe[f"{fid}_mean"] + self.raw_dataframe[f"{fid}_std"]
-        )
-        lower_boundary = (
-            self.raw_dataframe[f"{fid}_mean"] - self.raw_dataframe[f"{fid}_std"]
-        )
-
-        # plot of baundaries
-        for boundary in [upper_boundary, lower_boundary]:
-            sns.lineplot(
-                data=self.raw_dataframe,
-                x=self.raw_dataframe.index,
-                y=boundary,
-                color="#d3d3d3",
-                alpha=0,
-                legend=False,
-            )
-
-        # fill space between boundaries
-        self.axs.fill_between(
-            self.raw_dataframe.index,
-            lower_boundary,
-            upper_boundary,
-            color="#ebebeb",
-            label=f"mean {plusminus} std",
-        )
-
     def plot_features(self, orbit_collection=None):
-        for subsets, anomalies, orbit in orbit_collection.get_data():
+        for subsets, anomalies, orbit, single_axis in orbit_collection.get_data():
             for index, feature in enumerate(self.features):
                 feature_plot = PlotData(
                     raw_data=subsets.dataframe.loc[
@@ -172,22 +128,24 @@ class Plots:
                             f"{feature.fid}_"
                         ),
                     ],
-                    ax=self._get_plot_axis(index=index),
+                    ax=self._get_plot_axis(index=index, single_axis=single_axis),
                     fid=feature.fid,
                     orbit=self.orbit,
                     pol=self.pol,
                 )
 
-                feature_plot.plot_rawdata_range()
+                # only plot raw range on left axis
+                if feature_plot.ax.get_ylabel() != "2nd_des":
+                    feature_plot.plot_rawdata_range()
 
                 if self.linear:
                     feature_plot.plot_mean_range()
 
-                feature_plot.plot_rawdata()
+                if self.monthly:
+                    feature_plot.plot_rawdata()
 
-                # TODO: was None if plotting daily
-                # if self.reg_dataframe is not None:
-                #     feature_plot.plot_regression()
+                else:
+                    feature_plot.plot_regression()
 
                 feature_plot.plot_anomalies()
 
@@ -247,10 +205,14 @@ class Plots:
     def axes_ticks(self):
         for ax in self.fig.axes:
             if ax.get_ylabel() != "":  # apply following annotations to left axis
-                ax.tick_params(colors=sns.color_palette()[0], which='both', axis="y")  # ascending orbit always blue
+                ax.tick_params(
+                    colors=sns.color_palette()[0], which="both", axis="y"
+                )  # ascending orbit always blue
 
             else:  # if having secondary axis
-                ax.tick_params(colors=sns.color_palette()[3], which='both', axis="y")  # descending orbit red if on secondary y-axis
+                ax.tick_params(
+                    colors=sns.color_palette()[3], which="both", axis="y"
+                )  # descending orbit red if on secondary y-axis
 
             ax.xaxis.set_minor_locator(
                 mdates.MonthLocator()
@@ -429,7 +391,8 @@ class PlotData:
             zorder=zorder,
             ax=self.ax,
             color=sns.color_palette()[3]
-            if self.ax.get_ylabel() == "2nd_des"  # descending orbit in red, if on secondary y-axis
+            if self.ax.get_ylabel()
+            == "2nd_des"  # descending orbit in red, if on secondary y-axis
             else sns.color_palette()[0],  # ascending orbit always blue
         )
 
@@ -454,7 +417,8 @@ class PlotData:
             alpha=0.2,  # use 0.25 if desired to have the +/- std range visible
             zorder=zorder,
             color=sns.color_palette()[3]  # alternate violet "#ab84b3"
-            if self.ax.get_ylabel() == "2nd_des"  # descending orbit in red, if on secondary y-axis
+            if self.ax.get_ylabel()
+            == "2nd_des"  # descending orbit in red, if on secondary y-axis
             else sns.color_palette()[0],  # ascending orbit always blue
         )
 
@@ -469,7 +433,8 @@ class PlotData:
             zorder=zorder,
             alpha=0.5,
             color=sns.color_palette()[3]  # alternate violet "#ab84b3"
-            if self.ax.get_ylabel() == "2nd_des"  # descending orbit in red, if on secondary y-axis
+            if self.ax.get_ylabel()
+            == "2nd_des"  # descending orbit in red, if on secondary y-axis
             else sns.color_palette()[0],  # ascending orbit always blue
         )
 
@@ -491,6 +456,7 @@ class PlotData:
             legend=False,
             ax=self.ax,
             color=sns.color_palette()[3]  # alternate red
-            if self.ax.get_ylabel() == "2nd_des"  # descending orbit in red, if on secondary y-axis
+            if self.ax.get_ylabel()
+            == "2nd_des"  # descending orbit in red, if on secondary y-axis
             else sns.color_palette()[0],  # ascending orbit always blue
         )
