@@ -14,7 +14,7 @@ if __name__ == "__main__":
         ext="geojson",
         start="2020-01-01",
         end="2022-12-31",
-        monthly=True,
+        monthly=False,
         regression="spline",
         linear=True,
         aoi_split=True,

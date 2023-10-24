@@ -246,8 +246,11 @@ class Plots:
         ]  # arrange handles and labels as pairs
 
         self.fig.legend(
-            *zip(*uniques), loc="outside lower center", ncols=2, bbox_to_anchor=(0.5, 0)
+            *zip(*uniques), loc="outside lower center", ncols=2  # , bbox_to_anchor=(0.5, 0, 0, 0.5)
         )
+
+    def layout(self):
+        self.fig.set_layout_engine(layout="compressed")
 
     def finalize(self):
         self.unused_subplots()
@@ -255,8 +258,7 @@ class Plots:
         self.axes_limits()
         self.axes_ticks()
         self.plot_legend()
-
-        plt.tight_layout(pad=2.5)
+        self.layout()
 
     def correct_name(self):
         self.name = self.name.lower()
