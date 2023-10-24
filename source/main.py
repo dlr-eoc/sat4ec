@@ -34,6 +34,7 @@ def plot_data(
         out_dir=out_dir,
         name=name,
         monthly=monthly,
+        orbit=orbit_collection.orbit,
         linear=linear,
         features=features,
         raw_range=mutliple_orbits_raw_range(  # only for adjusting the plot space, not actually plotted here

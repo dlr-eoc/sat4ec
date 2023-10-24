@@ -34,14 +34,6 @@ class Plots:
         self._get_subplots()
         self._get_long_orbit()
 
-    @staticmethod
-    def _load_df(filename):
-        df = pd.read_csv(filename)
-        df["interval_from"] = pd.to_datetime(df["interval_from"])
-        df = df.set_index("interval_from")
-
-        return df
-
     def _get_rows_cols(self):
         if len(self.features[:-1]) < self.max_cols:
             nrows = 1
@@ -130,7 +122,7 @@ class Plots:
                     ],
                     ax=self._get_plot_axis(index=index, single_axis=single_axis),
                     fid=feature.fid,
-                    orbit=self.orbit,
+                    orbit=orbit,
                     pol=self.pol,
                 )
 
@@ -155,6 +147,7 @@ class Plots:
         )
 
         for index, ax in enumerate(self.fig.axes):
+            # TODO: if index % 2 == 0 --> 2nd column
             if ax.get_ylabel() != "2nd_des":  # apply following annotations to left axis
                 ax.set_ylabel("Sentinel-1 backscatter [dB]")
                 # ax.set_xlabel("Timestamp")
@@ -167,6 +160,9 @@ class Plots:
                     ax.set_title(f"Feature {self.features[index].fid}")
 
             else:  # if having secondary axis, do not label it
+                ax.set_ylabel("")
+
+            if (index + 1) % 2 == 0:  # 2nd column
                 ax.set_ylabel("")
 
     def axes_limits(self):

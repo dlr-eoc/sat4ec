@@ -159,12 +159,13 @@ class TestPlotting(unittest.TestCase):
                         index=index, single_axis=single_axis
                     ),
                     fid=feature.fid,
+                    orbit=orbit,
                 )
                 plotting.plot_regression()
 
         self.collection.finalize()
         self.assertTrue(isinstance(self.collection.axs, plt.Axes))
-        # plt.show()
+        plt.show()
 
     def test_raw_regression_overlay(self):
         for subsets, anomalies, orbit, single_axis in self.orbit_collection.get_data():
