@@ -4,7 +4,7 @@ from scipy.signal import find_peaks
 from pathlib import Path
 
 
-class AnomalyCollection:
+class Anomalies:
     def __init__(
         self,
         data=None,
@@ -50,14 +50,15 @@ class AnomalyCollection:
         return df
 
     def _prepare_dataframe(self):
-        self.dataframe = self.indicator_df.copy()  # create target dataframe
+        if self.indicator_df is not None:
+            self.dataframe = self.indicator_df.copy()  # create target dataframe
 
-        for feature in self.features:
-            self.dataframe[
-                f"{feature.fid}_anomaly"
-            ] = False  # create new column storing anomaly state [boolean]
+            for feature in self.features:
+                self.dataframe[
+                    f"{feature.fid}_anomaly"
+                ] = False  # create new column storing anomaly state [boolean]
 
-        self.dataframe = self.dataframe[sorted(self.dataframe.columns)]
+            self.dataframe = self.dataframe[sorted(self.dataframe.columns)]
 
     def find_extrema(self):
         for feature in self.features:
@@ -80,6 +81,13 @@ class AnomalyCollection:
                 f"{feature.fid}_anomaly",
             ] = True
 
+    def save_anomalies(self):
+        if self.monthly:
+            self.save_raw()
+
+        else:
+            self.save_regression()
+
     def save_raw(self):
         out_file = self.out_dir.joinpath(
             "anomalies",
@@ -93,6 +101,11 @@ class AnomalyCollection:
             f"indicator_1_anomalies_regression_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
         self.dataframe.to_csv(out_file)
+
+    def cleanup(self):
+        del self.indicator_df
+        del self.features
+        del self.linear_regression_df
 
 
 class Anomaly:

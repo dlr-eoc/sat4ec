@@ -1,47 +1,47 @@
 import pandas as pd
 
 
-def prepare_test_dataframes(data_dir=None, aoi_split=False):
+def prepare_test_dataframes(data_dir=None, aoi_split=False, orbit="asc"):
     if aoi_split:
-        raw_data = pd.read_csv(data_dir.joinpath("raw", "indicator_1_rawdata_aoi_split_asc_VH.csv"))
+        raw_data = pd.read_csv(data_dir.joinpath("raw", f"indicator_1_rawdata_daily_aoi_split_{orbit}_VH.csv"))
         raw_monthly_data = pd.read_csv(
-            data_dir.joinpath("raw", "indicator_1_rawdata_monthly_aoi_split_asc_VH.csv")
+            data_dir.joinpath("raw", f"indicator_1_rawdata_monthly_aoi_split_{orbit}_VH.csv")
         )
         reg_data = pd.read_csv(
-            data_dir.joinpath("regression", "indicator_1_regression_daily_aoi_split_asc_VH.csv")
+            data_dir.joinpath("regression", f"indicator_1_regression_daily_aoi_split_{orbit}_VH.csv")
         )
         linear_data = pd.read_csv(
-            data_dir.joinpath("regression", "indicator_1_linear_daily_aoi_split_asc_VH.csv")
+            data_dir.joinpath("regression", f"indicator_1_linear_daily_aoi_split_{orbit}_VH.csv")
         )
         linear_monthly_data = pd.read_csv(
-            data_dir.joinpath("regression", "indicator_1_linear_monthly_aoi_split_asc_VH.csv")
+            data_dir.joinpath("regression", f"indicator_1_linear_monthly_aoi_split_{orbit}_VH.csv")
         )
         reg_anomaly_data = pd.read_csv(
-            data_dir.joinpath("anomalies", "indicator_1_anomalies_regression_aoi_split_asc_VH.csv")
+            data_dir.joinpath("anomalies", f"indicator_1_anomalies_regression_daily_aoi_split_{orbit}_VH.csv")
         )
         raw_monthly_anomaly_data = pd.read_csv(
-            data_dir.joinpath("anomalies", "indicator_1_anomalies_raw_monthly_aoi_split_asc_VH.csv")
+            data_dir.joinpath("anomalies", f"indicator_1_anomalies_raw_monthly_aoi_split_{orbit}_VH.csv")
         )
 
     else:
-        raw_data = pd.read_csv(data_dir.joinpath("raw", "indicator_1_rawdata_daily_asc_VH.csv"))
+        raw_data = pd.read_csv(data_dir.joinpath("raw", f"indicator_1_rawdata_daily_{orbit}_VH.csv"))
         raw_monthly_data = pd.read_csv(
-            data_dir.joinpath("raw", "indicator_1_rawdata_monthly_asc_VH.csv")
+            data_dir.joinpath("raw", f"indicator_1_rawdata_monthly_{orbit}_VH.csv")
         )
         reg_data = pd.read_csv(
-            data_dir.joinpath("regression", "indicator_1_regression_daily_asc_VH.csv")
+            data_dir.joinpath("regression", f"indicator_1_regression_daily_{orbit}_VH.csv")
         )
         linear_data = pd.read_csv(
-            data_dir.joinpath("regression", "indicator_1_linear_daily_asc_VH.csv")
+            data_dir.joinpath("regression", f"indicator_1_linear_daily_{orbit}_VH.csv")
         )
         linear_monthly_data = pd.read_csv(
-            data_dir.joinpath("regression", "indicator_1_linear_monthly_asc_VH.csv")
+            data_dir.joinpath("regression", f"indicator_1_linear_monthly_{orbit}_VH.csv")
         )
         reg_anomaly_data = pd.read_csv(
-            data_dir.joinpath("anomalies", "indicator_1_anomalies_regression_daily_asc_VH.csv")
+            data_dir.joinpath("anomalies", f"indicator_1_anomalies_regression_daily_{orbit}_VH.csv")
         )
         raw_monthly_anomaly_data = pd.read_csv(
-            data_dir.joinpath("anomalies", "indicator_1_anomalies_raw_monthly_asc_VH.csv")
+            data_dir.joinpath("anomalies", f"indicator_1_anomalies_raw_monthly_{orbit}_VH.csv")
         )
 
     raw_data.loc[:, "interval_from"] = pd.to_datetime(raw_data["interval_from"])
