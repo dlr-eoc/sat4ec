@@ -336,17 +336,23 @@ class PlotData:
         self.pol = pol
         self.linear_fill = linear_fill
 
-    def plot_rawdata(self, zorder=5):
+    def plot_rawdata(self, zorder=5, alpha=1):
         # plot of main line
         sns.lineplot(
             data=self.raw_dataframe,
             x=self.raw_dataframe.index,
             y=self.raw_dataframe[f"{self.fid}_mean"],
             legend=False,
-            color="#bbbbbb",
+            # color="#bbbbbb",
             label="raw mean",
+            linestyle="dotted",
             zorder=zorder,
+            alpha=alpha,
             ax=self.ax,
+            color=sns.color_palette()[3]
+            if self.ax.get_ylabel()
+            == "2nd_des"  # descending orbit in red, if on secondary y-axis
+            else sns.color_palette()[0],  # ascending orbit always blue
         )
 
     def plot_rawdata_range(self, zorder=0):

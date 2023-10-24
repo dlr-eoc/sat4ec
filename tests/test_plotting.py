@@ -89,6 +89,7 @@ class TestPlotting(unittest.TestCase):
                         index=index, single_axis=single_axis
                     ),
                     fid=feature.fid,
+                    orbit=orbit,
                 )
                 plotting.plot_rawdata()
 
@@ -194,7 +195,7 @@ class TestPlotting(unittest.TestCase):
                 if plotting.ax.get_ylabel() != "2nd_des":
                     plotting.plot_rawdata_range()
 
-                plotting.plot_rawdata()
+                plotting.plot_rawdata(alpha=0.5)
                 plotting.plot_regression()
 
         self.collection.finalize()
