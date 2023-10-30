@@ -139,6 +139,7 @@ class AOI:
 
             elif len(self.features) > 1:
                 if self.aoi_split:
+
                     # duplicates functionality self.get_features, but treats features individually
                     for f in self.features:
                         feature = Feature(feature=f)

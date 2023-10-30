@@ -10,7 +10,7 @@ from pathlib import Path
 from datetime import datetime
 
 from data_retrieval import IndicatorData as IData
-from stac import StacItems
+from stac import StacCollection
 from system.helper_functions import get_logger, get_last_month, mutliple_orbits_raw_range
 
 # clean output directory
@@ -111,6 +111,25 @@ def compute_anomaly(
     return anomalies
 
 
+def get_s1_scenes(
+        data=None,
+        features=None,
+        geometries=None,
+        orbit="asc",
+        pol="VH",
+        out_dir=None,
+):
+    stac_collection = StacCollection(
+        data=data,
+        features=features,
+        geometries=geometries,
+        orbit=orbit,
+        pol=pol,
+        out_dir=out_dir,
+    )
+    stac_collection.get_stac_collection()
+
+
 def main(
     aoi_data=None,
     out_dir=None,
@@ -144,6 +163,7 @@ def main(
 
                 subsets.add_subset(df=indicator.dataframe)
                 subsets.add_feature(feature)
+                subsets.add_geometry(indicator.geometry)
 
         if len(subsets.features) > 1:
             subsets.aggregate_columns()
@@ -170,6 +190,15 @@ def main(
             )
             orbit_collection.add_anomalies(anomalies=raw_anomalies, orbit=orbit)
 
+            get_s1_scenes(
+                data=raw_anomalies.dataframe,
+                features=subsets.features,
+                geometries=subsets.geometries,
+                orbit=orbit,
+                pol=pol,
+                out_dir=subsets.out_dir,
+            )
+
         else:
             reg_anomalies = compute_anomaly(
                 df=subsets.regression_dataframe,
@@ -182,13 +211,13 @@ def main(
             )
             orbit_collection.add_anomalies(anomalies=reg_anomalies, orbit=orbit)
 
-        # stac = StacItems(
-        #     data=reg_anomalies.dataframe,
-        #     geometry=indicator.geometry,
-        #     orbit=indicator.orbit,
-        #     pol=pol,
-        #     out_dir=indicator.out_dir,
-        # )
+            stac = StacItems(
+                data=reg_anomalies.dataframe,
+                geometry=indicator.geometry,
+                orbit=indicator.orbit,
+                pol=pol,
+                out_dir=indicator.out_dir,
+            )
 
     plot_data(
         orbit_collection=orbit_collection,

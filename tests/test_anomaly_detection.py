@@ -2,7 +2,7 @@ import unittest
 import shutil
 
 import pandas as pd
-from source.anomaly_detection import Anomaly, AnomalyCollection
+from source.anomaly_detection import Anomaly, Anomalies
 from source.aoi_check import Feature
 from test_helper_functions import prepare_test_dataframes
 from pathlib import Path
@@ -33,7 +33,7 @@ class TestAD(unittest.TestCase):
             shutil.rmtree(self.out_dir)
 
     def test_dataframe_from_file(self):
-        anomaly_collection = AnomalyCollection(
+        anomaly_collection = Anomalies(
             data=TEST_DIR.joinpath("input", "raw", "indicator_1_rawdata_daily_asc_VH.csv"),
             features=[Feature(fid="0")],
         )
@@ -44,7 +44,7 @@ class TestAD(unittest.TestCase):
         )
 
     def test_dataframe_from_dataframe(self):
-        anomaly_collection = AnomalyCollection(
+        anomaly_collection = Anomalies(
             data=self.raw_data,
             features=[Feature(fid="0")],
         )
@@ -55,7 +55,7 @@ class TestAD(unittest.TestCase):
         )
 
     def test_dataframe_from_filestring(self):
-        anomaly_collection = AnomalyCollection(
+        anomaly_collection = Anomalies(
             data=str(
                 TEST_DIR.joinpath(
                     "input", "raw", "indicator_1_rawdata_daily_asc_VH.csv"
@@ -70,7 +70,7 @@ class TestAD(unittest.TestCase):
         )
 
     def test_prepare_dataframe(self):
-        anomaly_collection = AnomalyCollection(
+        anomaly_collection = Anomalies(
             data=self.raw_data,
             features=[Feature(fid="0")],
         )
@@ -94,7 +94,7 @@ class TestAD(unittest.TestCase):
         )
 
     def test_find_maxima_regression(self):
-        anomaly_collection = AnomalyCollection(
+        anomaly_collection = Anomalies(
             data=self.reg_data,
             linear_data=self.linear_data,
             features=[Feature(fid="0")],
@@ -121,7 +121,7 @@ class TestAD(unittest.TestCase):
         self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 25)
 
     def test_find_minima_regression(self):
-        anomaly_collection = AnomalyCollection(
+        anomaly_collection = Anomalies(
             data=self.reg_data,
             linear_data=self.linear_data,
             features=[Feature(fid="0")],
@@ -148,7 +148,7 @@ class TestAD(unittest.TestCase):
         self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 24)
 
     def test_find_extrema_regression(self):
-        anomaly_collection = AnomalyCollection(
+        anomaly_collection = Anomalies(
             data=self.reg_data,
             linear_data=self.linear_data,
             features=[Feature(fid="0")],
@@ -175,7 +175,7 @@ class TestAD(unittest.TestCase):
         self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 43)
 
     def test_find_uncorrected_extrema(self):
-        anomaly_collection = AnomalyCollection(
+        anomaly_collection = Anomalies(
             data=self.reg_data,
             linear_data=self.linear_data,
             features=[Feature(fid="0")],
@@ -203,7 +203,7 @@ class TestAD(unittest.TestCase):
         self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 49)
 
     def test_find_extrema_monthly(self):
-        anomaly_collection = AnomalyCollection(
+        anomaly_collection = Anomalies(
             data=self.raw_monthly_data,
             linear_data=self.linear_monthly_data,
             features=[Feature(fid="0")],
@@ -230,7 +230,7 @@ class TestAD(unittest.TestCase):
         self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 6)
 
     def test_anomaly_save_monthly(self):
-        anomaly_collection = AnomalyCollection(
+        anomaly_collection = Anomalies(
             data=self.raw_monthly_data,
             linear_data=self.linear_monthly_data,
             features=[Feature(fid="0")],
@@ -267,7 +267,7 @@ class TestAD(unittest.TestCase):
         )
 
     def test_anomaly_save_regression(self):
-        anomaly_collection = AnomalyCollection(
+        anomaly_collection = Anomalies(
             data=self.reg_data,
             linear_data=self.linear_data,
             features=[Feature(fid="0")],

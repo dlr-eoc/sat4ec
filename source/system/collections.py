@@ -14,6 +14,7 @@ class SubsetCollection:
         self.orbit = orbit
         self.pol = pol
         self.features = []
+        self.geometries = []
 
     def add_subset(self, df=None):
         self.dataframe = pd.concat(
@@ -22,6 +23,9 @@ class SubsetCollection:
 
     def add_feature(self, feature=None):
         self.features.append(feature)
+
+    def add_geometry(self, geometry=None):
+        self.geometries.append(geometry)
 
     def add_regression_subset(self, df=None):
         self.regression_dataframe = pd.concat(

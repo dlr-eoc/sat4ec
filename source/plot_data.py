@@ -56,7 +56,7 @@ class Plots:
 
         return nrows, ncols
 
-    def _get_subplots(self, width=16, height=9):
+    def _get_subplots(self, width=8, height=4.5):
         nrows, ncols = self._get_rows_cols()
         self.fig, self.axs = plt.subplots(
             nrows=nrows, ncols=ncols, figsize=(width * ncols, height * nrows)
