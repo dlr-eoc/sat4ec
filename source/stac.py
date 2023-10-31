@@ -53,7 +53,7 @@ class StacCollection:
         self.dataframe = self.dataframe.merge(df, how="outer")
 
     def get_stac_collection(self):
-        for feature, geometry in zip(self.features, self.geometries):
+        for index, (feature, geometry) in enumerate(zip(self.features, self.geometries)):
             stac = StacItems(
                 anomalies_df=self.anomalies_df.loc[
                     :, self.anomalies_df.columns.str.startswith(f"{feature.fid}_")
@@ -62,15 +62,19 @@ class StacCollection:
                 geometry=geometry,
             )
             stac.scenes_to_df()
-            self.join_with_anomalies(fid=feature.fid)
-            # self.dataframe = pd.concat([self.dataframe, stac.dataframe]).sort_index()
+            stac.join_with_anomalies()
 
+            if index == 0:
+                self.init_dataframe(df=stac.dataframe)
+
+            else:
+                self.add_stac_item(df=stac.dataframe)
+
+        self.delete_columns()
         self.save()
 
-    def join_with_anomalies(self, fid=None):
-        # TODO: one index for both 0_anomaly and 1_anomaly, cannot be set as the boolean condition must apply for the entire row
-        # self.dataframe[f"{fid}_anomaly"] = self.anomalies_df.set_index(self.anomalies_df.index)[f"{fid}_anomaly"]
-        self.dataframe[f"{fid}_anomaly"] = self.anomalies_df[self.anomalies_df[f"{fid}_anomaly"]]
+    def delete_columns(self, columns=("mean", "std")):
+        self.dataframe = self.dataframe.loc[:, ~self.dataframe.columns.str.endswith(columns)]
 
     def save(self):
         out_file = self.out_dir.joinpath(
