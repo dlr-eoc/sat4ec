@@ -2,8 +2,10 @@ import unittest
 from pathlib import Path
 
 import pandas as pd
+import shutil
 
 from source.data_retrieval import IndicatorData as IData
+from data_retrieval import SubsetCollection as Subsets
 from source.aoi_check import AOI
 
 from sentinelhub import (
@@ -19,141 +21,169 @@ TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
 class TestGetData(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestGetData, self).__init__(*args, **kwargs)
-        aoi = AOI(TEST_DIR.joinpath("AOIs", "vw_wolfsburg.geojson"))
-        aoi.get_features()
-        self.aoi = aoi.geometry
-        self.out_dir = TEST_DIR.joinpath("vw_wolfsburg")
-        self.start_date = "2016-01-01"
-        self.end_date = "2022-12-31"
-        self.orbit = "asc"
-        self.pol = "VH"
+        self.out_dir = TEST_DIR.joinpath("output", "vw_wolfsburg")
+        self.aoi_collection = AOI(
+            data=TEST_DIR.joinpath("input", "AOIs", "vw_wolfsburg_aoi_split.geojson")
+        )
+        self.features = [feature for feature in self.aoi_collection.get_feature()]
+        self.feature = self.features[0]
+
+        self.indicator = IData(
+            aoi=self.feature.geometry,
+            fid=self.feature.fid,
+            out_dir=self.out_dir,
+            start_date="2020-01-01",
+            end_date="2022-12-31",
+            orbit="asc",
+            pol="VH",
+        )
+
+        self.subsets = Subsets(
+            out_dir=self.indicator.out_dir,
+            monthly=False,
+            orbit=self.indicator.orbit,
+            pol=self.indicator.pol,
+        )
+
+    def tearDown(self):
+        if self.out_dir.exists():
+            shutil.rmtree(self.out_dir)
 
     def test_class_init(self):
-        indicator = IData(
-            aoi=self.aoi,
-            out_dir=self.out_dir,
-            start_date=self.start_date,
-            end_date=self.end_date,
-            orbit=self.orbit,
-            pol=self.pol,
-        )
-
-        self.assertTrue(isinstance(indicator.geometry, Geometry))
-        self.assertTrue(isinstance(indicator.size, tuple))
-        self.assertEqual(len(indicator.size), 2)
-        self.assertTrue(isinstance(indicator.collection, DataCollection))
-        self.assertTrue(indicator.out_dir.exists())
+        self.assertTrue(isinstance(self.indicator.geometry, Geometry))
+        self.assertTrue(isinstance(self.indicator.size, tuple))
+        self.assertEqual(len(self.indicator.size), 2)
+        self.assertTrue(isinstance(self.indicator.collection, DataCollection))
+        self.assertTrue(self.indicator.out_dir.exists())
 
     def test_request_grd(self):
-        indicator = IData(
-            aoi=self.aoi,
-            out_dir=self.out_dir,
-            start_date=self.start_date,
-            end_date=self.end_date,
-            orbit=self.orbit,
-            pol=self.pol,
-        )
-
-        indicator.get_request_grd()
-        self.assertTrue(isinstance(indicator.request, SentinelHubStatistical))
+        self.indicator.get_request_grd()
+        self.assertTrue(isinstance(self.indicator.request, SentinelHubStatistical))
 
     def test_get_data(self):
-        indicator = IData(
-            aoi=self.aoi,
-            out_dir=self.out_dir,
-            start_date=self.start_date,
-            end_date=self.end_date,
-            orbit=self.orbit,
-            pol=self.pol,
-        )
-
-        indicator.get_request_grd()
-        indicator.get_data()
-        self.assertEqual(list(indicator.stats.keys()), ["data", "status"])
-        self.assertEqual(indicator.stats["status"], "OK")
+        self.indicator.get_request_grd()
+        self.indicator.get_data()
+        self.assertEqual(list(self.indicator.stats.keys()), ["data", "status"])
+        self.assertEqual(self.indicator.stats["status"], "OK")
 
     def test_stats_to_df(self):
-        indicator = IData(
-            aoi=self.aoi,
-            out_dir=self.out_dir,
-            start_date=self.start_date,
-            end_date=self.end_date,
-            orbit=self.orbit,
-            pol=self.pol,
+        self.indicator.get_request_grd()
+        self.indicator.get_data()
+        self.indicator.stats_to_df()
+
+        self.assertTrue(
+            self.indicator.dataframe.dtypes["interval_to"], pd.DatetimeTZDtype
         )
-
-        indicator.get_request_grd()
-        indicator.get_data()
-        indicator.stats_to_df()
-
-        self.assertEqual(
-            list(indicator.dataframe.columns[1:]), list(indicator.columns_map.values())
-        )  # ignore 1st col
-        self.assertTrue(indicator.dataframe.dtypes["interval_to"], pd.DatetimeTZDtype)
-        self.assertTrue(indicator.dataframe.dtypes["min"], "float32")
-        self.assertTrue(indicator.dataframe.dtypes["max"], "float32")
-        self.assertTrue(indicator.dataframe.dtypes["mean"], "float32")
-        self.assertTrue(indicator.dataframe.dtypes["std"], "float32")
-        self.assertTrue(indicator.dataframe.index.inferred_type, pd.DatetimeIndex)
+        self.assertTrue(
+            self.indicator.dataframe.dtypes[f"{self.feature.fid}_min"], "float32"
+        )
+        self.assertTrue(
+            self.indicator.dataframe.dtypes[f"{self.feature.fid}_max"], "float32"
+        )
+        self.assertTrue(
+            self.indicator.dataframe.dtypes[f"{self.feature.fid}_mean"], "float32"
+        )
+        self.assertTrue(
+            self.indicator.dataframe.dtypes[f"{self.feature.fid}_std"], "float32"
+        )
+        self.assertTrue(self.indicator.dataframe.index.inferred_type, pd.DatetimeIndex)
 
     def test_monthly_aggregate(self):
-        indicator = IData(
-            aoi=self.aoi,
-            out_dir=self.out_dir,
-            start_date=self.start_date,
-            end_date=self.end_date,
-            orbit=self.orbit,
-            pol=self.pol,
-            monthly=True
+        self.indicator.monthly = True
+        self.indicator.get_request_grd()
+        self.indicator.get_data()
+        self.indicator.stats_to_df()
+        daily_dataframe = self.indicator.dataframe.copy()
+
+        self.subsets.monthly = True
+        self.subsets.dataframe = self.indicator.dataframe
+        self.subsets.monthly_aggregate()
+
+        self.assertTrue(self.subsets.dataframe.index.inferred_type, pd.DatetimeIndex)
+        self.assertTrue(len(self.subsets.dataframe) < len(daily_dataframe))
+
+    def test_regression_raw(self):
+        self.indicator.dataframe = pd.read_csv(
+            self.out_dir.joinpath("raw", "indicator_1_rawdata_asc_VH.csv")
         )
-
-        indicator.get_request_grd()
-        indicator.get_data()
-        indicator.stats_to_df()
-        daily_dataframe = indicator.dataframe.copy()
-        indicator.monthly_aggregate()
-
-        self.assertTrue(indicator.dataframe.index.inferred_type, pd.DatetimeIndex)
-        self.assertTrue(len(indicator.dataframe) < len(daily_dataframe))
-
-    def test_regression(self):
-        indicator = IData(
-            aoi=self.aoi,
-            out_dir=self.out_dir,
-            start_date=self.start_date,
-            end_date=self.end_date,
-            orbit=self.orbit,
-            pol=self.pol,
+        self.indicator.dataframe["interval_from"] = pd.to_datetime(
+            self.indicator.dataframe["interval_from"]
         )
+        self.indicator.dataframe = self.indicator.dataframe.set_index("interval_from")
+        self.subsets.dataframe = self.indicator.dataframe
+        self.subsets.features = self.features
 
-        indicator.dataframe = pd.read_csv(self.out_dir.joinpath("raw", "indicator_1_rawdata_asc_VH.csv"))
-        indicator.dataframe["interval_from"] = pd.to_datetime(indicator.dataframe["interval_from"])
-        indicator.dataframe = indicator.dataframe.set_index("interval_from")
+        self.subsets.apply_regression(mode="spline")
+        self.subsets.save_regression(mode="spline")
 
-        indicator.apply_regression(mode="spline")
-        indicator.save_regression(mode="spline")
         self.assertTrue(
-            indicator.out_dir.joinpath(
-                "regression", f"indicator_1_spline_{self.orbit}_{self.pol}.csv"
+            self.indicator.out_dir.joinpath(
+                "regression",
+                f"indicator_1_spline_{self.indicator.orbit}_{self.indicator.pol}.csv",
+            ).exists()
+        )
+        self.assertTrue(
+            self.indicator.out_dir.joinpath(
+                "regression",
+                f"indicator_1_linear_{self.indicator.orbit}_{self.indicator.pol}.csv",
             ).exists()
         )
 
-    def test_save_df(self):
-        indicator = IData(
-            aoi=self.aoi,
-            out_dir=self.out_dir,
-            start_date=self.start_date,
-            end_date=self.end_date,
-            orbit=self.orbit,
-            pol=self.pol,
+    def test_regression_monthly(self):
+        self.indicator.dataframe = pd.read_csv(
+            self.out_dir.joinpath("raw", "indicator_1_rawdata_asc_VH.csv")
+        )
+        self.indicator.dataframe["interval_from"] = pd.to_datetime(
+            self.indicator.dataframe["interval_from"]
+        )
+        self.indicator.dataframe = self.indicator.dataframe.set_index("interval_from")
+        self.subsets.dataframe = self.indicator.dataframe
+        self.subsets.features = self.features
+        self.subsets.monthly = True
+
+        self.subsets.monthly_aggregate()
+        self.subsets.apply_regression(mode="spline")
+        self.subsets.save_regression(mode="spline")
+
+        self.assertTrue(
+            self.indicator.out_dir.joinpath(
+                "regression",
+                f"indicator_1_spline_{self.indicator.orbit}_{self.indicator.pol}.csv",
+            ).exists()
+        )
+        self.assertTrue(
+            self.indicator.out_dir.joinpath(
+                "regression",
+                f"indicator_1_linear_{self.indicator.orbit}_{self.indicator.pol}.csv",
+            ).exists()
         )
 
-        indicator.get_request_grd()
-        indicator.get_data()
-        indicator.stats_to_df()
-        indicator.save_regression()
+    def test_save_df_raw(self):  # pure raw data
+        self.indicator.get_request_grd()
+        self.indicator.get_data()
+        self.indicator.stats_to_df()
+        self.subsets.dataframe = self.indicator.dataframe
+        self.subsets.save_raw()
+
         self.assertTrue(
-            indicator.out_dir.joinpath(
-                "raw", f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv"
+            self.indicator.out_dir.joinpath(
+                "raw",
+                f"indicator_1_rawdata_{self.indicator.orbit}_{self.indicator.pol}.csv",
+            ).exists()
+        )
+
+    def test_save_df_monthly(self):  # monthly raw data
+        self.indicator.get_request_grd()
+        self.indicator.get_data()
+        self.indicator.stats_to_df()
+        self.subsets.dataframe = self.indicator.dataframe
+        self.subsets.monthly = True
+        self.subsets.monthly_aggregate()
+        self.subsets.save_monthly_raw()
+
+        self.assertTrue(
+            self.indicator.out_dir.joinpath(
+                "raw",
+                f"indicator_1_rawdata_monthly_{self.indicator.orbit}_{self.indicator.pol}.csv",
             ).exists()
         )
