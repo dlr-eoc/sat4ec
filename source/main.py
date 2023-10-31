@@ -2,14 +2,16 @@ import argparse
 import shutil
 import traceback
 from aoi_check import AOI
-from anomaly_detection import Anomaly
-from plot_data import PlotData
+from system.collections import SubsetCollection as Subsets
+from system.collections import OrbitCollection as Orbits
+from plot_data import Plots
+from anomaly_detection import Anomalies
 from pathlib import Path
 from datetime import datetime
 
 from data_retrieval import IndicatorData as IData
-from stac import StacItems
-from system.helper_functions import get_logger, get_last_month
+from stac import StacCollection
+from system.helper_functions import get_logger, get_last_month, mutliple_orbits_raw_range
 
 # clean output directory
 # for item in Path(OUT_DIR).glob("*"):
@@ -23,56 +25,49 @@ from system.helper_functions import get_logger, get_last_month
 def plot_data(
     out_dir=None,
     name=None,
-    raw_data=None,
-    reg_data=None,
-    anomaly_data=None,
-    linear_data=None,
-    orbit="asc",
+    orbit_collection=None,
     monthly=False,
-    linear=False
+    linear=False,
+    features=None,
+    linear_fill=False,
 ):
-    with PlotData(
+    with Plots(
         out_dir=out_dir,
         name=name,
-        raw_data=raw_data,
-        reg_data=reg_data,
-        anomaly_data=anomaly_data,
-        linear_data=linear_data,
-        orbit=orbit,
-        monthly=monthly
+        monthly=monthly,
+        orbit=orbit_collection.orbit,
+        linear=linear,
+        linear_fill=linear_fill,
+        features=features,
+        raw_range=mutliple_orbits_raw_range(  # only for adjusting the plot space, not actually plotted here
+            fid="0" if len(features) == 1 else "total",
+            orbit_collection=orbit_collection
+        ),
     ) as plotting:
-        plotting.plot_rawdata_range()
-
-        if linear:
-            plotting.plot_mean_range()
-
-        plotting.plot_rawdata()
-
-        if reg_data is not None:
-            plotting.plot_regression()
-
-        plotting.plot_anomalies()
-        plotting.plot_finalize()
+        plotting.plot_features(orbit_collection=orbit_collection)
+        plotting.finalize()
 
         if monthly:
             plotting.save_raw()
 
         else:
-            plotting.save_regression()
+            plotting.save_regression(svg=True)
+
+        plotting.show_plot()
 
 
 def compute_raw_data(
-    aoi=None,
+    feature=None,
     out_dir=None,
     start_date=None,
     end_date=None,
     orbit="asc",
     pol="VH",
     monthly=False,
-    regression="spline"
 ):
     indicator = IData(
-        aoi=aoi.geometry,
+        aoi=feature.geometry,
+        fid=feature.fid,
         out_dir=out_dir,
         start_date=start_date,
         end_date=end_date,
@@ -84,14 +79,6 @@ def compute_raw_data(
     indicator.get_request_grd()
     indicator.get_data()
     indicator.stats_to_df()
-    indicator.save_raw()  # save raw data
-
-    if monthly:
-        indicator.monthly_aggregate()
-        indicator.save_raw()  # save raw mothly data
-
-    indicator.apply_regression(mode=regression)
-    indicator.save_regression(mode=regression)  # save spline data
 
     return indicator
 
@@ -104,26 +91,43 @@ def compute_anomaly(
     orbit="asc",
     pol="VH",
     monthly=False,
+    features=None,
 ):
-    anomaly = Anomaly(
+    anomalies = Anomalies(
         data=df,
-        linear_data=linear_data,
         anomaly_column=anomaly_column,
+        features=features,
         out_dir=out_dir,
         orbit=orbit,
         pol=pol,
-        monthly=monthly
+        monthly=monthly,
+        linear_data=linear_data,
     )
 
-    anomaly.find_extrema()
+    anomalies.find_extrema()
+    anomalies.save_anomalies()
+    anomalies.cleanup()
 
-    if monthly:
-        anomaly.save_raw()
+    return anomalies
 
-    else:
-        anomaly.save_regression()
 
-    return anomaly
+def get_s1_scenes(
+        data=None,
+        features=None,
+        geometries=None,
+        orbit="asc",
+        pol="VH",
+        out_dir=None,
+):
+    stac_collection = StacCollection(
+        data=data.copy(),
+        features=features,
+        geometries=geometries,
+        orbit=orbit,
+        pol=pol,
+        out_dir=out_dir,
+    )
+    stac_collection.get_stac_collection()
 
 
 def main(
@@ -132,83 +136,111 @@ def main(
     start_date=None,
     end_date=None,
     pol="VH",
-    orbit="asc",
+    in_orbit="asc",
     name="Unkown Brand",
     monthly=False,
     regression="spline",
     linear=False,
+    aoi_split=False,
+    linear_fill=False,
 ):
-    with AOI(data=aoi_data) as aoi:
-        aoi.get_features()
+    orbit_collection = Orbits(orbit=in_orbit, monthly=monthly)
 
-        indicator = compute_raw_data(
-            aoi=aoi,
-            out_dir=out_dir,
-            start_date=start_date,
-            end_date=end_date,
-            orbit=orbit,
-            pol=pol,
-            monthly=monthly,
-            regression=regression
-        )
+    for orbit in orbit_collection.orbits:
+        with AOI(data=aoi_data, aoi_split=aoi_split) as aoi_collection:
+            subsets = Subsets(out_dir=out_dir, monthly=monthly, orbit=orbit, pol=pol)
 
-        raw_anomalies = compute_anomaly(
-            df=indicator.dataframe,
-            linear_data=indicator.linear_dataframe,
-            out_dir=indicator.out_dir,
-            orbit=orbit,
-            pol=pol,
-            monthly=monthly,
-        )
+            for index, feature in enumerate(aoi_collection.get_feature()):
+                indicator = compute_raw_data(
+                    feature=feature,
+                    out_dir=out_dir,
+                    start_date=start_date,
+                    end_date=end_date,
+                    orbit=orbit,
+                    pol=pol,
+                    monthly=monthly,
+                )
 
-        reg_anomalies = compute_anomaly(
-            df=indicator.regression_dataframe,
-            linear_data=indicator.linear_dataframe,
-            out_dir=indicator.out_dir,
-            orbit=orbit,
-            pol=pol,
-            monthly=monthly,
-        )
+                subsets.add_subset(df=indicator.dataframe)
+                subsets.add_feature(feature)
+                subsets.add_geometry(indicator.geometry)
 
-        stac = StacItems(
-            data=reg_anomalies.dataframe,
-            geometry=indicator.geometry,
-            orbit=indicator.orbit,
-            pol=pol,
-            out_dir=indicator.out_dir,
-        )
+        if len(subsets.features) > 1:
+            subsets.aggregate_columns()
+
+        subsets.save_raw()  # save raw data
 
         if monthly:
-            # plot anomalies on raw data
-            plot_data(
-                out_dir=indicator.out_dir,
-                name=name,
-                raw_data=indicator.dataframe,
-                reg_data=indicator.dataframe,
-                anomaly_data=raw_anomalies.dataframe,
-                linear_data=indicator.linear_dataframe,
+            subsets.monthly_aggregate()
+            subsets.save_monthly_raw()  # save monthly raw data
+
+        subsets.apply_regression(mode=regression)
+        subsets.save_regression(mode=regression)  # save spline data
+        orbit_collection.add_subsets(subsets=subsets, orbit=orbit)
+
+        if monthly:
+            raw_anomalies = compute_anomaly(
+                df=subsets.dataframe,
+                linear_data=subsets.linear_dataframe,
+                out_dir=subsets.out_dir,
                 orbit=orbit,
+                pol=pol,
                 monthly=monthly,
-                linear=linear
+                features=subsets.features,
+            )
+            orbit_collection.add_anomalies(anomalies=raw_anomalies, orbit=orbit)
+
+            get_s1_scenes(
+                data=raw_anomalies.dataframe,
+                features=subsets.features,
+                geometries=subsets.geometries,
+                orbit=orbit,
+                pol=pol,
+                out_dir=subsets.out_dir,
             )
 
         else:
-            # plot anomalies on regression data
-            plot_data(
-                out_dir=indicator.out_dir,
-                name=name,
-                raw_data=indicator.dataframe,
-                anomaly_data=reg_anomalies.dataframe,
-                reg_data=indicator.regression_dataframe,
-                linear_data=indicator.linear_dataframe,
+            reg_anomalies = compute_anomaly(
+                df=subsets.regression_dataframe,
+                linear_data=subsets.linear_dataframe,
+                out_dir=subsets.out_dir,
                 orbit=orbit,
+                pol=pol,
                 monthly=monthly,
-                linear=linear
+                features=subsets.features,
+            )
+            orbit_collection.add_anomalies(anomalies=reg_anomalies, orbit=orbit)
+
+            get_s1_scenes(
+                data=reg_anomalies.dataframe,
+                features=subsets.features,
+                geometries=subsets.geometries,
+                orbit=orbit,
+                pol=pol,
+                out_dir=subsets.out_dir,
             )
 
-        stac.scenes_to_df()
-        stac.join_with_anomalies()
-        stac.save()
+    plot_data(
+        orbit_collection=orbit_collection,
+        out_dir=subsets.out_dir,
+        name=name,
+        monthly=monthly,
+        linear=linear,
+        features=subsets.features,
+        linear_fill=linear_fill,
+    )
+
+
+def parse_boolean(param=None, literal=None):
+    if param[0].lower() == "true":
+        return True
+
+    elif param[0].lower() == "false":
+        return False
+
+    else:
+        raise ValueError(f"The provided value {param[0]} for --{literal} is not supported. "
+                         f"Choose from [true, false].")
 
 
 def run():
@@ -236,14 +268,9 @@ def run():
     else:
         pol = args.polarization.upper()
 
-    if args.linear[0].lower() == "true":
-        linear = True
-
-    elif args.linear[0].lower() == "false":
-        linear = False
-
-    else:
-        raise ValueError(f"The provided value {args.linear[0]} for --linear is not supported. Choose from [true, false].")
+    linear = parse_boolean(param=args.linear, literal="linear")
+    linear_fill = parse_boolean(param=args.linear_fill, literal="linear_fill")
+    aoi_split = parse_boolean(param=args.aoi_split, literal="aoi_split")
 
     if args.aggregate[0] == "daily":
         aggregate = False
@@ -262,11 +289,13 @@ def run():
         start_date=args.start_date,
         end_date=end_date,
         pol=pol,
-        orbit=orbit,
+        in_orbit=orbit,
         name=args.name[0],
         monthly=aggregate,
         regression=args.regression[0],
         linear=linear,
+        aoi_split=aoi_split,
+        linear_fill=linear_fill,
     )
 
 
@@ -281,6 +310,13 @@ def create_parser():
         "Polygon or Multipolygon.",
         metavar="AOI",
         required=True,
+    )
+    parser.add_argument(
+        "--aoi_split",
+        nargs=1,
+        help="Wether to split the AOI into separate features or not, default: false.",
+        choices=["true", "false"],
+        default="false"
     )
     parser.add_argument(
         "--out_dir",
@@ -317,7 +353,7 @@ def create_parser():
     parser.add_argument(
         "--orbit",
         help="Orbit of Sentinel-1 data, default: ascending",
-        choices=["asc", "des"],
+        choices=["asc", "des", "both"],
         nargs=1,
         default="asc",
     )
@@ -337,6 +373,13 @@ def create_parser():
         "--linear",
         nargs=1,
         help="Wether to plot the linear regression with insensitive range or not, default: false.",
+        choices=["true", "false"],
+        default="false"
+    )
+    parser.add_argument(
+        "--linear_fill",
+        nargs=1,
+        help="Wether to fill the linear insensitive range or not, default: false.",
         choices=["true", "false"],
         default="false"
     )

@@ -24,20 +24,22 @@ if __name__ == "__main__":
         "porsche_leipzig",
         # "ford_koeln",
     ]
-    for orbit in orbits:
-        for aoi in aois:
-            conf = Config(
-                aoi_dir=Path(r"input/AOIs"),
-                working_dir=Path.home().joinpath("sat4ec"),
-                out_dir=Path(r"output"),
-                orbit=orbit,
-                pol=pol,  # only use VH polarization
-                aoi="porsche_leipzig",
-                ext="geojson",
-                start="2016-01-01",
-                monthly=False,
-                regression="spline",
-                linear=True,
-            )
-            prod = Production(config=conf)
-            prod.workflow()
+
+    for aoi in aois:
+        conf = Config(
+            aoi_dir=Path(r"input/AOIs"),
+            working_dir=Path(r"/mnt/data1/gitlab/sat4ec/data"),  # Path.home().joinpath("sat4ec"),
+            out_dir=Path(r"output"),
+            orbit="both",
+            pol="VH",  # only use VH polarization
+            aoi="porsche_leipzig",
+            ext="geojson",
+            start="2016-01-01",
+            monthly=False,
+            regression="spline",
+            linear=True,
+            linear_fill=False,
+            aoi_split=True,
+        )
+        prod = Production(config=conf)
+        prod.workflow()
