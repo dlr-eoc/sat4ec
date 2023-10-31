@@ -120,7 +120,7 @@ def get_s1_scenes(
         out_dir=None,
 ):
     stac_collection = StacCollection(
-        data=data,
+        data=data.copy(),
         features=features,
         geometries=geometries,
         orbit=orbit,
@@ -211,12 +211,13 @@ def main(
             )
             orbit_collection.add_anomalies(anomalies=reg_anomalies, orbit=orbit)
 
-            stac = StacItems(
+            get_s1_scenes(
                 data=reg_anomalies.dataframe,
-                geometry=indicator.geometry,
-                orbit=indicator.orbit,
+                features=subsets.features,
+                geometries=subsets.geometries,
+                orbit=orbit,
                 pol=pol,
-                out_dir=indicator.out_dir,
+                out_dir=subsets.out_dir,
             )
 
     plot_data(
@@ -228,10 +229,6 @@ def main(
         features=subsets.features,
         linear_fill=linear_fill,
     )
-
-    # stac.scenes_to_df()
-    # stac.join_with_anomalies()
-    # stac.save()
 
 
 def parse_boolean(param=None, literal=None):

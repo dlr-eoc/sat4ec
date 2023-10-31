@@ -1,6 +1,7 @@
 import unittest
 from pathlib import Path
 import pandas as pd
+import shutil
 
 from source.stac import StacItems, StacCollection
 from source.aoi_check import AOI
@@ -40,7 +41,7 @@ class TestGetData(unittest.TestCase):
         self.create_output_dir()
 
         self.stac_collection = StacCollection(
-            data=self.reg_anomaly_data,
+            data=self.reg_anomaly_data.copy(),
             features=self.features,
             geometries=self.geometries,
             orbit=self.orbit,
@@ -60,9 +61,9 @@ class TestGetData(unittest.TestCase):
         if not self.out_dir.joinpath("scenes").exists():
             self.out_dir.joinpath("scenes").mkdir(parents=True)
 
-    # def tearDown(self):
-    #     if self.out_dir.exists():
-    #         shutil.rmtree(self.out_dir)
+    def tearDown(self):
+        if self.out_dir.exists():
+            shutil.rmtree(self.out_dir)
 
     def test_dataframe_from_file(self):
         stac_collection = StacCollection(
@@ -125,8 +126,8 @@ class TestGetData(unittest.TestCase):
         feature = self.features[0]
         geometry = self.geometries[0]
         stac = StacItems(
-            anomalies_df=self.reg_anomaly_data.loc[
-                :, self.reg_anomaly_data.columns.str.startswith(f"{feature.fid}_")
+            anomalies_df=self.stac_collection.anomalies_df.loc[
+                :, self.stac_collection.anomalies_df.columns.str.startswith(f"{feature.fid}_")
             ],
             fid=feature.fid,
             geometry=geometry,
@@ -163,8 +164,8 @@ class TestGetData(unittest.TestCase):
             zip(self.features, self.geometries)
         ):
             stac = StacItems(
-                anomalies_df=self.reg_anomaly_data.loc[
-                    :, self.reg_anomaly_data.columns.str.startswith(f"{feature.fid}_")
+                anomalies_df=self.stac_collection.anomalies_df.loc[
+                    :, self.stac_collection.anomalies_df.columns.str.startswith(f"{feature.fid}_")
                 ],
                 fid=feature.fid,
                 geometry=geometry,

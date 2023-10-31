@@ -1,4 +1,6 @@
 import pandas as pd
+import pytz
+import dateutil
 
 from system.authentication import Config
 from sentinelhub import DataCollection, SentinelHubCatalog
@@ -42,7 +44,7 @@ class StacCollection:
     def _load_df(filename):
         df = pd.read_csv(filename)
         df["interval_from"] = pd.to_datetime(df["interval_from"])
-        df = df.set_index("interval_from")
+        df = df.set_index("interval_from")  # required to find scenes at DateTimeIndex
 
         return df
 
@@ -53,7 +55,9 @@ class StacCollection:
         self.dataframe = self.dataframe.merge(df, how="outer")
 
     def get_stac_collection(self):
-        for index, (feature, geometry) in enumerate(zip(self.features, self.geometries)):
+        for index, (feature, geometry) in enumerate(
+            zip(self.features, self.geometries)
+        ):
             stac = StacItems(
                 anomalies_df=self.anomalies_df.loc[
                     :, self.anomalies_df.columns.str.startswith(f"{feature.fid}_")
@@ -74,11 +78,14 @@ class StacCollection:
         self.save()
 
     def delete_columns(self, columns=("mean", "std")):
-        self.dataframe = self.dataframe.loc[:, ~self.dataframe.columns.str.endswith(columns)]
+        self.dataframe = self.dataframe.loc[
+            :, ~self.dataframe.columns.str.endswith(columns)
+        ]
 
     def save(self):
         out_file = self.out_dir.joinpath(
-            "scenes", f"indicator_1_scenes_{self.orbit}_{self.pol}.csv",
+            "scenes",
+            f"indicator_1_scenes_{self.orbit}_{self.pol}.csv",
         )
 
         self.dataframe.to_csv(out_file)
@@ -109,8 +116,25 @@ class StacItems(Config):
         self.catalog.get_collection(DataCollection.SENTINEL1)
 
     def join_with_anomalies(self):
-        true_anomalies = self.anomalies_df.loc[self.anomalies_df[f"{self.fid}_anomaly"]]  # True at these indices
-        self.dataframe = self.dataframe.merge(true_anomalies, on=["interval_from"], how="inner")
+        if isinstance(self.anomalies_df.index, pd.DatetimeIndex):
+            if self.anomalies_df.index.tzinfo is None:
+                self.anomalies_df.index = self.anomalies_df.index.tz_localize("UTC")
+
+            else:
+                self.anomalies_df.index = self.anomalies_df.index.tz_convert("UTC")
+
+            self.anomalies_df.insert(0, "tmp", self.anomalies_df.index.to_series())
+            self.anomalies_df = self.anomalies_df.reset_index(drop=True)
+            self.anomalies_df = self.anomalies_df.rename(
+                columns={"tmp": "interval_from"}
+            )
+
+        true_anomalies = self.anomalies_df.loc[
+            self.anomalies_df[f"{self.fid}_anomaly"]
+        ]  # True at these indices
+        self.dataframe = self.dataframe.merge(
+            true_anomalies, on=["interval_from"], how="inner"
+        )
         self.dataframe = self.dataframe.drop(f"{self.fid}_anomaly", axis=1)
 
     def get_scenes(self):
@@ -122,7 +146,9 @@ class StacItems(Config):
         self.dataframe = pd.DataFrame(
             {
                 "interval_from": [
-                    pd.to_datetime(_item["properties"]["datetime"]).normalize()  # get rid of time
+                    pd.to_datetime(_item["properties"]["datetime"])
+                    .normalize()
+                    .tz_convert("UTC")  # get rid of time
                     for values in scenes_df.values
                     for _item in values
                 ],
@@ -131,6 +157,12 @@ class StacItems(Config):
                 ],
             }
         )
+
+    def remove_datetime_index(self):
+        if isinstance(self.dataframe.index, pd.DatetimeIndex):
+            self.dataframe.insert(0, "tmp", self.dataframe.index.to_series())
+            self.dataframe = self.dataframe.reset_index(drop=True)
+            self.dataframe = self.dataframe.rename(columns={"tmp": "interval_from"})
 
     def search_catalog(self, row):
         date = row.name

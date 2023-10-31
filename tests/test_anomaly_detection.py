@@ -227,6 +227,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_feature_extrema()
+
         self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 6)
 
     def test_anomaly_save_monthly(self):

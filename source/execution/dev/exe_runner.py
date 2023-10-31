@@ -10,9 +10,9 @@ if __name__ == "__main__":
         out_dir=Path(r"output"),
         orbit="both",  # ascending or descending orbit
         pol="VH",  # only use VH polarization
-        aoi="vw_wolfsburg3subfeatures",
+        aoi="vw_wolfsburg2subfeatures",
         ext="geojson",
-        start="2014-05-01",
+        start="2020-05-01",
         end="2022-12-31",
         monthly=True,
         regression="spline",
