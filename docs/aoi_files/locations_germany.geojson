@@ -1,0 +1,22 @@
+{
+"type": "FeatureCollection",
+"name": "locations_germany",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "producer": "VW", "location": "Emden" }, "geometry": { "type": "Point", "coordinates": [ 7.169391757448844, 53.346809231611111 ] } },
+{ "type": "Feature", "properties": { "producer": "VW", "location": "Wolfsburg" }, "geometry": { "type": "Point", "coordinates": [ 10.75278050419597, 52.432649216024025 ] } },
+{ "type": "Feature", "properties": { "producer": "Mercedes", "location": "Ludwigsfelde" }, "geometry": { "type": "Point", "coordinates": [ 13.27204190412213, 52.320593425097982 ] } },
+{ "type": "Feature", "properties": { "producer": "VW", "location": "Zwickau" }, "geometry": { "type": "Point", "coordinates": [ 12.488287476213021, 50.797721794385552 ] } },
+{ "type": "Feature", "properties": { "producer": "Opel", "location": "Eisenach" }, "geometry": { "type": "Point", "coordinates": [ 10.269807982762233, 50.984595640065159 ] } },
+{ "type": "Feature", "properties": { "producer": "Opel", "location": "Ruesselsheim" }, "geometry": { "type": "Point", "coordinates": [ 8.393016512020289, 49.985611667658489 ] } },
+{ "type": "Feature", "properties": { "producer": "Audi", "location": "Ingolstadt" }, "geometry": { "type": "Point", "coordinates": [ 11.429007637887613, 48.78475587725557 ] } },
+{ "type": "Feature", "properties": { "producer": "BMW", "location": "Regensburg" }, "geometry": { "type": "Point", "coordinates": [ 12.176463478883088, 48.974653637449286 ] } },
+{ "type": "Feature", "properties": { "producer": "BMW", "location": "Leipzig" }, "geometry": { "type": "Point", "coordinates": [ 12.43932179, 51.404117296018484 ] } },
+{ "type": "Feature", "properties": { "producer": "Porsche", "location": "Leipzig" }, "geometry": { "type": "Point", "coordinates": [ 12.290283261470561, 51.408328869864221 ] } },
+{ "type": "Feature", "properties": { "producer": "Audi", "location": "Neckars-Ulm" }, "geometry": { "type": "Point", "coordinates": [ 9.221558714487857, 49.208013979681354 ] } },
+{ "type": "Feature", "properties": { "producer": "Ford", "location": "Saarlouis" }, "geometry": { "type": "Point", "coordinates": [ 6.75643072568151, 49.346267372721769 ] } },
+{ "type": "Feature", "properties": { "producer": "Ford", "location": "Cologne" }, "geometry": { "type": "Point", "coordinates": [ 6.957739717638415, 51.014090027522307 ] } },
+{ "type": "Feature", "properties": { "producer": "Mercedes", "location": "Duesseldorf" }, "geometry": { "type": "Point", "coordinates": [ 6.791530758643862, 51.255003183557143 ] } },
+{ "type": "Feature", "properties": { "producer": "Mercedes", "location": "Bremen" }, "geometry": { "type": "Point", "coordinates": [ 8.913838002518705, 53.065457085695989 ] } }
+]
+}
