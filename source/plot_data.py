@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-import pandas as pd
+import math
 import matplotlib.dates as mdates
 from system.helper_functions import get_monthly_keyword, mutliple_orbits_raw_range
 from datetime import timedelta
@@ -35,7 +35,7 @@ class Plots:
         self._get_long_orbit()
 
     def _get_rows_cols(self):
-        if len(self.features[:-1]) < self.max_cols:
+        if len(self.features[:-1]) < self.max_cols:  # all plots fit into one row
             nrows = 1
             ncols = len(self.features)
 
@@ -45,13 +45,13 @@ class Plots:
             nrows = 2
             ncols = self.max_cols
 
-        else:  # len(self.features) > max_cols
+        else:  # having more plots than fit into one row
             if len(self.features) % self.max_cols == 0:  # e.g. 8 % 4 = 0
                 nrows = int(len(self.features) / self.max_cols)
                 ncols = self.max_cols
 
             else:
-                nrows = int(len(self.features) // self.max_cols)
+                nrows = int(math.ceil(len(self.features) / self.max_cols))
                 ncols = self.max_cols
 
         return nrows, ncols
@@ -191,13 +191,6 @@ class Plots:
                 self.raw_range_dataframe.index[0].to_pydatetime() - timedelta(days=7),
                 self.raw_range_dataframe.index[-1].to_pydatetime() + timedelta(days=7),
             )
-
-        # reset limits for all y axes
-        min_y_limits = [ax.get_ylim()[0] for ax in self.fig.axes]
-        max_y_limits = [ax.get_ylim()[1] for ax in self.fig.axes]
-
-        for ax in self.fig.axes:
-            ax.set_ylim([min(min_y_limits), max(max_y_limits)])
 
     def axes_ticks(self):
         for ax in self.fig.axes:

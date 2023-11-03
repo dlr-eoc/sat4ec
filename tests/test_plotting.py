@@ -19,6 +19,7 @@ TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
 class TestPlotting(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestPlotting, self).__init__(*args, **kwargs)
+        self.tear_down = True  # delete output data per default, switch to False in test methods if required
         self.out_dir = TEST_DIR.joinpath("output", "vw_wolfsburg")
         self.monthly = False
         self.orbit_collection = Orbits(orbit="both", monthly=self.monthly)
@@ -35,7 +36,7 @@ class TestPlotting(unittest.TestCase):
             ),
         )
 
-    def _prepare(self, aoi_split=False):
+    def _prepare(self, aoi_split=False, data_dir=TEST_DIR.joinpath("orbit_input")):
         for orbit in self.orbit_collection.orbits:
             (
                 self.raw_data,
@@ -46,7 +47,7 @@ class TestPlotting(unittest.TestCase):
                 self.linear_data,
                 self.linear_monthly_data,
             ) = prepare_test_dataframes(
-                data_dir=TEST_DIR.joinpath("orbit_input"),
+                data_dir=data_dir,
                 orbit=orbit,
                 aoi_split=aoi_split,
             )
@@ -75,8 +76,9 @@ class TestPlotting(unittest.TestCase):
             self.out_dir.joinpath("plot").mkdir(parents=True)
 
     def tearDown(self):
-        if self.out_dir.exists():
-            shutil.rmtree(self.out_dir)
+        if self.tear_down:
+            if self.out_dir.exists():
+                shutil.rmtree(self.out_dir)
 
     def test_raw_plot(self):
         for subsets, anomalies, orbit, single_axis in self.orbit_collection.get_data():
