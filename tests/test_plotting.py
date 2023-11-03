@@ -139,6 +139,7 @@ class TestPlotting(unittest.TestCase):
                 ),
                 ax=self.collection._get_plot_axis(index=index),
                 fid=feature.fid,
+                monthly=self.monthly,
             )
             # only plot raw range on left axis
             if plotting.ax.get_ylabel() != "2nd_des":
@@ -409,6 +410,7 @@ class TestPlotting(unittest.TestCase):
                     ),
                     orbit=orbit,
                     fid=feature.fid,
+                    monthly=self.monthly,
                 )
                 # only plot raw range on left axis
                 if plotting.ax.get_ylabel() != "2nd_des":
@@ -446,6 +448,7 @@ class TestPlotting(unittest.TestCase):
                     ),
                     orbit=orbit,
                     fid=feature.fid,
+                    monthly=self.monthly,
                 )
                 plotting.plot_rawdata()
                 plotting.plot_anomalies()
@@ -543,6 +546,7 @@ class TestPlotting(unittest.TestCase):
                     ),
                     orbit=orbit,
                     fid=feature.fid,
+                    monthly=self.monthly,
                 )
                 # only plot raw range on left axis
                 if plotting.ax.get_ylabel() != "2nd_des":

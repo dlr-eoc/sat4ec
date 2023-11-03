@@ -125,6 +125,7 @@ class Plots:
                     orbit=orbit,
                     pol=self.pol,
                     linear_fill=self.linear_fill,
+                    monthly=self.monthly,
                 )
 
                 # only plot raw range on left axis
@@ -194,15 +195,15 @@ class Plots:
 
     def axes_ticks(self):
         for ax in self.fig.axes:
-            if ax.get_ylabel() != "":  # apply following annotations to left axis
-                ax.tick_params(
-                    colors=sns.color_palette()[0], which="both", axis="y"
-                )  # ascending orbit always blue
-
-            else:  # if having secondary axis
+            if ax.get_ylabel() == "2nd_des":  # if having secondary axis
                 ax.tick_params(
                     colors=sns.color_palette()[3], which="both", axis="y"
                 )  # descending orbit red if on secondary y-axis
+
+            else:  # apply following annotations to left axis
+                ax.tick_params(
+                    colors=sns.color_palette()[0], which="both", axis="y"
+                )  # ascending orbit always blue
 
             ax.xaxis.set_minor_locator(
                 mdates.MonthLocator()
@@ -248,9 +249,9 @@ class Plots:
 
     def finalize(self):
         self.unused_subplots()
-        self.plot_annotations()
         self.axes_limits()
         self.axes_ticks()
+        self.plot_annotations()
         self.plot_legend()
         self.layout()
 
@@ -317,6 +318,7 @@ class PlotData:
         orbit=None,
         pol=None,
         linear_fill=False,
+        monthly=False,
     ):
         self.raw_dataframe = raw_data
         self.raw_range_dataframe = raw_range
@@ -328,6 +330,7 @@ class PlotData:
         self.orbit = orbit
         self.pol = pol
         self.linear_fill = linear_fill
+        self.monthly = monthly
 
     def plot_rawdata(self, zorder=5, alpha=1):
         # plot of main line
@@ -338,7 +341,7 @@ class PlotData:
             legend=False,
             # color="#bbbbbb",
             label="raw mean",
-            linestyle="dotted",
+            linestyle="dotted" if not self.monthly else "solid",
             zorder=zorder,
             alpha=alpha,
             ax=self.ax,
