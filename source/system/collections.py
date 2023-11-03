@@ -43,6 +43,13 @@ class SubsetCollection:
                 :, self.dataframe.columns.str.endswith(col)
             ].mean(axis=1)
 
+        self.dataframe[f"total_min"] = self.dataframe.loc[
+            :, self.dataframe.columns.str.endswith("min")
+        ].min(axis=1)
+        self.dataframe[f"total_max"] = self.dataframe.loc[
+            :, self.dataframe.columns.str.endswith("max")
+        ].max(axis=1)
+
         for col in ["sample_count", "nodata_count"]:
             self.dataframe[f"total_{col}"] = self.dataframe.loc[
                 :, self.dataframe.columns.str.endswith(col)

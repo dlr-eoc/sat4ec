@@ -1,0 +1,1 @@
+In order to detect significant changes, the raw data is subject to regression.
