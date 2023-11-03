@@ -125,6 +125,7 @@ class Plots:
                     orbit=orbit,
                     pol=self.pol,
                     linear_fill=self.linear_fill,
+                    monthly=self.monthly,
                 )
 
                 # only plot raw range on left axis
@@ -317,6 +318,7 @@ class PlotData:
         orbit=None,
         pol=None,
         linear_fill=False,
+        monthly=False,
     ):
         self.raw_dataframe = raw_data
         self.raw_range_dataframe = raw_range
@@ -328,6 +330,7 @@ class PlotData:
         self.orbit = orbit
         self.pol = pol
         self.linear_fill = linear_fill
+        self.monthly = monthly
 
     def plot_rawdata(self, zorder=5, alpha=1):
         # plot of main line
@@ -338,7 +341,7 @@ class PlotData:
             legend=False,
             # color="#bbbbbb",
             label="raw mean",
-            linestyle="dotted",
+            linestyle="dotted" if not self.monthly else "solid",
             zorder=zorder,
             alpha=alpha,
             ax=self.ax,
