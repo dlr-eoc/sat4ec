@@ -194,15 +194,15 @@ class Plots:
 
     def axes_ticks(self):
         for ax in self.fig.axes:
-            if ax.get_ylabel() != "":  # apply following annotations to left axis
-                ax.tick_params(
-                    colors=sns.color_palette()[0], which="both", axis="y"
-                )  # ascending orbit always blue
-
-            else:  # if having secondary axis
+            if ax.get_ylabel() == "2nd_des":  # if having secondary axis
                 ax.tick_params(
                     colors=sns.color_palette()[3], which="both", axis="y"
                 )  # descending orbit red if on secondary y-axis
+
+            else:  # apply following annotations to left axis
+                ax.tick_params(
+                    colors=sns.color_palette()[0], which="both", axis="y"
+                )  # ascending orbit always blue
 
             ax.xaxis.set_minor_locator(
                 mdates.MonthLocator()
@@ -248,9 +248,9 @@ class Plots:
 
     def finalize(self):
         self.unused_subplots()
-        self.plot_annotations()
         self.axes_limits()
         self.axes_ticks()
+        self.plot_annotations()
         self.plot_legend()
         self.layout()
 
