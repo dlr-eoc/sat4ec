@@ -100,7 +100,7 @@ The following list is a collection of automobile producer facilities linking to 
 | Mercedes | [Mercedes Ludwigsfelde](#mercedes-ludwigsfelde) |
 | Mercedes | [Mercedes Duesseldorf](#mercedes-duesseldorf)   |
 
-![](tutorial/images/locations_germany.png)
+![](doc_images/locations_germany.png)
 
 #### BMW Regensburg
 
