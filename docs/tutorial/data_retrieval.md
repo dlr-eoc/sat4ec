@@ -1,0 +1,1 @@
+The data retrieval code exploits the [sentinelhub Python package](https://pypi.org/project/sentinelhub/). 

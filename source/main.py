@@ -151,7 +151,6 @@ def main(
             subsets = Subsets(out_dir=out_dir, monthly=monthly, orbit=orbit, pol=pol)
 
             for index, feature in enumerate(aoi_collection.get_feature()):
-                print(feature.fid)
                 indicator = compute_raw_data(
                     feature=feature,
                     out_dir=out_dir,

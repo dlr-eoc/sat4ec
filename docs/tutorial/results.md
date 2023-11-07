@@ -71,3 +71,4 @@ This data contains the name of every anomal Sentinel-1 scene for a given (sub) A
 
 Plotted results look as follows:
 
+![BMW Regensburg](../doc_images/bmw_regensburg_monthly_plot.png)

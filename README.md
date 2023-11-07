@@ -1,5 +1,8 @@
 # Sat4Ec
 
+This repository tracks occupation of parking lots of automobile producers with Sentinel-1 data.
+Please read the in-depth documentation unter `docs/`.
+
 ## Installation
 
 Build the docker image.
