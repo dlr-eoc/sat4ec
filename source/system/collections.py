@@ -68,7 +68,7 @@ class SubsetCollection:
         self.dataframe["month"] = self.dataframe.index.month
         self.dataframe = self.dataframe.groupby(
             by=["year", "month"], as_index=False
-        ).mean()
+        ).mean(numeric_only=True)
         self.dataframe["interval_from"] = pd.to_datetime(
             self.dataframe[["year", "month"]].assign(DAY=15)
         )

@@ -1,6 +1,12 @@
 import subprocess
+import os
 from pathlib import Path
 from source.execution.exe_helper_functions import get_name
+
+# for development
+# os.environ["PROJ_LIB"] = str(Path.home().joinpath("mambaforge", "envs", "sat4ec", "share", "proj").absolute())
+# for production
+os.environ["PROJ_LIB"] = str(Path.home().joinpath("sat4ec", "sat4ec_env", "share", "proj").absolute())
 
 
 class Production:
