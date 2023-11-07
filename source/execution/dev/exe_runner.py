@@ -10,14 +10,14 @@ if __name__ == "__main__":
         out_dir=Path(r"output"),
         orbit="both",  # ascending or descending orbit
         pol="VH",  # only use VH polarization
-        aoi="mercedes_bremen4subfeatures",
+        aoi="bmw_regensburg",
         ext="geojson",
         start="2021-01-01",
-        monthly=False,
+        monthly=True,
         regression="spline",
         linear=True,
         linear_fill=False,
-        aoi_split=True,
+        aoi_split=False,
     )
     prod = Production(config=conf)
     prod.workflow(_path=r"/mnt/data1/gitlab/sat4ec/source")

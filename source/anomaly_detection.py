@@ -281,6 +281,6 @@ class Anomaly:
     def find_minima(self):
         self.flip_data()  # flip data to make original minima to maximas that can be detected
         self.find_maxima()  # find maxima (originally minima) on dataframe
-        self.dataframe[self.column] = self.dataframe_bak[
-            self.column
+        self.dataframe.loc[:, self.column] = self.dataframe_bak.loc[
+            :, self.column
         ]  # revert flipped data column to original state
