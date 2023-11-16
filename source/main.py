@@ -57,6 +57,7 @@ def plot_data(
 
 
 def compute_raw_data(
+    archive_data=None,
     feature=None,
     out_dir=None,
     start_date=None,
@@ -66,6 +67,7 @@ def compute_raw_data(
     monthly=False,
 ):
     indicator = IData(
+        archive_data=archive_data,
         aoi=feature.geometry,
         fid=feature.fid,
         out_dir=out_dir,
@@ -149,9 +151,11 @@ def main(
     for orbit in orbit_collection.orbits:
         with AOI(data=aoi_data, aoi_split=aoi_split) as aoi_collection:
             subsets = Subsets(out_dir=out_dir, monthly=monthly, orbit=orbit, pol=pol)
+            subsets.check_existing_raw()
 
             for index, feature in enumerate(aoi_collection.get_feature()):
                 indicator = compute_raw_data(
+                    archive_data=subsets.archive_dataframe,
                     feature=feature,
                     out_dir=out_dir,
                     start_date=start_date,
@@ -172,7 +176,7 @@ def main(
 
         if monthly:
             subsets.monthly_aggregate()
-            subsets.save_monthly_raw()  # save monthly raw data
+            subsets.save_raw()  # save monthly raw data
 
         subsets.apply_regression(mode=regression)
         subsets.save_regression(mode=regression)  # save spline data
@@ -252,8 +256,14 @@ def run():
     else:
         end_date = args.end_date
 
+    if not args.start_date:
+        start_date = "2014-05-01"
+
+    else:
+        start_date = args.start_date
+
     # check if dates are in format YYYY-MM-DD
-    for _date in [args.start_date, end_date]:
+    for _date in [start_date, end_date]:
         _date = datetime.strptime(_date, "%Y-%m-%d")  # throws an error if conversion fails
 
     if isinstance(args.orbit, list):
@@ -286,7 +296,7 @@ def run():
     main(
         aoi_data=args.aoi_data,
         out_dir=Path(args.out_dir),
-        start_date=args.start_date,
+        start_date=start_date,
         end_date=end_date,
         pol=pol,
         in_orbit=orbit,
