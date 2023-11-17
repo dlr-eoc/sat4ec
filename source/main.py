@@ -66,6 +66,13 @@ def compute_raw_data(
     pol="VH",
     monthly=False,
 ):
+    def run_indicator(_indicator):
+        _indicator.get_request_grd()
+        _indicator.get_data()
+        _indicator.stats_to_df()
+
+        return _indicator
+
     indicator = IData(
         archive_data=archive_data,
         aoi=feature.geometry,
@@ -77,10 +84,37 @@ def compute_raw_data(
         pol=pol,
         monthly=monthly,
     )
+    print(f"Original start date {indicator.start_date}")
+    print(f"Original end date {indicator.end_date}")
+    print(f"Earliest archive data {indicator.archive_data.index[0]}")
+    print(f"Latest archive data {indicator.archive_data.index[-1]}")
+    existing_keyword, column_keyword = indicator.check_existing_data()
 
-    indicator.get_request_grd()
-    indicator.get_data()
-    indicator.stats_to_df()
+    if not existing_keyword:  # no archive data, run indicator once
+        print("not existing")
+        # indicator = run_indicator(indicator)
+
+    else:  # archive data present, check if new feature and earlier and/or future data required
+        if not column_keyword:
+            print("no column")
+            # indicator = run_indicator(indicator)
+
+        else:
+            if indicator.check_dates(start=True) == "past":
+                # print("past dates")
+                # print(f"Checked interval {indicator.interval}")
+                indicator = run_indicator(indicator)
+                indicator.insert_past_dates()
+                indicator.get_start_end_date(start=start_date, end=end_date)
+                # print(f"Corrected interval {indicator.interval}")
+
+            if indicator.check_dates(end=True) == "future":
+                # print("future dates")
+                # print(f"Checked interval {indicator.interval}")
+                indicator = run_indicator(indicator)
+                indicator.insert_future_dates()
+                indicator.get_start_end_date(start=start_date, end=end_date)
+                # print(f"Corrected interval {indicator.interval}")
 
     return indicator
 
@@ -194,14 +228,14 @@ def main(
             )
             orbit_collection.add_anomalies(anomalies=raw_anomalies, orbit=orbit)
 
-            get_s1_scenes(
-                data=raw_anomalies.dataframe,
-                features=subsets.features,
-                geometries=subsets.geometries,
-                orbit=orbit,
-                pol=pol,
-                out_dir=subsets.out_dir,
-            )
+            # get_s1_scenes(
+            #     data=raw_anomalies.dataframe,
+            #     features=subsets.features,
+            #     geometries=subsets.geometries,
+            #     orbit=orbit,
+            #     pol=pol,
+            #     out_dir=subsets.out_dir,
+            # )
 
         else:
             reg_anomalies = compute_anomaly(
@@ -215,14 +249,14 @@ def main(
             )
             orbit_collection.add_anomalies(anomalies=reg_anomalies, orbit=orbit)
 
-            get_s1_scenes(
-                data=reg_anomalies.dataframe,
-                features=subsets.features,
-                geometries=subsets.geometries,
-                orbit=orbit,
-                pol=pol,
-                out_dir=subsets.out_dir,
-            )
+            # get_s1_scenes(
+            #     data=reg_anomalies.dataframe,
+            #     features=subsets.features,
+            #     geometries=subsets.geometries,
+            #     orbit=orbit,
+            #     pol=pol,
+            #     out_dir=subsets.out_dir,
+            # )
 
     plot_data(
         orbit_collection=orbit_collection,

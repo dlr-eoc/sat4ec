@@ -7,6 +7,7 @@ from system.helper_functions import Regression
 class SubsetCollection:
     def __init__(self, out_dir=None, monthly=False, orbit="asc", pol="VH"):
         self.dataframe = None
+        self.archive_dataframe = None  # dataframe that might has been saved before, for comparison with new data
         self.regression_dataframe = None
         self.linear_dataframe = None  # dataframe for default linear regression
         self.out_dir = out_dir
@@ -16,11 +17,26 @@ class SubsetCollection:
         self.features = []
         self.geometries = []
 
+        self._get_outfile()
+
+    def _get_outfile(self):
+        self.monthly_out_file = self.out_dir.joinpath(
+            "raw",
+            f"indicator_1_rawdata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+        )
+        self.daily_out_file = self.out_dir.joinpath(
+            "raw",
+            f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv",
+        )
+
     def add_subset(self, df=None):
+        print(self.dataframe)
+        print(df.index[0])
+        print(type(df.index[0]))
         self.dataframe = pd.concat(
             [self.dataframe, df], axis=1
         ).sort_index()  # merge arrays
-
+        print(self.dataframe.index)
     def add_feature(self, feature=None):
         self.features.append(feature)
 
@@ -75,19 +91,17 @@ class SubsetCollection:
         self.dataframe = self.dataframe.set_index("interval_from")
         self.dataframe.drop(["year", "month"], axis=1, inplace=True)
 
-    def save_raw(self):
-        out_file = self.out_dir.joinpath(
-            "raw",
-            f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv",
-        )
-        self.dataframe.to_csv(out_file)
+    def check_existing_raw(self):
+        if self.daily_out_file.exists():
+            self.archive_dataframe = pd.read_csv(self.daily_out_file)
+            self.archive_dataframe = self.archive_dataframe.set_index("interval_from")
 
-    def save_monthly_raw(self):
-        out_file = self.out_dir.joinpath(
-            "raw",
-            f"indicator_1_rawdata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
-        )
-        self.dataframe.to_csv(out_file)
+    def save_raw(self):
+        if self.monthly:
+            self.dataframe.to_csv(self.monthly_out_file)
+
+        else:
+            self.dataframe.to_csv(self.daily_out_file)
 
     def apply_regression(self, mode="spline"):
         for feature in self.features:

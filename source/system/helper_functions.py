@@ -8,7 +8,7 @@ from scipy.interpolate import splrep, BSpline
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from dateutil.relativedelta import relativedelta
-from datetime import datetime
+from datetime import datetime, time
 from jsonformatter import JsonFormatter
 from pathlib import Path
 
@@ -177,9 +177,37 @@ def get_last_month():
     return datetime.strftime(last_month, "%Y-%m-%d")
 
 
+def adapt_start_end_time(start=False, end=False, timestamp=None):
+    """
+    Start date must have time part set to 00:00:00.
+    End date must have time part set to 23:59:59.
+    """
+
+    date = datetime.strptime(timestamp, "%Y-%m-%d")
+
+    if start:
+        date = datetime.combine(date, time(hour=0, minute=0, second=0))
+
+    if end:
+        date = datetime.combine(date, time(hour=23, minute=59, second=59))
+
+    return datetime.strftime(date, "%Y-%m-%dT%H:%M:%SZ")
+
+
 def create_out_dir(base_dir=None, out_dir=None):
     if not base_dir.joinpath(out_dir).exists():
         base_dir.joinpath(out_dir).mkdir(parents=True)
+
+
+def convert_dataframe_tz(var=None):
+    if isinstance(var, pd.DatetimeIndex) or isinstance(var, pd.Timestamp):
+        if var.tzinfo is None:
+            var = var.tz_localize("UTC")
+
+        else:
+            var = var.tz_convert("UTC")
+
+    return var
 
 
 def load_yaml(yaml_path):

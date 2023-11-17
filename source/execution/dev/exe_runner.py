@@ -13,7 +13,7 @@ if __name__ == "__main__":
         aoi="bmw_regensburg",
         ext="geojson",
         start="2021-01-01",
-        monthly=True,
+        monthly=False,
         regression="spline",
         linear=True,
         linear_fill=False,
