@@ -8,11 +8,11 @@ if __name__ == "__main__":
         aoi_dir=Path(r"input/AOIs"),
         working_dir=Path(r"/mnt/data1/gitlab/sat4ec/data"),  # Path.home().joinpath("sat4ec"),
         out_dir=Path(r"output"),
-        orbit="both",  # ascending or descending orbit
+        orbit="asc",  # ascending or descending orbit
         pol="VH",  # only use VH polarization
         aoi="bmw_regensburg",
         ext="geojson",
-        start="2021-01-01",
+        start="2022-12-01",
         monthly=False,
         regression="spline",
         linear=True,

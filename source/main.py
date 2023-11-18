@@ -84,15 +84,11 @@ def compute_raw_data(
         pol=pol,
         monthly=monthly,
     )
-    print(f"Original start date {indicator.start_date}")
-    print(f"Original end date {indicator.end_date}")
-    print(f"Earliest archive data {indicator.archive_data.index[0]}")
-    print(f"Latest archive data {indicator.archive_data.index[-1]}")
     existing_keyword, column_keyword = indicator.check_existing_data()
 
     if not existing_keyword:  # no archive data, run indicator once
         print("not existing")
-        # indicator = run_indicator(indicator)
+        indicator = run_indicator(indicator)
 
     else:  # archive data present, check if new feature and earlier and/or future data required
         if not column_keyword:
@@ -101,20 +97,14 @@ def compute_raw_data(
 
         else:
             if indicator.check_dates(start=True) == "past":
-                # print("past dates")
-                # print(f"Checked interval {indicator.interval}")
                 indicator = run_indicator(indicator)
                 indicator.insert_past_dates()
                 indicator.get_start_end_date(start=start_date, end=end_date)
-                # print(f"Corrected interval {indicator.interval}")
 
             if indicator.check_dates(end=True) == "future":
-                # print("future dates")
-                # print(f"Checked interval {indicator.interval}")
                 indicator = run_indicator(indicator)
                 indicator.insert_future_dates()
                 indicator.get_start_end_date(start=start_date, end=end_date)
-                # print(f"Corrected interval {indicator.interval}")
 
     return indicator
 
@@ -198,7 +188,6 @@ def main(
                     pol=pol,
                     monthly=monthly,
                 )
-
                 subsets.add_subset(df=indicator.dataframe)
                 subsets.add_feature(feature)
                 subsets.add_geometry(indicator.geometry)

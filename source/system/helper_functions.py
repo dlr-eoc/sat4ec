@@ -177,13 +177,14 @@ def get_last_month():
     return datetime.strftime(last_month, "%Y-%m-%d")
 
 
-def adapt_start_end_time(start=False, end=False, timestamp=None):
+def adapt_start_end_time(start=False, end=False, date=None):
     """
     Start date must have time part set to 00:00:00.
     End date must have time part set to 23:59:59.
     """
 
-    date = datetime.strptime(timestamp, "%Y-%m-%d")
+    if isinstance(date, str):
+        date = datetime.strptime(date, "%Y-%m-%d")
 
     if start:
         date = datetime.combine(date, time(hour=0, minute=0, second=0))

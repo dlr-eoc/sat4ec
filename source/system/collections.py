@@ -30,13 +30,10 @@ class SubsetCollection:
         )
 
     def add_subset(self, df=None):
-        print(self.dataframe)
-        print(df.index[0])
-        print(type(df.index[0]))
         self.dataframe = pd.concat(
             [self.dataframe, df], axis=1
         ).sort_index()  # merge arrays
-        print(self.dataframe.index)
+
     def add_feature(self, feature=None):
         self.features.append(feature)
 
@@ -94,6 +91,7 @@ class SubsetCollection:
     def check_existing_raw(self):
         if self.daily_out_file.exists():
             self.archive_dataframe = pd.read_csv(self.daily_out_file)
+            self.archive_dataframe["interval_from"] = pd.to_datetime(self.archive_dataframe["interval_from"])
             self.archive_dataframe = self.archive_dataframe.set_index("interval_from")
 
     def save_raw(self):

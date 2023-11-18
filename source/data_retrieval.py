@@ -73,7 +73,7 @@ class IndicatorData(Config):
         self._set_interval()
 
     def _set_interval(self):
-        self.interval = (adapt_start_end_time(start=True, timestamp=self.start_date), adapt_start_end_time(end=True, timestamp=self.end_date))
+        self.interval = (adapt_start_end_time(start=True, date=self.start_date), adapt_start_end_time(end=True, date=self.end_date))
 
     def _get_column_rename_map(self):
         self.columns_map = {
@@ -114,7 +114,7 @@ class IndicatorData(Config):
         if start:
             # start_date is less than earliest archive date --> new data required for earlier dates
             if convert_dataframe_tz(var=pd.to_datetime(self.interval[0])) < convert_dataframe_tz(var=pd.to_datetime(self.archive_data.index[0])):
-                self.end_date = self.archive_data.index[0][:10]  # strip date what looks like 2021-01-03 00:00:00+00:00
+                self.end_date = self.archive_data.index[0].date()  # strip date what looks like 2021-01-03 00:00:00+00:00
                 self._set_interval()
 
                 return "past"
@@ -122,7 +122,7 @@ class IndicatorData(Config):
         if end:
             # end_date is greater than latest archive date --> new data required for future dates
             if convert_dataframe_tz(pd.to_datetime(self.interval[-1])) > convert_dataframe_tz(pd.to_datetime(self.archive_data.index[-1])):
-                self.start_date = self.archive_data.index[-1][:10]
+                self.start_date = self.archive_data.index[-1].date()
                 self._set_interval()
 
                 return "future"
@@ -148,6 +148,7 @@ class IndicatorData(Config):
         2  2020-01-01   1
         3  2020-02-02   2
         """
+
         self.dataframe = pd.concat([self.dataframe, self.archive_data], axis=0)
 
     def insert_future_dates(self):
@@ -160,6 +161,7 @@ class IndicatorData(Config):
         2  2020-03-03  3
         3  2020-04-04  4
         """
+
         self.dataframe = pd.concat([self.archive_data, self.dataframe], axis=0)
 
     def get_request_grd(self):
