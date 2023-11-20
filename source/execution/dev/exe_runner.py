@@ -11,12 +11,13 @@ if __name__ == "__main__":
         orbit="asc",  # ascending or descending orbit
         aoi="bmw_regensburg",
         ext="geojson",
-        start="2022-12-01",
+        start="2023-10-01",
         monthly=False,
         regression="spline",
         linear=True,
         linear_fill=False,
         aoi_split=False,
+        overwrite_raw=False,
     )
     prod = Production(config=conf)
     prod.workflow(_path=r"/mnt/data1/gitlab/sat4ec/source")

@@ -172,12 +172,13 @@ def main(
     linear=False,
     aoi_split=False,
     linear_fill=False,
+    overwrite_raw=False,
 ):
     orbit_collection = Orbits(orbit=in_orbit, monthly=monthly)
 
     for orbit in orbit_collection.orbits:
         with AOI(data=aoi_data, aoi_split=aoi_split) as aoi_collection:
-            subsets = Subsets(out_dir=out_dir, monthly=monthly, orbit=orbit, pol=pol)
+            subsets = Subsets(out_dir=out_dir, monthly=monthly, orbit=orbit, pol=pol, overwrite_raw=overwrite_raw)
             subsets.check_existing_raw()
 
             for index, feature in enumerate(aoi_collection.get_feature()):
@@ -276,13 +277,13 @@ def parse_boolean(param=None, literal=None):
 def run():
     args = parse_commandline_args()
 
-    if not args.end_date:
+    if not args.end_date or args.end_date == "None":
         end_date = get_last_month()
 
     else:
         end_date = args.end_date
 
-    if not args.start_date:
+    if not args.start_date or args.start_date == "None":
         start_date = "2014-05-01"
 
     else:
@@ -307,6 +308,7 @@ def run():
     linear = parse_boolean(param=args.linear, literal="linear")
     linear_fill = parse_boolean(param=args.linear_fill, literal="linear_fill")
     aoi_split = parse_boolean(param=args.aoi_split, literal="aoi_split")
+    overwrite_raw = parse_boolean(param=args.overwrite_raw, literal="overwrite_raw")
 
     if args.aggregate[0] == "daily":
         aggregate = False
@@ -332,6 +334,7 @@ def run():
         linear=linear,
         aoi_split=aoi_split,
         linear_fill=linear_fill,
+        overwrite_raw=overwrite_raw,
     )
 
 
@@ -416,6 +419,13 @@ def create_parser():
         "--linear_fill",
         nargs=1,
         help="Wether to fill the linear insensitive range or not, default: false.",
+        choices=["true", "false"],
+        default="false"
+    )
+    parser.add_argument(
+        "--overwrite_raw",
+        nargs=1,
+        help="Overwrite existing raw data if desired, default: false.",
         choices=["true", "false"],
         default="false"
     )

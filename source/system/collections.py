@@ -5,7 +5,7 @@ from system.helper_functions import Regression
 
 
 class SubsetCollection:
-    def __init__(self, out_dir=None, monthly=False, orbit="asc", pol="VH"):
+    def __init__(self, out_dir=None, monthly=False, orbit="asc", pol="VH", overwrite_raw=False):
         self.dataframe = None
         self.archive_dataframe = None  # dataframe that might has been saved before, for comparison with new data
         self.regression_dataframe = None
@@ -16,6 +16,7 @@ class SubsetCollection:
         self.pol = pol
         self.features = []
         self.geometries = []
+        self.overwrite_raw = overwrite_raw
 
         self._get_outfile()
 
@@ -89,14 +90,15 @@ class SubsetCollection:
         self.dataframe.drop(["year", "month"], axis=1, inplace=True)
 
     def check_existing_raw(self):
-        if self.daily_out_file.exists():
-            self.archive_dataframe = pd.read_csv(self.daily_out_file, decimal=".")
-            self.archive_dataframe["interval_from"] = pd.to_datetime(
-                self.archive_dataframe["interval_from"]
-            )
-            self.archive_dataframe = self.archive_dataframe.set_index("interval_from")
+        if not self.overwrite_raw:
+            if self.daily_out_file.exists():
+                self.archive_dataframe = pd.read_csv(self.daily_out_file, decimal=".")
+                self.archive_dataframe["interval_from"] = pd.to_datetime(
+                    self.archive_dataframe["interval_from"]
+                )
+                self.archive_dataframe = self.archive_dataframe.set_index("interval_from")
 
-            self.correct_archive_datatypes()
+                self.correct_archive_datatypes()
 
     def correct_archive_datatypes(self):
         # correct datatypes

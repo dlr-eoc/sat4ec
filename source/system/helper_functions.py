@@ -89,8 +89,6 @@ class Regression:
         return poly_reg_model.predict(poly_features)
 
     def apply_linear(self, column="mean"):
-        print(self.dataframe[column])
-        print(self.dataframe.dtypes)
         model = LinearRegression(fit_intercept=True)
         model.fit(self.dataframe[["interval_diff"]], self.dataframe[column])
 

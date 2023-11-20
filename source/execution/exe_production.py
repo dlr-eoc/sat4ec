@@ -42,6 +42,8 @@ class Production:
                 "true" if self.config.linear_fill else "false",
                 "--aoi_split",
                 "true" if self.config.aoi_split else "false",
+                "--overwrite_raw",
+                "true" if self.config.overwrite_raw else "false",
             ],
             capture_output=False,
         )
