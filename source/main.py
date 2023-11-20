@@ -106,6 +106,8 @@ def compute_raw_data(
                 indicator.insert_future_dates()
                 indicator.get_start_end_date(start=start_date, end=end_date)
 
+            indicator.remove_duplicate_date()
+
     return indicator
 
 

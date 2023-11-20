@@ -281,6 +281,9 @@ class IndicatorData(Config):
     def rename_column(self, src=None, dst=None):
         self.dataframe.rename(columns={f"{src}": f"{self.fid}_{dst}"}, inplace=True)
 
+    def remove_duplicate_date(self):
+        self.dataframe = self.dataframe[~self.dataframe.index.duplicated()]
+
 
 class Band:
     def __init__(self, name=None, stats=None):
