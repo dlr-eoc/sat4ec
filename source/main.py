@@ -56,6 +56,14 @@ def plot_data(
         plotting.show_plot()
 
 
+def run_indicator(_indicator):
+    _indicator.get_request_grd()
+    _indicator.get_data()
+    _indicator.stats_to_df()
+
+    return _indicator
+
+
 def compute_raw_data(
     archive_data=None,
     feature=None,
@@ -66,13 +74,6 @@ def compute_raw_data(
     pol="VH",
     monthly=False,
 ):
-    def run_indicator(_indicator):
-        _indicator.get_request_grd()
-        _indicator.get_data()
-        _indicator.stats_to_df()
-
-        return _indicator
-
     indicator = IData(
         archive_data=archive_data,
         aoi=feature.geometry,
