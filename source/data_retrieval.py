@@ -1,5 +1,5 @@
 import pandas as pd
-from system.helper_functions import get_monthly_keyword, create_out_dir
+from system.helper_functions import get_last_month, create_out_dir, convert_dataframe_tz, adapt_start_end_time
 from system.authentication import Config
 from sentinelhub import (
     Geometry,
@@ -14,6 +14,7 @@ from sentinelhub import (
 class IndicatorData(Config):
     def __init__(
         self,
+        archive_data=None,
         aoi=None,
         fid=None,
         out_dir=None,
@@ -26,12 +27,14 @@ class IndicatorData(Config):
         monthly=False,
     ):
         super().__init__()
+        self.archive_data = archive_data
         self.aoi = aoi
         self.fid = fid
         self.crs = crs
         self.geometry = None
         self.orbit = orbit
-        self.interval = (f"{start_date}T00:00:00Z", f"{end_date}T23:59:59Z")
+        self.start_date = None
+        self.end_date = None
         self.size = None
         self.resolution = resolution
         self.aggregation = None
@@ -47,11 +50,30 @@ class IndicatorData(Config):
         self.outliers = None
         self.monthly = monthly
 
+        self.get_start_end_date(start=start_date, end=end_date)
         self._get_geometry()
         self._get_dimensions()
         self._get_collection()
         self._create_out_dirs()
         self._get_column_rename_map()
+
+    def get_start_end_date(self, start=None, end=None):
+        if start is None:
+            self.start_date = "2014-05-01"
+
+        else:
+            self.start_date = start
+
+        if end is None:
+            self.end_date = get_last_month()
+
+        else:
+            self.end_date = end
+
+        self._set_interval()
+
+    def _set_interval(self):
+        self.interval = (adapt_start_end_time(start=True, date=self.start_date), adapt_start_end_time(end=True, date=self.end_date))
 
     def _get_column_rename_map(self):
         self.columns_map = {
@@ -87,6 +109,60 @@ class IndicatorData(Config):
         # Select columns with float64 dtype
         float64_cols = list(self.dataframe.select_dtypes(include="float64"))
         self.dataframe[float64_cols] = self.dataframe[float64_cols].astype("float32")
+
+    def check_dates(self, start=False, end=False):
+        if start:
+            # start_date is less than earliest archive date --> new data required for earlier dates
+            if convert_dataframe_tz(var=pd.to_datetime(self.interval[0])) < convert_dataframe_tz(var=pd.to_datetime(self.archive_data.index[0])):
+                self.end_date = self.archive_data.index[0].date()  # strip date what looks like 2021-01-03 00:00:00+00:00
+                self._set_interval()
+
+                return "past"
+
+        if end:
+            # end_date is greater than latest archive date --> new data required for future dates
+            if convert_dataframe_tz(pd.to_datetime(self.interval[-1])) > convert_dataframe_tz(pd.to_datetime(self.archive_data.index[-1])):
+                self.start_date = self.archive_data.index[-1].date()
+                self._set_interval()
+
+                return "future"
+
+    def check_existing_data(self):
+        if self.archive_data is not None:  # if some raw date has already been saved
+            if f"{self.fid}_mean" in self.archive_data.columns:  # feature exists in archive data
+                return True, True
+
+            else:  # archive data present, but required feature not recorded
+                return True, False
+
+        else:  # no archive data
+            return False, None
+
+    def insert_past_dates(self):
+        """
+        Append archive dates to earlier dates,
+        e.g. ["2019-11-11", "2019-12-12"] is first appended by ["2020-01-01", "2020-02-02"]
+           date        val
+        0  2019-11-11  11
+        1  2019-12-12  12
+        2  2020-01-01   1
+        3  2020-02-02   2
+        """
+
+        self.dataframe = pd.concat([self.dataframe, self.archive_data], axis=0)
+
+    def insert_future_dates(self):
+        """
+        Append recent dates to archive dates,
+        e.g. ["2020-01-01", "2020-02-02"] is first appended by ["2020-03-03", "2020-04-04"]
+           date        val
+        0  2020-01-01  1
+        1  2020-02-02  2
+        2  2020-03-03  3
+        3  2020-04-04  4
+        """
+
+        self.dataframe = pd.concat([self.archive_data, self.dataframe], axis=0)
 
     def get_request_grd(self):
         # evalscript (unit: dB)
@@ -195,13 +271,18 @@ class IndicatorData(Config):
 
         self.dataframe = pd.DataFrame(target)
         self._correct_datatypes()
-        self.dataframe = self.dataframe.set_index("interval_from")
 
-        for col in self.columns_map:
-            self.rename_column(src=col, dst=self.columns_map[col])
+        if not self.dataframe.empty:  # proceed if dataframe is not empty
+            self.dataframe = self.dataframe.set_index("interval_from")
+
+            for col in self.columns_map:
+                self.rename_column(src=col, dst=self.columns_map[col])
 
     def rename_column(self, src=None, dst=None):
         self.dataframe.rename(columns={f"{src}": f"{self.fid}_{dst}"}, inplace=True)
+
+    def remove_duplicate_date(self):
+        self.dataframe = self.dataframe[~self.dataframe.index.duplicated()]
 
 
 class Band:

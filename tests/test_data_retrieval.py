@@ -1,12 +1,15 @@
 import unittest
 from pathlib import Path
+from datetime import datetime
 
 import pandas as pd
 import shutil
 
 from source.data_retrieval import IndicatorData as IData
-from data_retrieval import SubsetCollection as Subsets
+from source.system.collections import SubsetCollection as Subsets
 from source.aoi_check import AOI
+from source.system.helper_functions import get_last_month
+from source.main import run_indicator
 
 from sentinelhub import (
     Geometry,
@@ -21,7 +24,11 @@ TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
 class TestGetData(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestGetData, self).__init__(*args, **kwargs)
+        self.tear_down = True  # delete output data per default, switch to False in test methods if required
         self.out_dir = TEST_DIR.joinpath("output", "vw_wolfsburg")
+        self.daily_out_file = TEST_DIR.joinpath(
+            "orbit_input", "raw", "indicator_1_rawdata_daily_aoi_split_asc_VH.csv"
+        )
         self.aoi_collection = AOI(
             data=TEST_DIR.joinpath("input", "AOIs", "vw_wolfsburg_aoi_split.geojson")
         )
@@ -33,7 +40,7 @@ class TestGetData(unittest.TestCase):
             fid=self.feature.fid,
             out_dir=self.out_dir,
             start_date="2020-01-01",
-            end_date="2022-12-31",
+            end_date="2020-12-31",
             orbit="asc",
             pol="VH",
         )
@@ -46,8 +53,9 @@ class TestGetData(unittest.TestCase):
         )
 
     def tearDown(self):
-        if self.out_dir.exists():
-            shutil.rmtree(self.out_dir)
+        if self.tear_down:
+            if self.out_dir.exists():
+                shutil.rmtree(self.out_dir)
 
     def test_class_init(self):
         self.assertTrue(isinstance(self.indicator.geometry, Geometry))
@@ -55,6 +63,88 @@ class TestGetData(unittest.TestCase):
         self.assertEqual(len(self.indicator.size), 2)
         self.assertTrue(isinstance(self.indicator.collection, DataCollection))
         self.assertTrue(self.indicator.out_dir.exists())
+
+    def test_no_dates_provided(self):
+        indicator = IData(
+            aoi=self.feature.geometry,
+            fid=self.feature.fid,
+            out_dir=self.out_dir,
+        )
+
+        self.assertEqual(indicator.start_date, "2014-05-01")
+        self.assertEqual(indicator.end_date, get_last_month())
+
+    def test_existing_data_new_past_dates(self):
+        self.subsets.daily_out_file = self.daily_out_file
+        self.subsets.check_existing_raw()
+
+        # archive start: 2020-01-3
+        # archive end: 2023-09-27
+
+        indicator = IData(
+            archive_data=self.subsets.archive_dataframe,
+            aoi=self.feature.geometry,
+            fid=self.feature.fid,
+            out_dir=self.out_dir,
+            start_date="2019-12-20",
+            end_date="2020-01-31",
+        )
+
+        self.assertTrue(indicator.check_dates(start=True) == "past")
+        self.assertEqual(
+            datetime.strftime(indicator.end_date, "%Y-%m-%d"), "2020-01-03"
+        )
+
+        run_indicator(indicator)
+        indicator.insert_past_dates()
+        self.assertEqual(
+            len(indicator.dataframe), len(self.subsets.archive_dataframe) + 4
+        )
+
+    def test_existing_data_new_future_dates(self):
+        self.subsets.daily_out_file = self.daily_out_file
+        self.subsets.check_existing_raw()
+
+        # archive start: 2020-01-3
+        # archive end: 2023-09-27
+
+        indicator = IData(
+            archive_data=self.subsets.archive_dataframe,
+            aoi=self.feature.geometry,
+            fid=self.feature.fid,
+            out_dir=self.out_dir,
+            start_date="2023-09-01",
+            end_date="2023-10-31",
+        )
+
+        self.assertTrue(indicator.check_dates(end=True) == "future")
+        self.assertEqual(
+            datetime.strftime(indicator.start_date, "%Y-%m-%d"), "2023-09-27"
+        )
+
+        run_indicator(indicator)
+        indicator.insert_future_dates()
+        self.assertEqual(
+            len(indicator.dataframe), len(self.subsets.archive_dataframe) + 5
+        )
+
+    def test_existing_data_non_existing_column(self):
+        self.subsets.archive_dataframe = pd.read_csv(self.daily_out_file)
+        self.subsets.archive_dataframe = self.subsets.archive_dataframe.set_index(
+            "interval_from"
+        )
+        self.indicator.archive_data = self.subsets.archive_dataframe
+        self.indicator.fid = "11"
+        existing_keyword, column_keyword = self.indicator.check_existing_data()
+
+        self.assertTrue(existing_keyword)
+        self.assertFalse(column_keyword)
+
+    def test_non_existing_data(self):
+        existing_keyword, column_keyword = self.indicator.check_existing_data()
+
+        self.assertFalse(existing_keyword)
+        self.assertIsNone(column_keyword)
 
     def test_request_grd(self):
         self.indicator.get_request_grd()
@@ -159,6 +249,7 @@ class TestGetData(unittest.TestCase):
         )
 
     def test_save_df_raw(self):  # pure raw data
+        self.tear_down = False
         self.indicator.get_request_grd()
         self.indicator.get_data()
         self.indicator.stats_to_df()
@@ -179,7 +270,7 @@ class TestGetData(unittest.TestCase):
         self.subsets.dataframe = self.indicator.dataframe
         self.subsets.monthly = True
         self.subsets.monthly_aggregate()
-        self.subsets.save_monthly_raw()
+        self.subsets.save_raw()
 
         self.assertTrue(
             self.indicator.out_dir.joinpath(

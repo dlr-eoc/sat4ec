@@ -56,7 +56,16 @@ def plot_data(
         plotting.show_plot()
 
 
+def run_indicator(_indicator):
+    _indicator.get_request_grd()
+    _indicator.get_data()
+    _indicator.stats_to_df()
+
+    return _indicator
+
+
 def compute_raw_data(
+    archive_data=None,
     feature=None,
     out_dir=None,
     start_date=None,
@@ -66,6 +75,7 @@ def compute_raw_data(
     monthly=False,
 ):
     indicator = IData(
+        archive_data=archive_data,
         aoi=feature.geometry,
         fid=feature.fid,
         out_dir=out_dir,
@@ -75,10 +85,29 @@ def compute_raw_data(
         pol=pol,
         monthly=monthly,
     )
+    existing_keyword, column_keyword = indicator.check_existing_data()
 
-    indicator.get_request_grd()
-    indicator.get_data()
-    indicator.stats_to_df()
+    if not existing_keyword:  # no archive data, run indicator once
+        print("not existing")
+        indicator = run_indicator(indicator)
+
+    else:  # archive data present, check if new feature and earlier and/or future data required
+        if not column_keyword:
+            print("no column")
+            # indicator = run_indicator(indicator)
+
+        else:
+            if indicator.check_dates(start=True) == "past":
+                indicator = run_indicator(indicator)
+                indicator.insert_past_dates()
+                indicator.get_start_end_date(start=start_date, end=end_date)
+
+            if indicator.check_dates(end=True) == "future":
+                indicator = run_indicator(indicator)
+                indicator.insert_future_dates()
+                indicator.get_start_end_date(start=start_date, end=end_date)
+
+            indicator.remove_duplicate_date()
 
     return indicator
 
@@ -143,15 +172,18 @@ def main(
     linear=False,
     aoi_split=False,
     linear_fill=False,
+    overwrite_raw=False,
 ):
     orbit_collection = Orbits(orbit=in_orbit, monthly=monthly)
 
     for orbit in orbit_collection.orbits:
         with AOI(data=aoi_data, aoi_split=aoi_split) as aoi_collection:
-            subsets = Subsets(out_dir=out_dir, monthly=monthly, orbit=orbit, pol=pol)
+            subsets = Subsets(out_dir=out_dir, monthly=monthly, orbit=orbit, pol=pol, overwrite_raw=overwrite_raw)
+            subsets.check_existing_raw()
 
             for index, feature in enumerate(aoi_collection.get_feature()):
                 indicator = compute_raw_data(
+                    archive_data=subsets.archive_dataframe,
                     feature=feature,
                     out_dir=out_dir,
                     start_date=start_date,
@@ -160,7 +192,6 @@ def main(
                     pol=pol,
                     monthly=monthly,
                 )
-
                 subsets.add_subset(df=indicator.dataframe)
                 subsets.add_feature(feature)
                 subsets.add_geometry(indicator.geometry)
@@ -172,7 +203,7 @@ def main(
 
         if monthly:
             subsets.monthly_aggregate()
-            subsets.save_monthly_raw()  # save monthly raw data
+            subsets.save_raw()  # save monthly raw data
 
         subsets.apply_regression(mode=regression)
         subsets.save_regression(mode=regression)  # save spline data
@@ -190,14 +221,14 @@ def main(
             )
             orbit_collection.add_anomalies(anomalies=raw_anomalies, orbit=orbit)
 
-            get_s1_scenes(
-                data=raw_anomalies.dataframe,
-                features=subsets.features,
-                geometries=subsets.geometries,
-                orbit=orbit,
-                pol=pol,
-                out_dir=subsets.out_dir,
-            )
+            # get_s1_scenes(
+            #     data=raw_anomalies.dataframe,
+            #     features=subsets.features,
+            #     geometries=subsets.geometries,
+            #     orbit=orbit,
+            #     pol=pol,
+            #     out_dir=subsets.out_dir,
+            # )
 
         else:
             reg_anomalies = compute_anomaly(
@@ -211,14 +242,14 @@ def main(
             )
             orbit_collection.add_anomalies(anomalies=reg_anomalies, orbit=orbit)
 
-            get_s1_scenes(
-                data=reg_anomalies.dataframe,
-                features=subsets.features,
-                geometries=subsets.geometries,
-                orbit=orbit,
-                pol=pol,
-                out_dir=subsets.out_dir,
-            )
+            # get_s1_scenes(
+            #     data=reg_anomalies.dataframe,
+            #     features=subsets.features,
+            #     geometries=subsets.geometries,
+            #     orbit=orbit,
+            #     pol=pol,
+            #     out_dir=subsets.out_dir,
+            # )
 
     plot_data(
         orbit_collection=orbit_collection,
@@ -246,14 +277,20 @@ def parse_boolean(param=None, literal=None):
 def run():
     args = parse_commandline_args()
 
-    if not args.end_date:
+    if not args.end_date or args.end_date == "None":
         end_date = get_last_month()
 
     else:
         end_date = args.end_date
 
+    if not args.start_date or args.start_date == "None":
+        start_date = "2014-05-01"
+
+    else:
+        start_date = args.start_date
+
     # check if dates are in format YYYY-MM-DD
-    for _date in [args.start_date, end_date]:
+    for _date in [start_date, end_date]:
         _date = datetime.strptime(_date, "%Y-%m-%d")  # throws an error if conversion fails
 
     if isinstance(args.orbit, list):
@@ -271,6 +308,7 @@ def run():
     linear = parse_boolean(param=args.linear, literal="linear")
     linear_fill = parse_boolean(param=args.linear_fill, literal="linear_fill")
     aoi_split = parse_boolean(param=args.aoi_split, literal="aoi_split")
+    overwrite_raw = parse_boolean(param=args.overwrite_raw, literal="overwrite_raw")
 
     if args.aggregate[0] == "daily":
         aggregate = False
@@ -286,7 +324,7 @@ def run():
     main(
         aoi_data=args.aoi_data,
         out_dir=Path(args.out_dir),
-        start_date=args.start_date,
+        start_date=start_date,
         end_date=end_date,
         pol=pol,
         in_orbit=orbit,
@@ -296,6 +334,7 @@ def run():
         linear=linear,
         aoi_split=aoi_split,
         linear_fill=linear_fill,
+        overwrite_raw=overwrite_raw,
     )
 
 
@@ -380,6 +419,13 @@ def create_parser():
         "--linear_fill",
         nargs=1,
         help="Wether to fill the linear insensitive range or not, default: false.",
+        choices=["true", "false"],
+        default="false"
+    )
+    parser.add_argument(
+        "--overwrite_raw",
+        nargs=1,
+        help="Overwrite existing raw data if desired, default: false.",
         choices=["true", "false"],
         default="false"
     )

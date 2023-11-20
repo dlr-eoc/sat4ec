@@ -2,19 +2,19 @@ class Config:
     def __init__(
         self,
         orbit="asc",
-        pol="VH",
         aoi=None,
         ext="geojson",
         working_dir=None,
         out_dir=None,
         aoi_dir=None,
-        start="2020-01-01",
-        end="2020-12-31",
+        start=None,
+        end=None,
         monthly=False,
         regression="spline",
         linear=False,
         linear_fill=False,
         aoi_split=False,
+        overwrite_raw=False,
     ):
         self.orbit = orbit
         self.pol = "VH"
@@ -30,6 +30,7 @@ class Config:
         self.linear = linear
         self.linear_fill = linear_fill
         self.aoi_split = aoi_split
+        self.overwrite_raw = overwrite_raw
 
         self._get_out_dir()
         self._get_aoi_dir()
