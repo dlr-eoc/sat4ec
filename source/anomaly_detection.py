@@ -93,14 +93,14 @@ class Anomalies:
             "anomalies",
             f"indicator_1_anomalies_raw_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
-        self.dataframe.to_csv(out_file)
+        self.dataframe.to_csv(out_file, decimal=".")
 
     def save_regression(self):
         out_file = self.out_dir.joinpath(
             "anomalies",
             f"indicator_1_anomalies_regression_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
-        self.dataframe.to_csv(out_file)
+        self.dataframe.to_csv(out_file, decimal=".")
 
     def cleanup(self):
         del self.indicator_df
