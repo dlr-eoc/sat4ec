@@ -88,7 +88,7 @@ class StacCollection:
             f"indicator_1_scenes_{self.orbit}_{self.pol}.csv",
         )
 
-        self.dataframe.to_csv(out_file)
+        self.dataframe.to_csv(out_file, decimal=".")
 
 
 class StacItems(Config):

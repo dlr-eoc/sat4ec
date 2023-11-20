@@ -90,16 +90,32 @@ class SubsetCollection:
 
     def check_existing_raw(self):
         if self.daily_out_file.exists():
-            self.archive_dataframe = pd.read_csv(self.daily_out_file)
+            self.archive_dataframe = pd.read_csv(self.daily_out_file, decimal=".")
             self.archive_dataframe["interval_from"] = pd.to_datetime(self.archive_dataframe["interval_from"])
             self.archive_dataframe = self.archive_dataframe.set_index("interval_from")
 
+            self.correct_archive_datatypes()
+
+    def correct_archive_datatypes(self):
+        # correct datatypes
+        # read from CSV introduces object datatype instead of float
+
+        self.archive_dataframe["interval_to"] = self.archive_dataframe["interval_to"].astype("string")
+        object_cols = list(self.archive_dataframe.select_dtypes(include="object"))
+
+        try:
+            self.archive_dataframe[object_cols] = self.archive_dataframe[object_cols].astype("float32")
+
+        except ValueError:
+            for col in object_cols:
+                self.archive_dataframe[col] = self.archive_dataframe[col].str.replace(",", ".").astype("float32")
+
     def save_raw(self):
         if self.monthly:
-            self.dataframe.to_csv(self.monthly_out_file)
+            self.dataframe.to_csv(self.monthly_out_file, decimal=".")
 
         else:
-            self.dataframe.to_csv(self.daily_out_file)
+            self.dataframe.to_csv(self.daily_out_file, decimal=".")
 
     def apply_regression(self, mode="spline"):
         for feature in self.features:
@@ -124,13 +140,13 @@ class SubsetCollection:
                 "regression",
                 f"indicator_1_{mode}_{self.orbit}_{self.pol}.csv",
             )
-            self.regression_dataframe.to_csv(reg_out_file)
+            self.regression_dataframe.to_csv(reg_out_file, decimal=".")
 
         lin_out_file = self.out_dir.joinpath(
             "regression",
             f"indicator_1_linear_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
-        self.linear_dataframe.to_csv(lin_out_file)
+        self.linear_dataframe.to_csv(lin_out_file, decimal=".")
 
 
 class OrbitCollection:
