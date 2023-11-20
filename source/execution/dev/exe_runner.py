@@ -9,7 +9,6 @@ if __name__ == "__main__":
         working_dir=Path(r"/mnt/data1/gitlab/sat4ec/data"),  # Path.home().joinpath("sat4ec"),
         out_dir=Path(r"output"),
         orbit="asc",  # ascending or descending orbit
-        pol="VH",  # only use VH polarization
         aoi="bmw_regensburg",
         ext="geojson",
         start="2022-12-01",
