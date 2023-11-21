@@ -194,7 +194,6 @@ def main(
                     pol=pol,
                     monthly=monthly,
                 )
-
                 subsets.add_subset(df=indicator.dataframe)
                 subsets.add_feature(feature)
                 subsets.add_geometry(indicator.geometry)
