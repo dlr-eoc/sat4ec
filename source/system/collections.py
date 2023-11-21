@@ -30,10 +30,16 @@ class SubsetCollection:
             f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv",
         )
 
+    def check_index(self):
+        if isinstance(self.dataframe.index, pd.Index):
+            self.dataframe.index = pd.to_datetime(self.dataframe.index)
+        
     def add_subset(self, df=None):
         self.dataframe = pd.concat(
             [self.dataframe, df], axis=1
         ).sort_index()  # merge arrays
+        
+        self.check_index()
 
     def add_feature(self, feature=None):
         self.features.append(feature)
