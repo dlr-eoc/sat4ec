@@ -183,7 +183,9 @@ def main(
 
             for index, feature in enumerate(aoi_collection.get_feature()):
                 indicator = compute_raw_data(
-                    archive_data=subsets.archive_dataframe,
+                    archive_data=subsets.archive_dataframe.loc[
+                        :, subsets.archive_dataframe.columns.str.startswith(f"{feature.fid}_")
+                    ],
                     feature=feature,
                     out_dir=out_dir,
                     start_date=start_date,
@@ -192,6 +194,7 @@ def main(
                     pol=pol,
                     monthly=monthly,
                 )
+
                 subsets.add_subset(df=indicator.dataframe)
                 subsets.add_feature(feature)
                 subsets.add_geometry(indicator.geometry)
