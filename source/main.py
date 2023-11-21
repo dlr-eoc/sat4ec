@@ -48,7 +48,7 @@ def plot_data(
         plotting.finalize()
 
         if monthly:
-            plotting.save_raw()
+            plotting.save_raw(svg=True)
 
         else:
             plotting.save_regression(svg=True)
