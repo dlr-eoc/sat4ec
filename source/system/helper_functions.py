@@ -3,6 +3,7 @@ import sys
 import yaml
 import pandas as pd
 import numpy as np
+import copy
 
 from scipy.interpolate import splrep, BSpline
 from sklearn.linear_model import LinearRegression
@@ -18,8 +19,7 @@ class Regression:
         self.mode = mode
         self.monthly = monthly
         self.fid = fid
-        self.dataframe = df
-        self.linear_dataframe = None
+        self.dataframe = df.copy(deep=True)
         self.regression_dataframe = None
 
     def apply_feature_regression(self):
@@ -108,7 +108,7 @@ class Regression:
             self.dataframe[f"{self.fid}_mean"].to_numpy(),  # variable to interpolate
             w=(
                 self.dataframe[f"{self.fid}_mean"]
-                / self.dataframe[f"{self.fid}_mean"].mean()
+                / self.linear_dataframe[f"{self.fid}_mean"]
             ).to_numpy(),  # weights
             s=0.25 * len(self.dataframe),
         )
@@ -166,6 +166,14 @@ def get_monthly_keyword(monthly=False):
 
     else:
         return ""
+
+
+def get_split_keyword(aoi_split=False):
+    if aoi_split:
+        return "split_aoi_"
+
+    else:
+        return "single_aoi_"
 
 
 def get_last_month():

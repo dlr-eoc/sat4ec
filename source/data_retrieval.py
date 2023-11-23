@@ -41,7 +41,7 @@ class IndicatorData(Config):
         self.eval_script = None
         self.request = None
         self.stats = None
-        self.dataframe = None
+        self.dataframe = pd.DataFrame()
         self.regression_dataframe = None
         self.linear_dataframe = None  # dataframe for default linear regression
         self.pol = pol
@@ -138,7 +138,7 @@ class IndicatorData(Config):
         else:  # no archive data
             return False, None
 
-    def insert_past_dates(self):
+    def concat_dataframes(self, past_df=pd.DataFrame(), future_df=pd.DataFrame()):
         """
         Append archive dates to earlier dates,
         e.g. ["2019-11-11", "2019-12-12"] is first appended by ["2020-01-01", "2020-02-02"]
@@ -147,13 +147,8 @@ class IndicatorData(Config):
         1  2019-12-12  12
         2  2020-01-01   1
         3  2020-02-02   2
-        """
 
-        self.dataframe = pd.concat([self.dataframe, self.archive_data], axis=0)
-
-    def insert_future_dates(self):
-        """
-        Append recent dates to archive dates,
+        The, append recent dates to archive dates,
         e.g. ["2020-01-01", "2020-02-02"] is first appended by ["2020-03-03", "2020-04-04"]
            date        val
         0  2020-01-01  1
@@ -161,8 +156,7 @@ class IndicatorData(Config):
         2  2020-03-03  3
         3  2020-04-04  4
         """
-
-        self.dataframe = pd.concat([self.archive_data, self.dataframe], axis=0)
+        self.dataframe = pd.concat([past_df, self.archive_data, future_df], axis=0)
 
     def get_request_grd(self):
         # evalscript (unit: dB)

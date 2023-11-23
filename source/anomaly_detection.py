@@ -1,5 +1,5 @@
 import pandas as pd
-from system.helper_functions import get_monthly_keyword
+from system.helper_functions import get_monthly_keyword, get_split_keyword
 from scipy.signal import find_peaks
 from pathlib import Path
 
@@ -15,6 +15,7 @@ class Anomalies:
         orbit="asc",
         monthly=False,
         features=None,
+        aoi_split=False,
     ):
         self.indicator_df = self._get_data(data)
         self.linear_regression_df = self._get_data(linear_data)
@@ -24,6 +25,7 @@ class Anomalies:
         self.orbit = orbit
         self.pol = pol
         self.monthly = monthly
+        self.aoi_split = aoi_split
 
         self._prepare_dataframe()
 
@@ -91,14 +93,14 @@ class Anomalies:
     def save_raw(self):
         out_file = self.out_dir.joinpath(
             "anomalies",
-            f"indicator_1_anomalies_raw_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+            f"indicator_1_anomalies_raw_{get_split_keyword(aoi_split=self.aoi_split)}{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
         self.dataframe.to_csv(out_file, decimal=".")
 
     def save_regression(self):
         out_file = self.out_dir.joinpath(
             "anomalies",
-            f"indicator_1_anomalies_regression_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+            f"indicator_1_anomalies_regression_{get_split_keyword(aoi_split=self.aoi_split)}{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
         self.dataframe.to_csv(out_file, decimal=".")
 
@@ -123,7 +125,7 @@ class Anomaly:
         self.column = f"{self.fid}_{anomaly_column}"  # dataframe column containing the anomaly data
         self.ad = None
         self.dataframe = data
-        self.dataframe_bak = self.dataframe.copy()
+        self.dataframe_bak = self.dataframe.copy(deep=True)
         self.linear_regression_df = linear_data
         self.factor = (
             factor  # factor representing sensitive/insensitive standard deviation
@@ -265,7 +267,7 @@ class Anomaly:
             negative.index, self.column
         ].add(negative[self.column].subtract(self.global_mean).abs().mul(2))
 
-        self.dataframe.loc[
+        self.dataframe.copy().loc[
             :, f"{self.fid}_anomaly"  # all rows  # index of column
         ] = False  # boolean values were overwritten before and must be reset
         self.dataframe.loc[
@@ -281,6 +283,6 @@ class Anomaly:
     def find_minima(self):
         self.flip_data()  # flip data to make original minima to maximas that can be detected
         self.find_maxima()  # find maxima (originally minima) on dataframe
-        self.dataframe.loc[:, self.column] = self.dataframe_bak.loc[
+        self.dataframe.copy().loc[:, self.column] = self.dataframe_bak.loc[
             :, self.column
         ]  # revert flipped data column to original state

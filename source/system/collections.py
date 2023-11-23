@@ -1,11 +1,11 @@
 import pandas as pd
 from aoi_check import Feature
-from system.helper_functions import get_monthly_keyword
+from system.helper_functions import get_monthly_keyword, get_split_keyword
 from system.helper_functions import Regression
 
 
 class SubsetCollection:
-    def __init__(self, out_dir=None, monthly=False, orbit="asc", pol="VH", overwrite_raw=False):
+    def __init__(self, out_dir=None, monthly=False, orbit="asc", pol="VH", overwrite_raw=False, aoi_split=False):
         self.dataframe = None
         self.archive_dataframe = None  # dataframe that might has been saved before, for comparison with new data
         self.regression_dataframe = None
@@ -17,17 +17,18 @@ class SubsetCollection:
         self.features = []
         self.geometries = []
         self.overwrite_raw = overwrite_raw
+        self.aoi_split = aoi_split
 
         self._get_outfile()
 
     def _get_outfile(self):
         self.monthly_out_file = self.out_dir.joinpath(
             "raw",
-            f"indicator_1_rawdata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+            f"indicator_1_rawdata_{get_split_keyword(aoi_split=self.aoi_split)}{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
         self.daily_out_file = self.out_dir.joinpath(
             "raw",
-            f"indicator_1_rawdata_{self.orbit}_{self.pol}.csv",
+            f"indicator_1_rawdata_{get_split_keyword(aoi_split=self.aoi_split)}{self.orbit}_{self.pol}.csv",
         )
 
     def check_index(self):
@@ -125,12 +126,11 @@ class SubsetCollection:
                     self.archive_dataframe[col].str.replace(",", ".").astype("float32")
                 )
 
-    def save_raw(self):
-        if self.monthly:
-            self.dataframe.to_csv(self.monthly_out_file, decimal=".")
+    def save_daily_raw(self):
+        self.dataframe.to_csv(self.daily_out_file, decimal=".")
 
-        else:
-            self.dataframe.to_csv(self.daily_out_file, decimal=".")
+    def save_monthly_raw(self):
+        self.dataframe.to_csv(self.monthly_out_file, decimal=".")
 
     def apply_regression(self, mode="spline"):
         for feature in self.features:

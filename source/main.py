@@ -30,6 +30,7 @@ def plot_data(
     linear=False,
     features=None,
     linear_fill=False,
+    aoi_split=False,
 ):
     with Plots(
         out_dir=out_dir,
@@ -39,6 +40,7 @@ def plot_data(
         linear=linear,
         linear_fill=linear_fill,
         features=features,
+        aoi_split=aoi_split,
         raw_range=mutliple_orbits_raw_range(  # only for adjusting the plot space, not actually plotted here
             fid="0" if len(features) == 1 else "total",
             orbit_collection=orbit_collection
@@ -99,14 +101,21 @@ def compute_raw_data(
         else:
             if indicator.check_dates(start=True) == "past":
                 indicator = run_indicator(indicator)
-                indicator.insert_past_dates()
+                past_df = indicator.dataframe
                 indicator.get_start_end_date(start=start_date, end=end_date)
+
+            else:
+                past_df = indicator.dataframe
 
             if indicator.check_dates(end=True) == "future":
                 indicator = run_indicator(indicator)
-                indicator.insert_future_dates()
+                future_df = indicator.dataframe
                 indicator.get_start_end_date(start=start_date, end=end_date)
 
+            else:
+                future_df = indicator.dataframe
+
+            indicator.concat_dataframes(past_df=past_df, future_df=future_df)
             indicator.remove_duplicate_date()
 
     return indicator
@@ -121,6 +130,7 @@ def compute_anomaly(
     pol="VH",
     monthly=False,
     features=None,
+    aoi_split=False,
 ):
     anomalies = Anomalies(
         data=df,
@@ -131,6 +141,7 @@ def compute_anomaly(
         pol=pol,
         monthly=monthly,
         linear_data=linear_data,
+        aoi_split=aoi_split,
     )
 
     anomalies.find_extrema()
@@ -178,14 +189,14 @@ def main(
 
     for orbit in orbit_collection.orbits:
         with AOI(data=aoi_data, aoi_split=aoi_split) as aoi_collection:
-            subsets = Subsets(out_dir=out_dir, monthly=monthly, orbit=orbit, pol=pol, overwrite_raw=overwrite_raw)
+            subsets = Subsets(out_dir=out_dir, monthly=monthly, orbit=orbit, pol=pol, overwrite_raw=overwrite_raw, aoi_split=aoi_split)
             subsets.check_existing_raw()
 
             for index, feature in enumerate(aoi_collection.get_feature()):
                 indicator = compute_raw_data(
                     archive_data=subsets.archive_dataframe.loc[
                         :, subsets.archive_dataframe.columns.str.startswith(f"{feature.fid}_")
-                    ],
+                    ] if subsets.archive_dataframe is not None else None,
                     feature=feature,
                     out_dir=out_dir,
                     start_date=start_date,
@@ -201,11 +212,11 @@ def main(
         if len(subsets.features) > 1:
             subsets.aggregate_columns()
 
-        subsets.save_raw()  # save raw data
+        subsets.save_daily_raw()  # save raw data
 
         if monthly:
             subsets.monthly_aggregate()
-            subsets.save_raw()  # save monthly raw data
+            subsets.save_monthly_raw()  # save monthly raw data
 
         subsets.apply_regression(mode=regression)
         subsets.save_regression(mode=regression)  # save spline data
@@ -220,6 +231,7 @@ def main(
                 pol=pol,
                 monthly=monthly,
                 features=subsets.features,
+                aoi_split=subsets.aoi_split,
             )
             orbit_collection.add_anomalies(anomalies=raw_anomalies, orbit=orbit)
 
@@ -241,6 +253,7 @@ def main(
                 pol=pol,
                 monthly=monthly,
                 features=subsets.features,
+                aoi_split=subsets.aoi_split,
             )
             orbit_collection.add_anomalies(anomalies=reg_anomalies, orbit=orbit)
 
@@ -261,6 +274,7 @@ def main(
         linear=linear,
         features=subsets.features,
         linear_fill=linear_fill,
+        aoi_split=subsets.aoi_split,
     )
 
 
