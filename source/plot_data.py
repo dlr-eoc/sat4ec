@@ -3,7 +3,7 @@ import numpy as np
 import seaborn as sns
 import math
 import matplotlib.dates as mdates
-from system.helper_functions import get_monthly_keyword, mutliple_orbits_raw_range
+from system.helper_functions import get_monthly_keyword, mutliple_orbits_raw_range, get_split_keyword, create_out_dir
 from datetime import timedelta
 
 
@@ -19,6 +19,7 @@ class Plots:
         linear=False,
         linear_fill=False,
         features=None,
+        aoi_split=False,
         max_cols=2,
     ):
         self.raw_range_dataframe = raw_range
@@ -30,6 +31,7 @@ class Plots:
         self.linear = linear  # wether to plot linear regression or not
         self.linear_fill = linear_fill  # wether to plot linear insensitive area or not
         self.features = features
+        self.aoi_split = aoi_split
         self.max_cols = max_cols
         self._get_subplots()
         self._get_long_orbit()
@@ -265,12 +267,13 @@ class Plots:
         if self.orbit == "both":
             self.orbit = "asc_des"
 
-    @staticmethod
-    def get_extensions(svg=False):
+    def get_extensions(self, svg=False):
         exts = ["png"]
+        create_out_dir(base_dir=self.out_dir.joinpath("plot"), out_dir="png")
 
         if svg:
             exts.append("svg")
+            create_out_dir(base_dir=self.out_dir.joinpath("plot"), out_dir="svg")
 
         return exts
 
@@ -282,7 +285,8 @@ class Plots:
         for ext in exts:
             out_file = self.out_dir.joinpath(
                 "plot",
-                f"indicator_1_{self.name}_regression_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.{ext}",
+                ext,
+                f"indicator_1_{self.name}_regression_{get_split_keyword(aoi_split=self.aoi_split)}{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.{ext}",
             )
 
             self.fig.savefig(out_file, dpi=dpi)
@@ -295,7 +299,8 @@ class Plots:
         for ext in exts:
             out_file = self.out_dir.joinpath(
                 "plot",
-                f"indicator_1_{self.name}_rawdata_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.{ext}",
+                ext,
+                f"indicator_1_{self.name}_rawdata_{get_split_keyword(aoi_split=self.aoi_split)}{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.{ext}",
             )
 
             self.fig.savefig(out_file, dpi=dpi)

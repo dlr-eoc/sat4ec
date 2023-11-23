@@ -96,7 +96,8 @@ class TestGetData(unittest.TestCase):
         )
 
         run_indicator(indicator)
-        indicator.insert_past_dates()
+        past_df = indicator.dataframe
+        indicator.concat_dataframes(past_df=past_df)
         self.assertEqual(
             len(indicator.dataframe), len(self.subsets.archive_dataframe) + 4
         )
@@ -123,7 +124,8 @@ class TestGetData(unittest.TestCase):
         )
 
         run_indicator(indicator)
-        indicator.insert_future_dates()
+        future_df = indicator.dataframe
+        indicator.concat_dataframes(future_df=future_df)
         self.assertEqual(
             len(indicator.dataframe), len(self.subsets.archive_dataframe) + 5
         )
