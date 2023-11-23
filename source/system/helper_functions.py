@@ -170,10 +170,10 @@ def get_monthly_keyword(monthly=False):
 
 def get_split_keyword(aoi_split=False):
     if aoi_split:
-        return "split_aoi_"
+        return "split_aoi"
 
     else:
-        return "single_aoi_"
+        return "single_aoi"
 
 
 def get_last_month():

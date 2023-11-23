@@ -22,13 +22,13 @@ class SubsetCollection:
         self._get_outfile()
 
     def _get_outfile(self):
-        self.monthly_out_file = self.out_dir.joinpath(
+        self.monthly_raw_file = self.out_dir.joinpath(
             "raw",
-            f"indicator_1_rawdata_{get_split_keyword(aoi_split=self.aoi_split)}{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+            f"indicator_1_rawdata_{get_split_keyword(aoi_split=self.aoi_split)}_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
-        self.daily_out_file = self.out_dir.joinpath(
+        self.daily_raw_file = self.out_dir.joinpath(
             "raw",
-            f"indicator_1_rawdata_{get_split_keyword(aoi_split=self.aoi_split)}{self.orbit}_{self.pol}.csv",
+            f"indicator_1_rawdata_{get_split_keyword(aoi_split=self.aoi_split)}_{self.orbit}_{self.pol}.csv",
         )
 
     def check_index(self):
@@ -98,8 +98,8 @@ class SubsetCollection:
 
     def check_existing_raw(self):
         if not self.overwrite_raw:
-            if self.daily_out_file.exists():
-                self.archive_dataframe = pd.read_csv(self.daily_out_file, decimal=".")
+            if self.daily_raw_file.exists():
+                self.archive_dataframe = pd.read_csv(self.daily_raw_file, decimal=".")
                 self.archive_dataframe["interval_from"] = pd.to_datetime(
                     self.archive_dataframe["interval_from"]
                 )
@@ -127,10 +127,10 @@ class SubsetCollection:
                 )
 
     def save_daily_raw(self):
-        self.dataframe.to_csv(self.daily_out_file, decimal=".")
+        self.dataframe.to_csv(self.daily_raw_file, decimal=".")
 
     def save_monthly_raw(self):
-        self.dataframe.to_csv(self.monthly_out_file, decimal=".")
+        self.dataframe.to_csv(self.monthly_raw_file, decimal=".")
 
     def apply_regression(self, mode="spline"):
         for feature in self.features:
@@ -153,13 +153,13 @@ class SubsetCollection:
         if not self.monthly:  # regression is not saved for monthly data
             reg_out_file = self.out_dir.joinpath(
                 "regression",
-                f"indicator_1_{mode}_{self.orbit}_{self.pol}.csv",
+                f"indicator_1_{get_split_keyword(aoi_split=self.aoi_split)}_{mode}_{self.orbit}_{self.pol}.csv",
             )
             self.regression_dataframe.to_csv(reg_out_file, decimal=".")
 
         lin_out_file = self.out_dir.joinpath(
             "regression",
-            f"indicator_1_linear_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+            f"indicator_1_linear_{get_split_keyword(aoi_split=self.aoi_split)}_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
         self.linear_dataframe.to_csv(lin_out_file, decimal=".")
 
