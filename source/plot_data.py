@@ -286,7 +286,7 @@ class Plots:
             out_file = self.out_dir.joinpath(
                 "plot",
                 ext,
-                f"indicator_1_{self.name}_regression_{get_split_keyword(aoi_split=self.aoi_split)}{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.{ext}",
+                f"indicator_1_{self.name}_regression_{get_split_keyword(aoi_split=self.aoi_split)}_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.{ext}",
             )
 
             self.fig.savefig(out_file, dpi=dpi)
@@ -300,7 +300,7 @@ class Plots:
             out_file = self.out_dir.joinpath(
                 "plot",
                 ext,
-                f"indicator_1_{self.name}_rawdata_{get_split_keyword(aoi_split=self.aoi_split)}{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.{ext}",
+                f"indicator_1_{self.name}_rawdata_{get_split_keyword(aoi_split=self.aoi_split)}_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.{ext}",
             )
 
             self.fig.savefig(out_file, dpi=dpi)
