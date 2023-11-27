@@ -60,7 +60,7 @@ class StacCollection:
         ):
             stac = StacItems(
                 anomalies_df=self.anomalies_df.loc[
-                    :, self.anomalies_df.columns.str.startswith(f"{feature.fid}_")
+                    self.anomalies_df[f"{feature.fid}_anomaly"]
                 ],
                 fid=feature.fid,
                 geometry=geometry,
@@ -129,6 +129,9 @@ class StacItems(Config):
                 columns={"tmp": "interval_from"}
             )
 
+            # remove any Unnamed column
+            self.anomalies_df = self.anomalies_df.loc[:, ~self.anomalies_df.columns.str.contains("^Unnamed")]
+
         true_anomalies = self.anomalies_df.loc[
             self.anomalies_df[f"{self.fid}_anomaly"]
         ]  # True at these indices
@@ -138,22 +141,21 @@ class StacItems(Config):
         self.dataframe = self.dataframe.drop(f"{self.fid}_anomaly", axis=1)
 
     def get_scenes(self):
-        return self.anomalies_df.apply(lambda row: self.search_catalog(row), axis=1)
+        return [self.search_catalog(row) for row in range(len(self.anomalies_df))]
 
     def scenes_to_df(self):
-        scenes_df = self.get_scenes()
+        catalog = self.get_scenes()
 
         self.dataframe = pd.DataFrame(
             {
                 "interval_from": [
-                    pd.to_datetime(_item["properties"]["datetime"])
+                    pd.to_datetime(scene["properties"]["datetime"])
                     .normalize()
                     .tz_convert("UTC")  # get rid of time
-                    for values in scenes_df.values
-                    for _item in values
+                    for scene in catalog
                 ],
                 f"{self.fid}_scene": [
-                    _item["id"] for values in scenes_df.values for _item in values
+                    scene["id"] for scene in catalog
                 ],
             }
         )
@@ -165,7 +167,7 @@ class StacItems(Config):
             self.dataframe = self.dataframe.rename(columns={"tmp": "interval_from"})
 
     def search_catalog(self, row):
-        date = row.name
+        date = self.anomalies_df.iloc[row].name
 
         search_iterator = self.catalog.search(
             DataCollection.SENTINEL1,
@@ -177,4 +179,4 @@ class StacItems(Config):
             fields={"include": ["id", "properties.datetime"], "exclude": []},
         )
 
-        return list(search_iterator)
+        return list(search_iterator)[0]

@@ -17,6 +17,7 @@ TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
 class TestGetData(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestGetData, self).__init__(*args, **kwargs)
+        self.tear_down = True
         self.out_dir = TEST_DIR.joinpath("output", "vw_wolfsburg")
         self.data_dir = TEST_DIR.joinpath("orbit_input")
         self.orbit = "asc"
@@ -62,8 +63,9 @@ class TestGetData(unittest.TestCase):
             self.out_dir.joinpath("scenes").mkdir(parents=True)
 
     def tearDown(self):
-        if self.out_dir.exists():
-            shutil.rmtree(self.out_dir)
+        if self.tear_down:
+            if self.out_dir.exists():
+                shutil.rmtree(self.out_dir)
 
     def test_dataframe_from_file(self):
         stac_collection = StacCollection(
@@ -127,20 +129,19 @@ class TestGetData(unittest.TestCase):
         geometry = self.geometries[0]
         stac = StacItems(
             anomalies_df=self.stac_collection.anomalies_df.loc[
-                :, self.stac_collection.anomalies_df.columns.str.startswith(f"{feature.fid}_")
+                self.stac_collection.anomalies_df[f"{feature.fid}_anomaly"]
             ],
             fid=feature.fid,
             geometry=geometry,
         )
-
-        search = stac.search_catalog(stac.anomalies_df.iloc[0])
+        catalog = stac.search_catalog(row=0)
         timestamp = datetime.strptime(
-            search[0]["properties"]["datetime"], "%Y-%m-%dT%H:%M:%SZ"
+            catalog["properties"]["datetime"], "%Y-%m-%dT%H:%M:%SZ"
         )
 
-        self.assertTrue(isinstance(search[0]["id"], str))
-        self.assertEqual(len(search[0]["id"]), 67)
-        self.assertEqual(search[0]["id"][:2], "S1")
+        self.assertTrue(isinstance(catalog["id"], str))
+        self.assertEqual(len(catalog["id"]), 67)
+        self.assertEqual(catalog["id"][:2], "S1")
         self.assertTrue(isinstance(timestamp, datetime))
 
     def test_scenes_to_df(self):
@@ -165,7 +166,10 @@ class TestGetData(unittest.TestCase):
         ):
             stac = StacItems(
                 anomalies_df=self.stac_collection.anomalies_df.loc[
-                    :, self.stac_collection.anomalies_df.columns.str.startswith(f"{feature.fid}_")
+                    :,
+                    self.stac_collection.anomalies_df.columns.str.startswith(
+                        f"{feature.fid}_"
+                    ),
                 ],
                 fid=feature.fid,
                 geometry=geometry,
@@ -196,6 +200,7 @@ class TestGetData(unittest.TestCase):
         )
 
     def test_save(self):
+        self.tear_down = False
         self.stac_collection.get_stac_collection()
 
         self.assertTrue(
