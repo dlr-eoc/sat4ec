@@ -148,8 +148,8 @@ class TestGetData(unittest.TestCase):
         feature = self.features[0]
         geometry = self.geometries[0]
         stac = StacItems(
-            anomalies_df=self.reg_anomaly_data.loc[
-                :, self.reg_anomaly_data.columns.str.startswith(f"{feature.fid}_")
+            anomalies_df=self.stac_collection.anomalies_df.loc[
+                self.stac_collection.anomalies_df[f"{feature.fid}_anomaly"]
             ],
             fid=feature.fid,
             geometry=geometry,
@@ -165,11 +165,9 @@ class TestGetData(unittest.TestCase):
             zip(self.features, self.geometries)
         ):
             stac = StacItems(
-                anomalies_df=self.stac_collection.anomalies_df.loc[
-                    :,
-                    self.stac_collection.anomalies_df.columns.str.startswith(
-                        f"{feature.fid}_"
-                    ),
+                anomalies_df=self.stac_collection.anomalies_df.loc[:,
+                    # self.stac_collection.anomalies_df[f"{feature.fid}_anomaly"]
+                    self.stac_collection.anomalies_df.columns.str.startswith(f"{feature.fid}_")
                 ],
                 fid=feature.fid,
                 geometry=geometry,

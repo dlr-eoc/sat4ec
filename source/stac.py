@@ -65,6 +65,7 @@ class StacCollection:
                 fid=feature.fid,
                 geometry=geometry,
             )
+
             stac.scenes_to_df()
             stac.join_with_anomalies()
 
@@ -135,9 +136,8 @@ class StacItems(Config):
         true_anomalies = self.anomalies_df.loc[
             self.anomalies_df[f"{self.fid}_anomaly"]
         ]  # True at these indices
-        self.dataframe = self.dataframe.merge(
-            true_anomalies, on=["interval_from"], how="inner"
-        )
+
+        self.dataframe = pd.merge(self.dataframe, true_anomalies, on="interval_from", how="inner")
         self.dataframe = self.dataframe.drop(f"{self.fid}_anomaly", axis=1)
 
     def get_scenes(self):
@@ -149,13 +149,10 @@ class StacItems(Config):
         self.dataframe = pd.DataFrame(
             {
                 "interval_from": [
-                    pd.to_datetime(scene["properties"]["datetime"])
-                    .normalize()
-                    .tz_convert("UTC")  # get rid of time
-                    for scene in catalog
+                    scene["datetime"].iloc[0] for scene in catalog
                 ],
                 f"{self.fid}_scene": [
-                    scene["id"] for scene in catalog
+                    scene["id"].iloc[0] for scene in catalog
                 ],
             }
         )
@@ -173,10 +170,32 @@ class StacItems(Config):
             DataCollection.SENTINEL1,
             geometry=self.geometry,
             time=(
-                f"{date.year}-{date.month}-{date.day}",
-                f"{date.year}-{date.month}-{date.day}",
+                date - pd.Timedelta(days=12),  # start date
+                date + pd.Timedelta(days=12)  # end date
             ),
             fields={"include": ["id", "properties.datetime"], "exclude": []},
         )
 
-        return list(search_iterator)[0]
+        df = self.get_closest_date(self.catalog_to_dataframe(search_iterator), date=date)
+        df.index = df.index.normalize()
+        df = df.reset_index()
+
+        return df
+
+    @staticmethod
+    def catalog_to_dataframe(catalog=None):
+        df = pd.DataFrame(
+            [
+                {
+                    "id": item["id"],
+                    "datetime": pd.to_datetime(item["properties"]["datetime"])
+                } for item in catalog]
+        )
+        df = df.drop_duplicates(subset=["datetime"], ignore_index=True)
+        df = df.set_index("datetime")
+
+        return df
+
+    @staticmethod
+    def get_closest_date(df=None, date=None):
+        return df.iloc[df.index.get_indexer([pd.to_datetime(date, utc=True)], method="nearest")]

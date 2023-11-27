@@ -235,14 +235,14 @@ def main(
             )
             orbit_collection.add_anomalies(anomalies=raw_anomalies, orbit=orbit)
 
-            # get_s1_scenes(
-            #     data=raw_anomalies.dataframe,
-            #     features=subsets.features,
-            #     geometries=subsets.geometries,
-            #     orbit=orbit,
-            #     pol=pol,
-            #     out_dir=subsets.out_dir,
-            # )
+            get_s1_scenes(
+                data=raw_anomalies.dataframe,
+                features=subsets.features,
+                geometries=subsets.geometries,
+                orbit=orbit,
+                pol=pol,
+                out_dir=subsets.out_dir,
+            )
 
         else:
             reg_anomalies = compute_anomaly(
@@ -257,14 +257,14 @@ def main(
             )
             orbit_collection.add_anomalies(anomalies=reg_anomalies, orbit=orbit)
 
-            # get_s1_scenes(
-            #     data=reg_anomalies.dataframe,
-            #     features=subsets.features,
-            #     geometries=subsets.geometries,
-            #     orbit=orbit,
-            #     pol=pol,
-            #     out_dir=subsets.out_dir,
-            # )
+            get_s1_scenes(
+                data=reg_anomalies.dataframe,
+                features=subsets.features,
+                geometries=subsets.geometries,
+                orbit=orbit,
+                pol=pol,
+                out_dir=subsets.out_dir,
+            )
 
     plot_data(
         orbit_collection=orbit_collection,
