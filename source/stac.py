@@ -1,10 +1,9 @@
 import pandas as pd
-import pytz
-import dateutil
 
 from system.authentication import Config
 from sentinelhub import DataCollection, SentinelHubCatalog
 from pathlib import Path
+from system.helper_functions import get_monthly_keyword
 
 
 class StacCollection:
@@ -16,13 +15,14 @@ class StacCollection:
         orbit="asc",
         pol="VH",
         out_dir=None,
+        monthly=False,
     ):
         self.features = features
         self.geometries = geometries
         self.orbit = orbit
         self.pol = pol
         self.out_dir = out_dir
-
+        self.monthly = monthly
         self.anomalies_df = self._get_data(data=data)
         self.dataframe = pd.DataFrame()
 
@@ -60,11 +60,12 @@ class StacCollection:
         ):
             stac = StacItems(
                 anomalies_df=self.anomalies_df.loc[
-                    :, self.anomalies_df.columns.str.startswith(f"{feature.fid}_")
+                    self.anomalies_df[f"{feature.fid}_anomaly"]
                 ],
                 fid=feature.fid,
                 geometry=geometry,
             )
+
             stac.scenes_to_df()
             stac.join_with_anomalies()
 
@@ -75,6 +76,7 @@ class StacCollection:
                 self.add_stac_item(df=stac.dataframe)
 
         self.delete_columns()
+        self.sort_columns()
         self.save()
 
     def delete_columns(self, columns=("mean", "std")):
@@ -82,12 +84,14 @@ class StacCollection:
             :, ~self.dataframe.columns.str.endswith(columns)
         ]
 
+    def sort_columns(self):
+        self.dataframe = self.dataframe[["interval_from"] + sorted(self.dataframe.columns[1:])]
+
     def save(self):
         out_file = self.out_dir.joinpath(
             "scenes",
-            f"indicator_1_scenes_{self.orbit}_{self.pol}.csv",
+            f"indicator_1_scenes_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
-
         self.dataframe.to_csv(out_file, decimal=".")
 
 
@@ -129,31 +133,29 @@ class StacItems(Config):
                 columns={"tmp": "interval_from"}
             )
 
+            # remove any Unnamed column
+            self.anomalies_df = self.anomalies_df.loc[:, ~self.anomalies_df.columns.str.contains("^Unnamed")]
+
         true_anomalies = self.anomalies_df.loc[
             self.anomalies_df[f"{self.fid}_anomaly"]
         ]  # True at these indices
-        self.dataframe = self.dataframe.merge(
-            true_anomalies, on=["interval_from"], how="inner"
-        )
+
+        self.dataframe = pd.merge(self.dataframe, true_anomalies, on="interval_from", how="inner")
         self.dataframe = self.dataframe.drop(f"{self.fid}_anomaly", axis=1)
 
     def get_scenes(self):
-        return self.anomalies_df.apply(lambda row: self.search_catalog(row), axis=1)
+        return [self.search_catalog(row) for row in range(len(self.anomalies_df))]
 
     def scenes_to_df(self):
-        scenes_df = self.get_scenes()
+        catalog = self.get_scenes()
 
         self.dataframe = pd.DataFrame(
             {
                 "interval_from": [
-                    pd.to_datetime(_item["properties"]["datetime"])
-                    .normalize()
-                    .tz_convert("UTC")  # get rid of time
-                    for values in scenes_df.values
-                    for _item in values
+                    scene["datetime"].iloc[0] for scene in catalog
                 ],
                 f"{self.fid}_scene": [
-                    _item["id"] for values in scenes_df.values for _item in values
+                    scene["id"].iloc[0] for scene in catalog
                 ],
             }
         )
@@ -165,16 +167,38 @@ class StacItems(Config):
             self.dataframe = self.dataframe.rename(columns={"tmp": "interval_from"})
 
     def search_catalog(self, row):
-        date = row.name
+        date = self.anomalies_df.iloc[row].name
 
         search_iterator = self.catalog.search(
             DataCollection.SENTINEL1,
             geometry=self.geometry,
             time=(
-                f"{date.year}-{date.month}-{date.day}",
-                f"{date.year}-{date.month}-{date.day}",
+                date - pd.Timedelta(days=12),  # start date
+                date + pd.Timedelta(days=12)  # end date
             ),
             fields={"include": ["id", "properties.datetime"], "exclude": []},
         )
 
-        return list(search_iterator)
+        df = self.get_closest_date(self.catalog_to_dataframe(search_iterator), date=date)
+        df.index = df.index.normalize()
+        df = df.reset_index()
+
+        return df
+
+    @staticmethod
+    def catalog_to_dataframe(catalog=None):
+        df = pd.DataFrame(
+            [
+                {
+                    "id": item["id"],
+                    "datetime": pd.to_datetime(item["properties"]["datetime"])
+                } for item in catalog]
+        )
+        df = df.drop_duplicates(subset=["datetime"], ignore_index=True)
+        df = df.set_index("datetime")
+
+        return df
+
+    @staticmethod
+    def get_closest_date(df=None, date=None):
+        return df.iloc[df.index.get_indexer([pd.to_datetime(date, utc=True)], method="nearest")]

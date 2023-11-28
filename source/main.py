@@ -158,6 +158,7 @@ def get_s1_scenes(
         orbit="asc",
         pol="VH",
         out_dir=None,
+        monthly=False,
 ):
     stac_collection = StacCollection(
         data=data.copy(),
@@ -166,6 +167,7 @@ def get_s1_scenes(
         orbit=orbit,
         pol=pol,
         out_dir=out_dir,
+        monthly=monthly
     )
     stac_collection.get_stac_collection()
 
@@ -235,14 +237,15 @@ def main(
             )
             orbit_collection.add_anomalies(anomalies=raw_anomalies, orbit=orbit)
 
-            # get_s1_scenes(
-            #     data=raw_anomalies.dataframe,
-            #     features=subsets.features,
-            #     geometries=subsets.geometries,
-            #     orbit=orbit,
-            #     pol=pol,
-            #     out_dir=subsets.out_dir,
-            # )
+            get_s1_scenes(
+                data=raw_anomalies.dataframe,
+                features=subsets.features,
+                geometries=subsets.geometries,
+                orbit=orbit,
+                pol=pol,
+                out_dir=subsets.out_dir,
+                monthly=monthly,
+            )
 
         else:
             reg_anomalies = compute_anomaly(
@@ -257,14 +260,15 @@ def main(
             )
             orbit_collection.add_anomalies(anomalies=reg_anomalies, orbit=orbit)
 
-            # get_s1_scenes(
-            #     data=reg_anomalies.dataframe,
-            #     features=subsets.features,
-            #     geometries=subsets.geometries,
-            #     orbit=orbit,
-            #     pol=pol,
-            #     out_dir=subsets.out_dir,
-            # )
+            get_s1_scenes(
+                data=reg_anomalies.dataframe,
+                features=subsets.features,
+                geometries=subsets.geometries,
+                orbit=orbit,
+                pol=pol,
+                out_dir=subsets.out_dir,
+                monthly=monthly,
+            )
 
     plot_data(
         orbit_collection=orbit_collection,
