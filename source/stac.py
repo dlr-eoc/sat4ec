@@ -1,10 +1,9 @@
 import pandas as pd
-import pytz
-import dateutil
 
 from system.authentication import Config
 from sentinelhub import DataCollection, SentinelHubCatalog
 from pathlib import Path
+from system.helper_functions import get_monthly_keyword
 
 
 class StacCollection:
@@ -16,13 +15,14 @@ class StacCollection:
         orbit="asc",
         pol="VH",
         out_dir=None,
+        monthly=False,
     ):
         self.features = features
         self.geometries = geometries
         self.orbit = orbit
         self.pol = pol
         self.out_dir = out_dir
-
+        self.monthly = monthly
         self.anomalies_df = self._get_data(data=data)
         self.dataframe = pd.DataFrame()
 
@@ -76,6 +76,7 @@ class StacCollection:
                 self.add_stac_item(df=stac.dataframe)
 
         self.delete_columns()
+        self.sort_columns()
         self.save()
 
     def delete_columns(self, columns=("mean", "std")):
@@ -83,12 +84,14 @@ class StacCollection:
             :, ~self.dataframe.columns.str.endswith(columns)
         ]
 
+    def sort_columns(self):
+        self.dataframe = self.dataframe[["interval_from"] + sorted(self.dataframe.columns[1:])]
+
     def save(self):
         out_file = self.out_dir.joinpath(
             "scenes",
-            f"indicator_1_scenes_{self.orbit}_{self.pol}.csv",
+            f"indicator_1_scenes_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
-
         self.dataframe.to_csv(out_file, decimal=".")
 
 

@@ -203,7 +203,7 @@ def adapt_start_end_time(start=False, end=False, date=None):
     return datetime.strftime(date, "%Y-%m-%dT%H:%M:%SZ")
 
 
-def create_out_dir(base_dir=None, out_dir=None):
+def create_out_dir(base_dir=None, out_dir=""):
     if not base_dir.joinpath(out_dir).exists():
         base_dir.joinpath(out_dir).mkdir(parents=True)
 

@@ -158,6 +158,7 @@ def get_s1_scenes(
         orbit="asc",
         pol="VH",
         out_dir=None,
+        monthly=False,
 ):
     stac_collection = StacCollection(
         data=data.copy(),
@@ -166,6 +167,7 @@ def get_s1_scenes(
         orbit=orbit,
         pol=pol,
         out_dir=out_dir,
+        monthly=monthly
     )
     stac_collection.get_stac_collection()
 
@@ -242,6 +244,7 @@ def main(
                 orbit=orbit,
                 pol=pol,
                 out_dir=subsets.out_dir,
+                monthly=monthly,
             )
 
         else:
@@ -264,6 +267,7 @@ def main(
                 orbit=orbit,
                 pol=pol,
                 out_dir=subsets.out_dir,
+                monthly=monthly,
             )
 
     plot_data(

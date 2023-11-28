@@ -1,6 +1,6 @@
 import pandas as pd
 from aoi_check import Feature
-from system.helper_functions import get_monthly_keyword, get_split_keyword
+from system.helper_functions import get_monthly_keyword, get_split_keyword, create_out_dir
 from system.helper_functions import Regression
 
 
@@ -153,14 +153,18 @@ class SubsetCollection:
         if not self.monthly:  # regression is not saved for monthly data
             reg_out_file = self.out_dir.joinpath(
                 "regression",
+                f"{mode}",
                 f"indicator_1_{get_split_keyword(aoi_split=self.aoi_split)}_{mode}_{self.orbit}_{self.pol}.csv",
             )
+            create_out_dir(base_dir=reg_out_file.parent)
             self.regression_dataframe.to_csv(reg_out_file, decimal=".")
 
         lin_out_file = self.out_dir.joinpath(
             "regression",
+            "linear"
             f"indicator_1_linear_{get_split_keyword(aoi_split=self.aoi_split)}_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
+        create_out_dir(base_dir=lin_out_file.parent)
         self.linear_dataframe.to_csv(lin_out_file, decimal=".")
 
 
