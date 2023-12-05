@@ -8,16 +8,17 @@ if __name__ == "__main__":
         aoi_dir=Path(r"input/AOIs"),
         working_dir=Path(r"/mnt/data1/gitlab/sat4ec/data"),  # Path.home().joinpath("sat4ec"),
         out_dir=Path(r"output"),
-        orbit="both",  # ascending or descending orbit
-        aoi="bmw_regensburg",
+        orbit="des",  # ascending or descending orbit
+        aoi="opel_ruesselsheim",
         ext="geojson",
-        start="2022-07-01",
-        monthly=True,
+        start="2014-10-01",
+        end="2015-11-01",
+        monthly=False,
         regression="spline",
         linear=True,
         linear_fill=False,
         aoi_split=True,
-        overwrite_raw=False,
+        overwrite_raw=True,
     )
     prod = Production(config=conf)
     prod.workflow(_path=r"/mnt/data1/gitlab/sat4ec/source")
