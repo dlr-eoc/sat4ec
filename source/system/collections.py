@@ -1,6 +1,6 @@
 import pandas as pd
 from aoi_check import Feature
-from system.helper_functions import get_monthly_keyword, get_split_keyword, create_out_dir
+from system.helper_functions import get_monthly_keyword, get_split_keyword, create_out_dir, remove_dataframe_nan_rows
 from system.helper_functions import Regression
 
 
@@ -57,6 +57,9 @@ class SubsetCollection:
         self.linear_dataframe = pd.concat(
             [self.linear_dataframe, df], axis=1
         ).sort_index()  # merge arrays
+
+    def remove_nan_rows(self):
+        self.dataframe = remove_dataframe_nan_rows(df=self.dataframe)
 
     def aggregate_columns(self):
         for col in ["mean", "std", "min", "max"]:

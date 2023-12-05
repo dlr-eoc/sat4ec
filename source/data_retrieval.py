@@ -1,5 +1,10 @@
 import pandas as pd
-from system.helper_functions import get_last_month, create_out_dir, convert_dataframe_tz, adapt_start_end_time
+from system.helper_functions import (
+    get_last_month,
+    create_out_dir,
+    convert_dataframe_tz,
+    adapt_start_end_time,
+)
 from system.authentication import Config
 from sentinelhub import (
     Geometry,
@@ -73,7 +78,10 @@ class IndicatorData(Config):
         self._set_interval()
 
     def _set_interval(self):
-        self.interval = (adapt_start_end_time(start=True, date=self.start_date), adapt_start_end_time(end=True, date=self.end_date))
+        self.interval = (
+            adapt_start_end_time(start=True, date=self.start_date),
+            adapt_start_end_time(end=True, date=self.end_date),
+        )
 
     def _get_column_rename_map(self):
         self.columns_map = {
@@ -113,15 +121,21 @@ class IndicatorData(Config):
     def check_dates(self, start=False, end=False):
         if start:
             # start_date is less than earliest archive date --> new data required for earlier dates
-            if convert_dataframe_tz(var=pd.to_datetime(self.interval[0])) < convert_dataframe_tz(var=pd.to_datetime(self.archive_data.index[0])):
-                self.end_date = self.archive_data.index[0].date()  # strip date what looks like 2021-01-03 00:00:00+00:00
+            if convert_dataframe_tz(
+                var=pd.to_datetime(self.interval[0])
+            ) < convert_dataframe_tz(var=pd.to_datetime(self.archive_data.index[0])):
+                self.end_date = self.archive_data.index[
+                    0
+                ].date()  # strip date what looks like 2021-01-03 00:00:00+00:00
                 self._set_interval()
 
                 return "past"
 
         if end:
             # end_date is greater than latest archive date --> new data required for future dates
-            if convert_dataframe_tz(pd.to_datetime(self.interval[-1])) > convert_dataframe_tz(pd.to_datetime(self.archive_data.index[-1])):
+            if convert_dataframe_tz(
+                pd.to_datetime(self.interval[-1])
+            ) > convert_dataframe_tz(pd.to_datetime(self.archive_data.index[-1])):
                 self.start_date = self.archive_data.index[-1].date()
                 self._set_interval()
 
@@ -129,7 +143,9 @@ class IndicatorData(Config):
 
     def check_existing_data(self):
         if self.archive_data is not None:  # if some raw date has already been saved
-            if f"{self.fid}_mean" in self.archive_data.columns:  # feature exists in archive data
+            if (
+                f"{self.fid}_mean" in self.archive_data.columns
+            ):  # feature exists in archive data
                 return True, True
 
             else:  # archive data present, but required feature not recorded

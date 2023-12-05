@@ -219,6 +219,11 @@ def convert_dataframe_tz(var=None):
     return var
 
 
+def remove_dataframe_nan_rows(df=None):
+    print(df)
+    return df[np.isfinite(df).all(1)]
+
+
 def load_yaml(yaml_path):
     with open(yaml_path, "r") as f:
         return yaml.safe_load(f)
