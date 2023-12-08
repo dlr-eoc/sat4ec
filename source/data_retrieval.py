@@ -172,6 +172,7 @@ class IndicatorData(Config):
         2  2020-03-03  3
         3  2020-04-04  4
         """
+
         self.dataframe = pd.concat([past_df, self.archive_data, future_df], axis=0)
 
     def get_request_grd(self):

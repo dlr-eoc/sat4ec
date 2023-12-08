@@ -58,7 +58,10 @@ class SubsetCollection:
             [self.linear_dataframe, df], axis=1
         ).sort_index()  # merge arrays
 
-    def remove_nan_rows(self):
+    def remove_dataframe_items(self):
+        if "interval_to" in self.dataframe.columns:
+            self.dataframe.drop("interval_to", axis=1, inplace=True)
+
         self.dataframe = remove_dataframe_nan_rows(df=self.dataframe)
 
     def aggregate_columns(self):
@@ -107,7 +110,6 @@ class SubsetCollection:
                     self.archive_dataframe["interval_from"]
                 )
                 self.archive_dataframe = self.archive_dataframe.set_index("interval_from")
-
                 self.correct_archive_datatypes()
 
     def correct_archive_datatypes(self):

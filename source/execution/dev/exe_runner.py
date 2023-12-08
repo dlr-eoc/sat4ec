@@ -9,16 +9,16 @@ if __name__ == "__main__":
         working_dir=Path(r"/mnt/data1/gitlab/sat4ec/data"),  # Path.home().joinpath("sat4ec"),
         out_dir=Path(r"output"),
         orbit="des",  # ascending or descending orbit
-        aoi="opel_ruesselsheim",
+        aoi="ford_cologne",
         ext="geojson",
-        start="2014-10-01",
-        end="2015-11-01",
+        start="2021-03-01",
+        end="2021-05-01",
         monthly=False,
         regression="spline",
         linear=True,
         linear_fill=False,
         aoi_split=True,
-        overwrite_raw=True,
+        overwrite_raw=False,
     )
     prod = Production(config=conf)
     prod.workflow(_path=r"/mnt/data1/gitlab/sat4ec/source")

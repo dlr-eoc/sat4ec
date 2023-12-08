@@ -211,7 +211,7 @@ def main(
                 subsets.add_feature(feature)
                 subsets.add_geometry(indicator.geometry)
 
-            subsets.remove_nan_rows()
+            subsets.remove_dataframe_items()
 
         if len(subsets.features) > 1:
             subsets.aggregate_columns()

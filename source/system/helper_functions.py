@@ -220,7 +220,6 @@ def convert_dataframe_tz(var=None):
 
 
 def remove_dataframe_nan_rows(df=None):
-    print(df)
     return df[np.isfinite(df).all(1)]
 
 
