@@ -117,6 +117,7 @@ def compute_raw_data(
 
             indicator.concat_dataframes(past_df=past_df, future_df=future_df)
             indicator.remove_duplicate_date()
+            indicator.slice_dates()
 
     return indicator
 

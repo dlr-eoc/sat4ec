@@ -1,9 +1,11 @@
 import pandas as pd
+import numpy as np
 from system.helper_functions import (
     get_last_month,
     create_out_dir,
     convert_dataframe_tz,
     adapt_start_end_time,
+    date_to_string,
 )
 from system.authentication import Config
 from sentinelhub import (
@@ -294,6 +296,26 @@ class IndicatorData(Config):
 
     def remove_duplicate_date(self):
         self.dataframe = self.dataframe[~self.dataframe.index.duplicated()]
+
+    def slice_dates(self):
+        start_slice = date_to_string(date=pd.to_datetime(self.interval[0], utc=True))
+        end_slice = date_to_string(date=pd.to_datetime(self.interval[1], utc=True))
+
+        # find closest start and end date in given dataframe
+        # e.g. if start_slice = 2021-03-01 but given dates cover 2021-02-28 and 2021-03-02 only
+        closest_start = self.dataframe.index[self.dataframe.index.get_indexer([start_slice], method="nearest")]
+        closest_end = self.dataframe.index[self.dataframe.index.get_indexer([end_slice], method="nearest")]
+
+        # if closest available date is in another month, get the closest date that comes later
+        # by that ensure that monthly statistics remain valid
+        # e.g. if start_slice = 2021-03-01 but closest date is 2021-02-28, select next date like 2021-03-02
+        if pd.to_datetime(start_slice).month != closest_start.month.values[0]:
+            closest_start = self.dataframe.iloc[[np.searchsorted(self.dataframe.index, start_slice)]].index
+
+        if pd.to_datetime(end_slice).month != closest_end.month.values[0]:
+            closest_end = self.dataframe.iloc[[np.searchsorted(self.dataframe.index, end_slice)]].index
+
+        self.dataframe = self.dataframe.loc[closest_start[0]:closest_end[0]]
 
 
 class Band:
