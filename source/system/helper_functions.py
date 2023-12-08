@@ -203,6 +203,21 @@ def adapt_start_end_time(start=False, end=False, date=None):
     return datetime.strftime(date, "%Y-%m-%dT%H:%M:%SZ")
 
 
+def date_to_string(date=None, remove_isoformat_T=True):
+    """
+    Interval dates are in format YYYY-MM-DDT00:00:00Z. Convert to string with YYYY-MM-DD 00:00:00.
+    :param date:
+    :return:
+    """
+
+    date = date.isoformat()
+
+    if remove_isoformat_T:
+        date = date.replace("T", " ")
+
+    return date
+
+
 def create_out_dir(base_dir=None, out_dir=""):
     if not base_dir.joinpath(out_dir).exists():
         base_dir.joinpath(out_dir).mkdir(parents=True)
