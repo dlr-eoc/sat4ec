@@ -4,11 +4,11 @@ import shutil
 
 import numpy as np
 
-from source.plot_data import Plots, PlotData
+from sat4ec.plot_data import Plots, PlotData
 from system.collections import OrbitCollection as Orbits
 from system.collections import SubsetCollection as Subsets
 from anomaly_detection import Anomalies
-from source.aoi_check import Feature
+from sat4ec.aoi_check import Feature
 from test_helper_functions import prepare_test_dataframes
 from system.helper_functions import mutliple_orbits_raw_range
 from pathlib import Path

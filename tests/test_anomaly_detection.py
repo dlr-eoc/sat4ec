@@ -2,8 +2,8 @@ import unittest
 import shutil
 
 import pandas as pd
-from source.anomaly_detection import Anomaly, Anomalies
-from source.aoi_check import Feature
+from sat4ec.anomaly_detection import Anomaly, Anomalies
+from sat4ec.aoi_check import Feature
 from test_helper_functions import prepare_test_dataframes
 from pathlib import Path
 

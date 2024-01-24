@@ -5,11 +5,11 @@ from datetime import datetime
 import pandas as pd
 import shutil
 
-from source.data_retrieval import IndicatorData as IData
-from source.system.collections import SubsetCollection as Subsets
-from source.aoi_check import AOI
-from source.system.helper_functions import get_last_month
-from source.main import run_indicator
+from sat4ec.data_retrieval import IndicatorData as IData
+from sat4ec.system.collections import SubsetCollection as Subsets
+from sat4ec.aoi_check import AOI
+from sat4ec.system.helper_functions import get_last_month
+from sat4ec.main import run_indicator
 
 from sentinelhub import (
     Geometry,

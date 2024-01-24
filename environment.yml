@@ -1,0 +1,16 @@
+name: sat4ec
+channels:
+  - conda-forge
+dependencies:
+  - fiona
+  - matplotlib
+  - numpy
+  - pandas
+  - python-dateutil
+  - scikit-learn
+  - scipy
+  - seaborn
+  - sentinelhub
+  - shapely
+  - tqdm
+  - pyyaml

@@ -1,6 +1,4 @@
 import argparse
-import shutil
-import traceback
 from aoi_check import AOI
 from system.collections import SubsetCollection as Subsets
 from system.collections import OrbitCollection as Orbits
@@ -11,15 +9,7 @@ from datetime import datetime
 
 from data_retrieval import IndicatorData as IData
 from stac import StacCollection
-from system.helper_functions import get_logger, get_last_month, mutliple_orbits_raw_range
-
-# clean output directory
-# for item in Path(OUT_DIR).glob("*"):
-#     if item.is_file():
-#         item.unlink()
-#
-#     else:
-#         shutil.rmtree(item, ignore_errors=True)
+from system.helper_functions import get_last_month, mutliple_orbits_raw_range
 
 
 def plot_data(
@@ -461,8 +451,4 @@ def parse_commandline_args():
 
 
 if __name__ == "__main__":
-    # try:
     run()
-    #
-    # except:
-    #     logger.error(traceback.format_exc())

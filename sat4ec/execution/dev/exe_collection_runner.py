@@ -1,5 +1,5 @@
-from source.execution.exe_config import Config
-from source.execution.exe_production import Production
+from sat4ec.execution.exe_config import Config
+from sat4ec.execution.exe_production import Production
 from pathlib import Path
 
 

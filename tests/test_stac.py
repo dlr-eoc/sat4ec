@@ -3,8 +3,8 @@ from pathlib import Path
 import pandas as pd
 import shutil
 
-from source.stac import StacItems, StacCollection
-from source.aoi_check import AOI
+from sat4ec.stac import StacItems, StacCollection
+from sat4ec.aoi_check import AOI
 from test_helper_functions import prepare_test_dataframes
 
 from sentinelhub import SentinelHubCatalog, Geometry, CRS

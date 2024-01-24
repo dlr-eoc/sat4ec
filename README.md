@@ -1,84 +1,61 @@
 # Sat4Ec
 
+`sat4ec` is a Python package to monitor occupancy rates of automotive producing facilities by exploiting Sentinel-1 IW GRD data.
+
 ## Installation
 
-Build the docker image.
+This project uses a `conda` environment. For installing dependencies use:
 
-```
-docker build -f sat4ec.Dockerfile -t sat4ec .
-```
-
-## Usage
-
-### Preparation
-
-Define an area of interest (AOI) over a production parking lot and save as geojson or gpkg.
-
-![AOI BMW Regensburg](docs/aoi_bmw_regensburg.png)
-
-Cars are often parked in very small space and covered with a protective layer.
-
-![AOI BMW Regensburg cars](docs/bmw_regensburg_car_zoom.png)
-
-### Execution
-
-Execute the docker container.
-
-```
-docker run
--v /PATH/TO/INPUT/DIR/:/scratch/in/
--v /PATH/TO/OUTDIR/:/scratch/out/
---rm sat4ec
---aoi_data <Path to AOI file or AOI as POLYGON or AOI as WKT>
---start_date <Begin of the time series, as YYYY-MM-DD>
---end_date <End of the time series, as YYYY-MM-DD>
---name <Name of the location, appears as title in the plot, e.g. BMW Regensburg>
---polarization <VH or VV polarization, default is VH>
---orbit <Ascending or descending orbit, announce as asc or des>
---columns <statistical parameters to plot, choose from [mean, std, min, max], default are [mean, std]>
+```bash
+conda env create
 ```
 
-`--polarization`, `--orbit` and `--columns` hold default values and do not have to be declared in intetended to use default parameters.
+## Dependencies
+For the latest list of dependencies check the [`environment.yml`](environment.yml).
 
-An exemplarily docker call looks like this:
+# Development
 
+## `pre-commit`
+
+Some development guardrails are enforced via [`pre-commit`](https://pre-commit.com/). This is to
+ensure we follow similar code styles or it automatically cleans up jupyter notebooks.
+
+To install `pre-commit` (not necessary if you [installed the conda
+environment](#install-conda-evnironment)):
+
+```shell
+conda/pip install pre-commit
 ```
-docker run
--v /PATH/TO/INPUT/DIR/:/scratch/in/
--v /PATH/TO/OUTDIR/:/scratch/out/
---rm sat4ec
---aoi_data /path/to/aoi.geojson
---start_date 2020-01-01
---end_date 2020-12-31
---name BMW Regensburg
---orbit des
+
+To initialize all pre-commit hooks, run:
+
+```shell
+pre-commit install
 ```
 
-## Results
+To test whether `pre-commit` works:
 
-The default settings plot the aggregated mean Sentinel-1 backscatter per AOI with the aggregated standard deviation. All units are in dB. Each datapoint is represented by a distinct date with a 1 day resolution. This data is plotted in grey colors and already shows the timely variation of backscatter. To draw a clearer picture, mean and standard deviation data is interpolated with a weighted spline function. The spline weights were computed with `local_mean / global_mean`, giving datapoints exceeding the global mean a higher significance.
-
-![](docs/indicator_1_bmw_regensburg_splinedata_asc_VH.png)
-
-## Data
-
-### Sentinel Hub
-
-Sentinel-1 data downloaded via [Sentinel Hub](https://collections.sentinel-hub.com/sentinel-1-grd/) is the sole source for the statistical analysis. The data is requested as S1 GRD sigma0 and. Custom pre-processing steps include Lee speckle filtering and transformation into decibel [dB] values.
-
-### Google
-
-Sentinel-1 data downloaded via the Google Earth Engine was provided with several [pre-processing steps](https://developers.google.com/earth-engine/guides/sentinel1#sentinel-1-preprocessing). This data is used for raster visualizations alone.
-
-## Development
-
-### Execution
-If not intended to run with docker, e.g. for local testing, call and modify the [runner script](tests/sat4ec_runner.py).
-
-### Virtual environment
+```shell
+pre-commit run --all-files
 ```
-conda create -n sat4ec Python=3.11
-conda install matplotlib jupyterlab
-conda install gdal fiona shapely geopandas pandas seaborn
-conda install sentinelhub
-```
+
+It will check all files tracked by git and apply the triggers set up in
+[`.pre-commit-config.yaml`](.pre-commit-config.yaml). That is, it will run triggers, possibly
+changing the contents of the file (e.g. `black` formatting). Once set up, `pre-commit` will run, as
+the name implies, prior to each `git commit`. In its current config, it will format code with
+`black` and `isort`, clean up `jupyter notebook` output cells, remove trailing whitespaces and will
+block large files to be committed. If it fails, one has to re-stage the affected files (`git add` or
+`git stage`), and re-commit.
+
+## Contributors
+The DLR-DFD team creates and adapts libraries which simplify the usage of satellite data. Our team
+includes (in alphabetical order):
+* Krullikowski, Christian
+
+German Aerospace Center (DLR)
+
+## Licenses
+This software is licensed under the [Apache 2.0 License](LICENSE.txt).
+
+Copyright (c) 2023 German Aerospace Center (DLR) * German Remote Sensing Data Center * Department:
+Geo-Risks and Civil Security

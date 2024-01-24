@@ -1,7 +1,7 @@
 import subprocess
 import os
 from pathlib import Path
-from source.execution.exe_helper_functions import get_name
+from sat4ec.execution.exe_helper_functions import get_name
 
 # for development
 # os.environ["PROJ_LIB"] = str(Path.home().joinpath("mambaforge", "envs", "sat4ec", "share", "proj").absolute())
@@ -13,7 +13,7 @@ class Production:
     def __init__(self, config=None):
         self.config = config
 
-    def workflow(self, _path=r"source"):
+    def workflow(self, _path=r"sat4ec"):
         response = subprocess.run(
             [
                 "python3",

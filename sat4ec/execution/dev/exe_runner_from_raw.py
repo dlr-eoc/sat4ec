@@ -1,5 +1,5 @@
-from source.execution.exe_config import Config
-from source.execution.exe_production import Production
+from sat4ec.execution.exe_config import Config
+from sat4ec.execution.exe_production import Production
 from pathlib import Path
 
 
@@ -19,4 +19,4 @@ if __name__ == "__main__":
         aoi_split=False,
     )
     prod = Production(config=conf)
-    prod.workflow(_path=r"/mnt/data1/gitlab/sat4ec/source")
+    prod.workflow(_path=r"/")

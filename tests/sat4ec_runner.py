@@ -6,13 +6,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime, timedelta
 
-from source.data_retrieval import IndicatorData as IData
-from source.aoi_check import AOI
-from source.anomaly_detection import Anomaly
-from source.plot_data import PlotData
-from source.stac import StacItems
+from sat4ec.data_retrieval import IndicatorData as IData
+from sat4ec.aoi_check import AOI
+from sat4ec.anomaly_detection import Anomaly
+from sat4ec.plot_data import PlotData
+from sat4ec.stac import StacItems
 import matplotlib.dates as mdates
-from source.system.helper_functions import get_monthly_keyword, get_last_month
+from sat4ec.system.helper_functions import get_monthly_keyword, get_last_month
 
 
 class Config:
@@ -193,7 +193,7 @@ class Development:
     def __init__(self, config=None):
         self.config = config
         self.facility = None
-        # self.config.working_dir = Path(r"/mnt/data1/gitlab/source/tests/testdata/collection")
+        # self.config.working_dir = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata/collection")
 
         self._init_plot()
 
@@ -433,7 +433,7 @@ class Production:
             response = subprocess.run(
                 [
                     "python3",
-                    "../source/main.py",
+                    "../sat4ec/main.py",
                     "--aoi_data",
                     self.config.working_dir.joinpath(self.config.aois[aoi_name].name),
                     "--out_dir",
