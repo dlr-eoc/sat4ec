@@ -1,46 +1,56 @@
+"""Test anomaly detection."""
+from __future__ import annotations
+
 import unittest
-from fiona import errors as ferrors
-from fiona.collection import Collection
-from shapely.geometry.polygon import Polygon
-from shapely.geometry.multipolygon import MultiPolygon
-from shapely import errors
-from sat4ec.aoi_check import AOI
 from pathlib import Path
 
+from fiona import errors as ferrors
+from fiona.collection import Collection
+from shapely import errors
+from shapely.geometry.multipolygon import MultiPolygon
+from shapely.geometry.polygon import Polygon
+
+from sat4ec.aoi_check import AOI
 
 TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
 
 
 class TestAOI(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        super(TestAOI, self).__init__(*args, **kwargs)
+    """Encapsulates testing methods."""
+
+    def __init__(self: TestAOI, *args: int, **kwargs: int) -> None:
+        """Initialize TestAOI class."""
+        super().__init__(*args, **kwargs)
         self.data_dir = TEST_DIR.joinpath("vw_wolfsburg2subfeatures")
 
-    def test_open_aoi_file(self):
+    def test_open_aoi_file(self: TestAOI) -> None:
+        """Test open AOI file."""
         # provide as pathlib.Path
-        with AOI(data=TEST_DIR.joinpath("AOIs", "vw_wolfsburg2subfeatures.geojson")) as aoi_collection:
+        with AOI(data=TEST_DIR.joinpath("AOIs", "vw_wolfsburg.geojson")) as aoi_collection:
             self.assertTrue(isinstance(aoi_collection.filename, Path))
             self.assertTrue(isinstance(aoi_collection.aoi, Collection))
 
         # provide as string
-        with AOI(data=str(TEST_DIR.joinpath("AOIs", "vw_wolfsburg2subfeatures.geojson").absolute())) as aoi_collection:
+        with AOI(data=str(TEST_DIR.joinpath("AOIs", "vw_wolfsburg.geojson").absolute())) as aoi_collection:
             self.assertTrue(isinstance(aoi_collection.filename, Path))
             self.assertTrue(isinstance(aoi_collection.aoi, Collection))
 
-    def test_fail_open_aoi_file(self):
+    def test_fail_open_aoi_file(self: TestAOI) -> None:
+        """Test open missing AOI file."""
         # provide as pathlib.Path
         with self.assertRaises(ferrors.DriverError):
-            with AOI(data=TEST_DIR.joinpath("AOIs", "MISSING.geojson")) as aoi_collection:
-                pass
+            aoi_collection = AOI(data=TEST_DIR.joinpath("AOIs", "MISSING.geojson"))
+            aoi_collection.close()
 
         with self.assertRaises(TypeError):
-            with AOI(data=str(TEST_DIR.joinpath("AOIs", "MISSING.geojson").absolute())) as aoi_collection:
-                pass
+            aoi_collection = AOI(data=str(TEST_DIR.joinpath("AOIs", "MISSING.geojson").absolute()))
+            aoi_collection.close()
 
-    def test_get_aoi_features(self):
+    def test_get_aoi_features(self: TestAOI) -> None:
+        """Test AOI with features."""
         # provide as pathlib.Path
         with AOI(data=TEST_DIR.joinpath("AOIs", "vw_wolfsburg2subfeatures.geojson")) as aoi_collection:
-            features = [feature for feature in aoi_collection.get_feature()]
+            features = list(aoi_collection.get_feature())
             feature = features[0]
 
             self.assertTrue(isinstance(features, list))
@@ -55,34 +65,38 @@ class TestAOI(unittest.TestCase):
                 else:
                     self.assertTrue(isinstance(feature.geometry, MultiPolygon))
 
-    def test_get_aoi_no_features(self):
+    def test_get_aoi_no_features(self: TestAOI) -> None:
+        """Test empty AOI."""
         # provide as pathlib.Path
         with AOI(data=TEST_DIR.joinpath("AOIs", "empty.geojson")) as aoi_collection:
             self.assertEqual(len(aoi_collection.features), 0)
 
-    def test_aoi_from_polygon(self):
+    def test_aoi_from_polygon(self: TestAOI) -> None:
+        """Test AOI from polygon."""
         pol = Polygon(((11, 48), (12, 48), (12, 49), (11, 49), (11, 48)))
 
         with AOI(data=pol) as aoi_collection:
             self.assertTrue(isinstance(aoi_collection.geometry, Polygon))
             self.assertTrue(isinstance(aoi_collection.record, dict))
 
-    def test_aoi_from_wkt(self):
+    def test_aoi_from_wkt(self: TestAOI) -> None:
+        """Test AOI from WKT."""
         pol = "POLYGON((11 48, 12 48, 12 49, 11 49, 11 48))"
 
         with AOI(data=pol) as aoi_collection:
             self.assertTrue(isinstance(aoi_collection.geometry, Polygon))
             self.assertTrue(isinstance(aoi_collection.record, dict))
 
-    def test_aoi_from_wkt_errors(self):
+    def test_aoi_from_wkt_errors(self: TestAOI) -> None:
+        """Test AOI from errorness WKT string."""
         pol = "POLYGON((11, 48), (12, 48), (12, 49), (11, 49), (11, 48))"
 
         with self.assertRaises(errors.GEOSException):
-            with AOI(data=pol) as aoi_collection:
-                pass
+            aoi_collection = AOI(data=pol)
+            aoi_collection.close()
 
         pol = "polygon((11, 48), (12, 48), (12, 49), (11, 49), (11, 48))"
 
         with self.assertRaises(TypeError):
-            with AOI(data=pol) as aoi_collection:
-                pass
+            aoi_collection = AOI(data=pol)
+            aoi_collection.close()

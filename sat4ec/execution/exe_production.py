@@ -1,20 +1,30 @@
-import subprocess
+"""Encapsulate production workflow."""
+from __future__ import annotations
+
 import os
+import subprocess
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from exe_config import Config
+
 from sat4ec.execution.exe_helper_functions import get_name
 
-# for development
-# os.environ["PROJ_LIB"] = str(Path.home().joinpath("mambaforge", "envs", "sat4ec", "share", "proj").absolute())
 # for production
 os.environ["PROJ_LIB"] = str(Path.home().joinpath("sat4ec", "sat4ec_env", "share", "proj").absolute())
 
 
 class Production:
-    def __init__(self, config=None):
+    """Encapsulate production workflow."""
+
+    def __init__(self: Production, config: Config | None = None) -> None:
+        """Initialize Production class."""
         self.config = config
 
-    def workflow(self, _path=r"sat4ec"):
-        response = subprocess.run(
+    def workflow(self: Production, _path: str = r"sat4ec") -> None:
+        """Set workflow parameters."""
+        subprocess.run(
             [
                 "python3",
                 f"{Path(_path).joinpath('main.py')}",
@@ -46,4 +56,5 @@ class Production:
                 "true" if self.config.overwrite_raw else "false",
             ],
             capture_output=False,
+            check=False,
         )

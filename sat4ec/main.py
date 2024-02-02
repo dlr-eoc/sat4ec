@@ -1,27 +1,35 @@
-import argparse
-from aoi_check import AOI
-from system.collections import SubsetCollection as Subsets
-from system.collections import OrbitCollection as Orbits
-from plot_data import Plots
-from anomaly_detection import Anomalies
-from pathlib import Path
-from datetime import datetime
+"""Main entry point of application."""
+from __future__ import annotations
 
+import argparse
+from datetime import datetime
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
+
+from anomaly_detection import Anomalies
+from aoi_check import AOI, Feature
 from data_retrieval import IndicatorData as IData
+from plot_data import Plots
 from stac import StacCollection
 from system.helper_functions import get_last_month, mutliple_orbits_raw_range
+from system.subset_collections import OrbitCollection as Orbits
+from system.subset_collections import SubsetCollection as Subsets
 
 
 def plot_data(
-    out_dir=None,
-    name=None,
-    orbit_collection=None,
-    monthly=False,
-    linear=False,
-    features=None,
-    linear_fill=False,
-    aoi_split=False,
-):
+    out_dir: Path,
+    name: str,
+    orbit_collection: Orbits,
+    features: list,
+    monthly: bool = False,
+    linear: bool = False,
+    linear_fill: bool = False,
+    aoi_split: bool = False,
+) -> int:
+    """Encapsulate the plotting routine."""
     with Plots(
         out_dir=out_dir,
         name=name,
@@ -33,7 +41,7 @@ def plot_data(
         aoi_split=aoi_split,
         raw_range=mutliple_orbits_raw_range(  # only for adjusting the plot space, not actually plotted here
             fid="0" if len(features) == 1 else "total",
-            orbit_collection=orbit_collection
+            orbit_collection=orbit_collection,
         ),
     ) as plotting:
         plotting.plot_features(orbit_collection=orbit_collection)
@@ -47,8 +55,11 @@ def plot_data(
 
         plotting.show_plot()
 
+    return 0
 
-def run_indicator(_indicator):
+
+def run_indicator(_indicator: IData) -> IData:
+    """Encapsulate call of Indicator class."""
     _indicator.get_request_grd()
     _indicator.get_data()
     _indicator.stats_to_df()
@@ -57,15 +68,16 @@ def run_indicator(_indicator):
 
 
 def compute_raw_data(
-    archive_data=None,
-    feature=None,
-    out_dir=None,
-    start_date=None,
-    end_date=None,
-    orbit="asc",
-    pol="VH",
-    monthly=False,
-):
+    archive_data: pd.DataFrame,
+    feature: Feature,
+    out_dir: Path,
+    start_date: str,
+    end_date: str,
+    orbit: str = "asc",
+    pol: str = "VH",
+    monthly: bool = False,
+) -> IData:
+    """Fetch raw data from Sentinel Hub."""
     indicator = IData(
         archive_data=archive_data,
         aoi=feature.geometry,
@@ -80,49 +92,49 @@ def compute_raw_data(
     existing_keyword, column_keyword = indicator.check_existing_data()
 
     if not existing_keyword:  # no archive data, run indicator once
-        print("not existing")
         indicator = run_indicator(indicator)
 
-    else:  # archive data present, check if new feature and earlier and/or future data required
-        if not column_keyword:
-            print("no column")
-            # indicator = run_indicator(indicator)
+    elif existing_keyword and not column_keyword:  # archive data present
+        # decide if executing following code: indicator = run_indicator(indicator)
+        pass
+
+    # check if new feature and earlier and/or future data required
+    elif existing_keyword and column_keyword:  # archive data present
+        if indicator.check_dates(start=True) == "past":
+            indicator = run_indicator(indicator)
+            past_df = indicator.dataframe
+            indicator.get_start_end_date(start=start_date, end=end_date)
 
         else:
-            if indicator.check_dates(start=True) == "past":
-                indicator = run_indicator(indicator)
-                past_df = indicator.dataframe
-                indicator.get_start_end_date(start=start_date, end=end_date)
+            past_df = indicator.dataframe
 
-            else:
-                past_df = indicator.dataframe
+        if indicator.check_dates(end=True) == "future":
+            indicator = run_indicator(indicator)
+            future_df = indicator.dataframe
+            indicator.get_start_end_date(start=start_date, end=end_date)
 
-            if indicator.check_dates(end=True) == "future":
-                indicator = run_indicator(indicator)
-                future_df = indicator.dataframe
-                indicator.get_start_end_date(start=start_date, end=end_date)
+        else:
+            future_df = indicator.dataframe
 
-            else:
-                future_df = indicator.dataframe
-
-            indicator.concat_dataframes(past_df=past_df, future_df=future_df)
-            indicator.remove_duplicate_date()
-            indicator.slice_dates()
+        indicator.concat_dataframes(past_df=past_df, future_df=future_df)
+        indicator.remove_duplicate_date()
+        indicator.slice_dates()
 
     return indicator
 
 
 def compute_anomaly(
-    df=None,
-    linear_data=None,
-    anomaly_column="mean",
-    out_dir=None,
-    orbit="asc",
-    pol="VH",
-    monthly=False,
-    features=None,
-    aoi_split=False,
-):
+    df: pd.DataFrame,
+    linear_data: pd.DataFrame,
+    out_dir: Path,
+    features: list,
+    anomaly_column: str = "mean",
+    orbit: str = "asc",
+    pol: str = "VH",
+    monthly: bool = False,
+    aoi_split: bool = False,
+) -> Anomalies:
+    """Encapsulate anomaly detection."""
     anomalies = Anomalies(
         data=df,
         anomaly_column=anomaly_column,
@@ -143,14 +155,15 @@ def compute_anomaly(
 
 
 def get_s1_scenes(
-        data=None,
-        features=None,
-        geometries=None,
-        orbit="asc",
-        pol="VH",
-        out_dir=None,
-        monthly=False,
-):
+    out_dir: Path,
+    data: pd.DataFrame,
+    features: list,
+    geometries: list,
+    orbit: str = "asc",
+    pol: str = "VH",
+    monthly: bool = False,
+) -> int:
+    """Get a list of Sentinel-1 scenes used in this analysis."""
     stac_collection = StacCollection(
         data=data.copy(),
         features=features,
@@ -158,38 +171,51 @@ def get_s1_scenes(
         orbit=orbit,
         pol=pol,
         out_dir=out_dir,
-        monthly=monthly
+        monthly=monthly,
     )
     stac_collection.get_stac_collection()
 
+    return 0
+
 
 def main(
-    aoi_data=None,
-    out_dir=None,
-    start_date=None,
-    end_date=None,
-    pol="VH",
-    in_orbit="asc",
-    name="Unkown Brand",
-    monthly=False,
-    regression="spline",
-    linear=False,
-    aoi_split=False,
-    linear_fill=False,
-    overwrite_raw=False,
-):
+    aoi_data: str,
+    out_dir: Path,
+    start_date: str,
+    end_date: str,
+    pol: str = "VH",
+    in_orbit: str = "asc",
+    name: str = "Unkown Brand",
+    monthly: bool = False,
+    regression: str = "spline",
+    linear: bool = False,
+    aoi_split: bool = False,
+    linear_fill: bool = False,
+    overwrite_raw: bool = False,
+) -> 0:
+    """Encapsulate entry point for main functions."""
     orbit_collection = Orbits(orbit=in_orbit, monthly=monthly)
 
     for orbit in orbit_collection.orbits:
         with AOI(data=aoi_data, aoi_split=aoi_split) as aoi_collection:
-            subsets = Subsets(out_dir=out_dir, monthly=monthly, orbit=orbit, pol=pol, overwrite_raw=overwrite_raw, aoi_split=aoi_split)
+            subsets = Subsets(
+                out_dir=out_dir,
+                monthly=monthly,
+                orbit=orbit,
+                pol=pol,
+                overwrite_raw=overwrite_raw,
+                aoi_split=aoi_split,
+            )
             subsets.check_existing_raw()
 
-            for index, feature in enumerate(aoi_collection.get_feature()):
+            for _, feature in enumerate(aoi_collection.get_feature()):
                 indicator = compute_raw_data(
                     archive_data=subsets.archive_dataframe.loc[
-                        :, subsets.archive_dataframe.columns.str.startswith(f"{feature.fid}_")
-                    ] if subsets.archive_dataframe is not None else None,
+                        :,
+                        subsets.archive_dataframe.columns.str.startswith(f"{feature.fid}_"),
+                    ]
+                    if subsets.archive_dataframe is not None
+                    else None,
                     feature=feature,
                     out_dir=out_dir,
                     start_date=start_date,
@@ -274,49 +300,35 @@ def main(
         aoi_split=subsets.aoi_split,
     )
 
+    return 0
 
-def parse_boolean(param=None, literal=None):
+
+def parse_boolean(param: str, literal: str) -> bool:
+    """Parse boolean string values into real booleans."""
+    if param[0].lower() != "true" and param[0].lower() != "false":
+        raise ValueError(
+            f"The provided value {param[0]} for --{literal} is not supported. " f"Choose from [true, false]."
+        )
+
     if param[0].lower() == "true":
         return True
 
-    elif param[0].lower() == "false":
-        return False
-
-    else:
-        raise ValueError(f"The provided value {param[0]} for --{literal} is not supported. "
-                         f"Choose from [true, false].")
+    return False
 
 
-def run():
+def run() -> int:
+    """Encapsulate entry point for CLI."""
     args = parse_commandline_args()
 
-    if not args.end_date or args.end_date == "None":
-        end_date = get_last_month()
-
-    else:
-        end_date = args.end_date
-
-    if not args.start_date or args.start_date == "None":
-        start_date = "2014-05-01"
-
-    else:
-        start_date = args.start_date
+    end_date = get_last_month() if not args.end_date or args.end_date == "None" else args.end_date
+    start_date = "2014-05-01" if not args.start_date or args.start_date == "None" else args.start_date
 
     # check if dates are in format YYYY-MM-DD
     for _date in [start_date, end_date]:
         _date = datetime.strptime(_date, "%Y-%m-%d")  # throws an error if conversion fails
 
-    if isinstance(args.orbit, list):
-        orbit = args.orbit[0].lower()
-
-    else:
-        orbit = args.orbit.lower()
-
-    if isinstance(args.polarization, list):
-        pol = args.polarization[0].upper()
-
-    else:
-        pol = args.polarization.upper()
+    orbit = args.orbit[0].lower() if isinstance(args.orbit, list) else args.orbit.lower()
+    pol = args.polarization[0].upper() if isinstance(args.polarization, list) else args.polarization.upper()
 
     linear = parse_boolean(param=args.linear, literal="linear")
     linear_fill = parse_boolean(param=args.linear_fill, literal="linear_fill")
@@ -350,16 +362,16 @@ def run():
         overwrite_raw=overwrite_raw,
     )
 
+    return 0
 
-def create_parser():
-    parser = argparse.ArgumentParser(
-        description="Compute aggregated statistics on Sentinel-1 data"
-    )
+
+def parse_commandline_args(args: list[str] | None = None) -> argparse.Namespace:
+    """Parse CLI arguments."""
+    parser = argparse.ArgumentParser(description="Compute aggregated statistics on Sentinel-1 data")
     parser.add_argument(
         "--aoi_data",
         default="dummy",
-        help="Path to AOI.[GEOJSON, SHP, GPKG], AOI geometry as WKT, "
-        "Polygon or Multipolygon.",
+        help="Path to AOI.[GEOJSON, SHP, GPKG], AOI geometry as WKT, " "Polygon or Multipolygon.",
         metavar="AOI",
         required=True,
     )
@@ -368,7 +380,7 @@ def create_parser():
         nargs=1,
         help="Wether to split the AOI into separate features or not, default: false.",
         choices=["true", "false"],
-        default="false"
+        default="false",
     )
     parser.add_argument(
         "--out_dir",
@@ -419,35 +431,31 @@ def create_parser():
         nargs=1,
         help="Type of the regression, default: spline.",
         choices=["spline", "poly", "rolling"],
-        default="spline"
+        default="spline",
     )
     parser.add_argument(
         "--linear",
         nargs=1,
         help="Wether to plot the linear regression with insensitive range or not, default: false.",
         choices=["true", "false"],
-        default="false"
+        default="false",
     )
     parser.add_argument(
         "--linear_fill",
         nargs=1,
         help="Wether to fill the linear insensitive range or not, default: false.",
         choices=["true", "false"],
-        default="false"
+        default="false",
     )
     parser.add_argument(
         "--overwrite_raw",
         nargs=1,
         help="Overwrite existing raw data if desired, default: false.",
         choices=["true", "false"],
-        default="false"
+        default="false",
     )
 
-    return parser
-
-
-def parse_commandline_args():
-    return create_parser().parse_args()
+    return parser.parse_args(args)
 
 
 if __name__ == "__main__":

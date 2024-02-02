@@ -1,10 +1,17 @@
+"""Get authentication for Sentinel Hub."""
+from __future__ import annotations
+
 from pathlib import Path
-from system.helper_functions import load_yaml
+
 from sentinelhub import SHConfig
+from system.helper_functions import load_yaml
 
 
 class Config:
-    def __init__(self, _id=None, secret=None):
+    """Encapsulate methods to read credentials."""
+
+    def __init__(self: Config, _id: str | None = None, secret: str | None = None) -> None:
+        """Initialize class Config."""
         self.id = _id
         self.secret = secret
         self.config = None
@@ -14,11 +21,12 @@ class Config:
         self._get_config()
 
     @staticmethod
-    def _check_directory():
+    def _check_directory() -> None:
         if not Path(__file__).parent.exists():
             Path(__file__).parent.mkdir(parents=True)
 
-    def _get_credentials(self):
+    def _get_credentials(self: Config) -> None:
+        """Read credentials from file."""
         credentials = load_yaml(Path(__file__).parent.joinpath("credentials.yaml"))
 
         if not self.id:
@@ -27,7 +35,8 @@ class Config:
         if not self.secret:
             self.secret = credentials["SH_CLIENT_SECRET"]
 
-    def _get_config(self):
+    def _get_config(self: Config) -> None:
+        """Transfer credentials to Sentinel Hub."""
         self.config = SHConfig()
 
         self.config.sh_client_id = self.id

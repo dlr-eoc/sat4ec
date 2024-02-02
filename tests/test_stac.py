@@ -1,22 +1,27 @@
-import unittest
-from pathlib import Path
-import pandas as pd
-import shutil
+"""Test Sentinel-1 scene retrieval."""
+from __future__ import annotations
 
-from sat4ec.stac import StacItems, StacCollection
-from sat4ec.aoi_check import AOI
+import shutil
+import unittest
+from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
+from sentinelhub import CRS, Geometry, SentinelHubCatalog
 from test_helper_functions import prepare_test_dataframes
 
-from sentinelhub import SentinelHubCatalog, Geometry, CRS
-from datetime import datetime
-
+from sat4ec.aoi_check import AOI
+from sat4ec.stac import StacCollection, StacItems
 
 TEST_DIR = Path(r"/mnt/data1/gitlab/sat4ec/tests/testdata")
 
 
 class TestGetData(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        super(TestGetData, self).__init__(*args, **kwargs)
+    """Encapsulates testing methods."""
+
+    def __init__(self: TestGetData, *args: int, **kwargs: int) -> None:
+        """Initialize TestGetData class."""
+        super().__init__(*args, **kwargs)
         self.tear_down = True
         self.out_dir = TEST_DIR.joinpath("output", "vw_wolfsburg")
         self.data_dir = TEST_DIR.joinpath("orbit_input")
@@ -50,24 +55,24 @@ class TestGetData(unittest.TestCase):
             out_dir=self.out_dir,
         )
 
-    def _get_features(self):
-        self.features = [feature for feature in self.aoi_collection.get_feature()]
+    def _get_features(self: TestGetData) -> None:
+        self.features = list(self.aoi_collection.get_feature())
 
-    def _get_geometries(self):
-        self.geometries = [
-            Geometry(feature.geometry, crs=self.crs) for feature in self.features
-        ]
+    def _get_geometries(self: TestGetData) -> None:
+        self.geometries = [Geometry(feature.geometry, crs=self.crs) for feature in self.features]
 
-    def create_output_dir(self):
+    def create_output_dir(self: TestGetData) -> None:
+        """Create output directory if not existing."""
         if not self.out_dir.joinpath("scenes").exists():
             self.out_dir.joinpath("scenes").mkdir(parents=True)
 
-    def tearDown(self):
-        if self.tear_down:
-            if self.out_dir.exists():
-                shutil.rmtree(self.out_dir)
+    def tearDown(self: TestGetData) -> None:
+        """Delete output test data."""
+        if self.tear_down and self.out_dir.exists():
+            shutil.rmtree(self.out_dir)
 
-    def test_dataframe_from_file(self):
+    def test_dataframe_from_file(self: TestGetData) -> None:
+        """Test read dataframe from Path."""
         stac_collection = StacCollection(
             data=self.data_dir.joinpath(
                 "anomalies",
@@ -76,21 +81,19 @@ class TestGetData(unittest.TestCase):
         )
 
         self.assertTrue(isinstance(stac_collection.anomalies_df, pd.DataFrame))
-        self.assertTrue(
-            stac_collection.anomalies_df.index.inferred_type, pd.DatetimeIndex
-        )
+        self.assertTrue(stac_collection.anomalies_df.index.inferred_type, pd.DatetimeIndex)
 
-    def test_dataframe_from_dataframe(self):
+    def test_dataframe_from_dataframe(self: TestGetData) -> None:
+        """Test get dataframe from dataframe."""
         stac_collection = StacCollection(
             data=self.reg_anomaly_data,
         )
 
         self.assertTrue(isinstance(stac_collection.anomalies_df, pd.DataFrame))
-        self.assertTrue(
-            stac_collection.anomalies_df.index.inferred_type, pd.DatetimeIndex
-        )
+        self.assertTrue(stac_collection.anomalies_df.index.inferred_type, pd.DatetimeIndex)
 
-    def test_dataframe_from_filestring(self):
+    def test_dataframe_from_filestring(self: TestGetData) -> None:
+        """Test read dataframe from file string."""
         stac_collection = StacCollection(
             data=str(
                 self.data_dir.joinpath(
@@ -101,30 +104,27 @@ class TestGetData(unittest.TestCase):
         )
 
         self.assertTrue(isinstance(stac_collection.anomalies_df, pd.DataFrame))
-        self.assertTrue(
-            stac_collection.anomalies_df.index.inferred_type, pd.DatetimeIndex
-        )
+        self.assertTrue(stac_collection.anomalies_df.index.inferred_type, pd.DatetimeIndex)
 
-    def test_collection_class_init(self):
+    def test_collection_class_init(self: TestGetData) -> None:
+        """Test initialization of StacCollection class."""
         self.assertTrue(isinstance(self.stac_collection.anomalies_df, pd.DataFrame))
-        self.assertTrue(
-            self.stac_collection.anomalies_df.index.inferred_type, pd.DatetimeIndex
-        )
+        self.assertTrue(self.stac_collection.anomalies_df.index.inferred_type, pd.DatetimeIndex)
 
-    def test_stac_items_class_init(self):
+    def test_stac_items_class_init(self: TestGetData) -> None:
+        """Test initialization of StacItems class."""
         feature = self.features[0]
         geometry = self.geometries[0]
         stac = StacItems(
-            anomalies_df=self.reg_anomaly_data.loc[
-                :, self.reg_anomaly_data.columns.str.startswith(f"{feature.fid}_")
-            ],
+            anomalies_df=self.reg_anomaly_data.loc[:, self.reg_anomaly_data.columns.str.startswith(f"{feature.fid}_")],
             fid=feature.fid,
             geometry=geometry,
         )
 
         self.assertTrue(isinstance(stac.catalog, SentinelHubCatalog))
 
-    def test_search_catalog(self):
+    def test_search_catalog(self: TestGetData) -> None:
+        """Test search Sentinel Hub catalog."""
         feature = self.features[0]
         geometry = self.geometries[0]
         stac = StacItems(
@@ -135,16 +135,15 @@ class TestGetData(unittest.TestCase):
             geometry=geometry,
         )
         catalog = stac.search_catalog(row=0)
-        timestamp = datetime.strptime(
-            catalog["properties"]["datetime"], "%Y-%m-%dT%H:%M:%SZ"
-        )
+        timestamp = datetime.strptime(catalog["properties"]["datetime"], "%Y-%m-%dT%H:%M:%SZ")
 
         self.assertTrue(isinstance(catalog["id"], str))
         self.assertEqual(len(catalog["id"]), 67)
         self.assertEqual(catalog["id"][:2], "S1")
         self.assertTrue(isinstance(timestamp, datetime))
 
-    def test_scenes_to_df(self):
+    def test_scenes_to_df(self: TestGetData) -> None:
+        """Test transfer scenes to dataframe."""
         feature = self.features[0]
         geometry = self.geometries[0]
         stac = StacItems(
@@ -160,14 +159,13 @@ class TestGetData(unittest.TestCase):
         self.assertEqual(len(stac.dataframe.iloc[1]["0_scene"]), 67)
         self.assertEqual(stac.dataframe.iloc[1]["0_scene"][:2], "S1")
 
-    def test_scenes_to_df_multiple_features(self):
-        for index, (feature, geometry) in enumerate(
-            zip(self.features, self.geometries)
-        ):
+    def test_scenes_to_df_multiple_features(self: TestGetData) -> None:
+        """Test transfer scenes to dataframe for multiple features."""
+        for _, (feature, geometry) in enumerate(zip(self.features, self.geometries, strict=False)):
             stac = StacItems(
-                anomalies_df=self.stac_collection.anomalies_df.loc[:,
-                    # self.stac_collection.anomalies_df[f"{feature.fid}_anomaly"]
-                    self.stac_collection.anomalies_df.columns.str.startswith(f"{feature.fid}_")
+                anomalies_df=self.stac_collection.anomalies_df.loc[
+                    :,
+                    self.stac_collection.anomalies_df.columns.str.startswith(f"{feature.fid}_"),
                 ],
                 fid=feature.fid,
                 geometry=geometry,
@@ -186,23 +184,21 @@ class TestGetData(unittest.TestCase):
             self.assertEqual(len(stac.dataframe.iloc[1][f"{feature.fid}_scene"]), 67)
             self.assertEqual(stac.dataframe.iloc[1][f"{feature.fid}_scene"][:2], "S1")
 
-    def test_get_stac_collection(self):
+    def test_get_stac_collection(self: TestGetData) -> None:
+        """Test get STAC collection for the selected AOIs."""
         self.stac_collection.get_stac_collection()
 
         self.assertEqual(self.stac_collection.dataframe.columns[0], "interval_from")
         self.assertEqual(
-            self.stac_collection.dataframe.loc[
-                :, self.stac_collection.dataframe.columns.str.endswith("scene")
-            ].shape[1],
+            self.stac_collection.dataframe.loc[:, self.stac_collection.dataframe.columns.str.endswith("scene")].shape[
+                1
+            ],
             len(self.features),
         )
 
-    def test_save(self):
+    def test_save(self: TestGetData) -> None:
+        """Test saving scenes dataframe."""
         self.tear_down = False
         self.stac_collection.get_stac_collection()
 
-        self.assertTrue(
-            self.out_dir.joinpath(
-                "scenes", f"indicator_1_scenes_{self.orbit}_{self.pol}.csv"
-            ).exists()
-        )
+        self.assertTrue(self.out_dir.joinpath("scenes", f"indicator_1_scenes_{self.orbit}_{self.pol}.csv").exists())

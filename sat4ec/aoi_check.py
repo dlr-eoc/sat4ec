@@ -1,41 +1,47 @@
-from shapely.geometry.polygon import Polygon
-from shapely.geometry.multipolygon import MultiPolygon
-from shapely.geometry import mapping, shape
-from shapely import from_wkt
-from pathlib import Path, PurePath
+"""Prepare input data."""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+    from types import TracebackType
+
+from pathlib import Path
+
 import fiona
-
-
-# TODO: Check that aspect has only 2 vertices, otherwise orientation deems impossible.
-# TODO: Check that aspect group of parking lot AOIs and aspect line are equal.
-# TODO: Document that equal aspect groups are obligatory for parking lot AOI and aspect line.
-# TODO: Compute orientation of aspect line. Orientation only from 0 to 180°.
-# TODO: Compare with S1 orbit orientation. Orbits are constant.
+from shapely import from_wkt
+from shapely.geometry import mapping, shape
+from shapely.geometry.multipolygon import MultiPolygon
+from shapely.geometry.polygon import Polygon
 
 
 class Feature:
-    def __init__(self, feature=None, fid=None):
+    """Encapsulate AOI feature."""
+
+    def __init__(self: Feature, fid: str | None = None, feature: fiona.collection | None = None) -> None:
+        """Initialize Feature class."""
+        self.geometry = None
         self.feature = feature
         self.fid = fid
         self.azimuth_group = None
-        self.geometry = None
 
         if self.feature is not None:
             self._get_geometry()
             self._get_fid()
             self._get_azimuth_group()
 
-    def _get_geometry(self):
+    def _get_geometry(self: Feature) -> None:
         self.geometry = shape(self.feature["geometry"])
 
-    def _get_fid(self):
+    def _get_fid(self: Feature) -> None:
         if self.feature["properties"].get("id"):  # check if feature holds column with name id
             self.fid = self.feature["properties"]["id"]
 
         else:
             self.fid = self.feature["id"]
 
-    def _get_azimuth_group(self):
+    def _get_azimuth_group(self: Feature) -> None:
         if self.feature["properties"].get("group"):
             self.azimuth_group = self.feature["properties"]["group"]
 
@@ -44,7 +50,10 @@ class Feature:
 
 
 class AOI:
-    def __init__(self, data, aoi_split=False, name="aoi"):
+    """Encapsulate input operations."""
+
+    def __init__(self: AOI, data: str | Path | Polygon, aoi_split: bool = False, name: str = "aoi") -> None:
+        """Initialize AOI class."""
         self.name = name
         self.geometry = None
         self.features = None
@@ -78,80 +87,93 @@ class AOI:
         else:
             raise TypeError(f"The provided data {data} is of unsupported type {type(data)}.")
 
-    def __enter__(self):
+    def __enter__(self: AOI) -> AOI:
+        """Get opening handler on context manager."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self: AOI,
+        exc_type: type(BaseException),
+        exc_val: BaseException,
+        exc_tb: TracebackType,
+    ) -> None:
+        """Get closing handler on context manager."""
         self.close()
 
-    def close(self):
-        if self.aoi:
+    def close(self: AOI) -> None:
+        """Clode AOI file."""
+        if self.aoi is not None:
             self.aoi.close()
 
-    def _build_schema(self, geometry_type="Polygon"):
-        self.schema = {
-            "geometry": geometry_type,
-            "properties": {
-                "name": "str"
-            }
-        }
+    def _build_schema(self: AOI, geometry_type: str = "Polygon") -> None:
+        """Write vector file scheme."""
+        self.schema = {"geometry": geometry_type, "properties": {"name": "str"}}
 
-    def _build_record(self, geometry=None):
-        self.record = {
-            "geometry": mapping(geometry),
-            "properties": {
-                "name": self.name
-            }
-        }
+    def _build_record(self: AOI, geometry: Polygon) -> None:
+        """Build vector file record."""
+        self.record = {"geometry": mapping(geometry), "properties": {"name": self.name}}
 
-    def build_aoi(self, geometry_type="Polygon", geometry=None):
+    def build_aoi(self: AOI, geometry: Polygon, geometry_type: str = "Polygon") -> None:
+        """Prepare AOI meta data for vector file output."""
         self._build_schema(geometry_type=geometry_type)
         self._build_record(geometry=geometry)
 
-    def save_aoi(self, out_dir, driver="GPKG", crs="epsg:4326", overwrite=True):
+    def save_aoi(
+        self: AOI,
+        out_dir: Path,
+        driver: str = "GPKG",
+        crs: str = "epsg:4326",
+        overwrite: bool = True,
+    ) -> None:
+        """Save AOI vetor file."""
         if not overwrite and out_dir.joinpath(f"{self.name}.{driver.lower()}").exists():
             pass
 
         else:
             with fiona.open(
-                    out_dir.joinpath(f"{self.name}.{driver.lower()}"), "w", driver=driver, crs=crs, schema=self.schema
+                out_dir.joinpath(f"{self.name}.{driver.lower()}"),
+                "w",
+                driver=driver,
+                crs=crs,
+                schema=self.schema,
             ) as out:
                 out.write(self.record)
 
-    def load_aoi(self):
+    def load_aoi(self: AOI) -> None:
+        """Open AOI file."""
         self.aoi = fiona.open(self.filename)
 
-    def get_features(self):
-        self.features = [feature for feature in self.aoi]
+    def get_features(self: AOI) -> None:
+        """Get features from opened AOI instance."""
+        self.features = list(self.aoi)
 
-    def get_feature(self):
+    def get_feature(self: AOI) -> Generator[Feature, Feature]:
+        """Get AOI feature and its geometry."""
         if self.geometry is not None:
             feature = Feature()
             feature.geometry = self.geometry
             yield feature  # return feature with geometry that has already been computed
 
-        else:
-            if len(self.features) == 1:
-                feature = Feature(feature=self.features[0])
-                self.build_aoi(geometry_type="Polygon", geometry=feature.geometry)
+        elif self.geometry is None and len(self.features) == 1:
+            feature = Feature(feature=self.features[0])
+            self.build_aoi(geometry_type="Polygon", geometry=feature.geometry)
 
-                yield feature  # AOI holds a single feature/polygon
+            yield feature  # AOI holds a single feature/polygon
 
-            elif len(self.features) > 1:
-                if self.aoi_split:
-
-                    # duplicates functionality self.get_features, but treats features individually
-                    for f in self.features:
-                        feature = Feature(feature=f)
-                        yield feature
-
-                else:
-                    feature = Feature()
-                    feature.geometry = MultiPolygon([shape(feature["geometry"]) for feature in self.features])
-                    feature.fid = "0"
-                    self.build_aoi(geometry_type="MultiPolygon", geometry=feature.geometry)
-
-                    yield feature  # AOI holds multiple features/polygons but are merged to a multipolygon
+        elif self.geometry is None and len(self.features) > 1:
+            if self.aoi_split:
+                # duplicates functionality self.get_features, but treats features individually
+                for f in self.features:
+                    feature = Feature(feature=f)
+                    yield feature
 
             else:
-                raise AttributeError(f"The AOI {self.filename} does not contain any features.")
+                feature = Feature()
+                feature.geometry = MultiPolygon([shape(feature["geometry"]) for feature in self.features])
+                feature.fid = "0"
+                self.build_aoi(geometry_type="MultiPolygon", geometry=feature.geometry)
+
+                yield feature  # AOI holds multiple features/polygons but are merged to a multipolygon
+
+        else:
+            raise AttributeError(f"The AOI {self.filename} does not contain any features.")

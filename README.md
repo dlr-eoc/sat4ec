@@ -2,7 +2,64 @@
 
 `sat4ec` is a Python package to monitor occupancy rates of automotive producing facilities by exploiting Sentinel-1 IW GRD data.
 
-## Installation
+# Usage
+
+## CLI
+
+This package provides standalone CLI functionality
+
+```
+usage: main.py [-h] --aoi_data AOI [--aoi_split {true,false}] --out_dir OUT --start_date YYYY-MM-DD [--end_date YYYY-MM-DD] [--polarization {VH,VV}] [--aggregate {daily,monthly}] [--orbit {asc,des,both}]
+               [--name NAME] [--regression {spline,poly,rolling}] [--linear {true,false}] [--linear_fill {true,false}] [--overwrite_raw {true,false}]
+
+Compute aggregated statistics on Sentinel-1 data
+
+options:
+  -h, --help            show this help message and exit
+  --aoi_data AOI        Path to AOI.[GEOJSON, SHP, GPKG], AOI geometry as WKT, Polygon or Multipolygon.
+  --aoi_split {true,false}
+                        Wether to split the AOI into separate features or not, default: false.
+  --out_dir OUT         Path to output directory.
+  --start_date YYYY-MM-DD
+                        Begin of the time series, as YYYY-MM-DD, like 2020-11-01
+  --end_date YYYY-MM-DD
+                        End of the time series, as YYYY-MM-DD, like 2020-11-01
+  --polarization {VH,VV}
+                        Polarization of Sentinel-1 data, default: VH
+  --aggregate {daily,monthly}
+                        Aggregation interval, default: daily
+  --orbit {asc,des,both}
+                        Orbit of Sentinel-1 data, default: ascending
+  --name NAME           Name of the location, e.g. BMW Regensburg. Appears in the plot title.
+  --regression {spline,poly,rolling}
+                        Type of the regression, default: spline.
+  --linear {true,false}
+                        Wether to plot the linear regression with insensitive range or not, default: false.
+  --linear_fill {true,false}
+                        Wether to fill the linear insensitive range or not, default: false.
+  --overwrite_raw {true,false}
+                        Overwrite existing raw data if desired, default: false.
+```
+
+## Python Module
+
+The main functionality is encapsulated inside the follwing scripts, setting the parameters and executing the main script.
+
+### Executing Python scripts
+
+If running on a single facility, adapt the settings in `sat4ec/execution/dev/exe_runner.py` and execute it.
+
+If running on multiple facilities, adapt the settings in `sat4ec/execution/dev/exe_collection_runner.py` and execute it.
+
+### Executing Jupyter Notebooks
+
+The code also runs in the [Euro Data Cube](https://www.eurodatacube.com/). There, the execution is triggered from jupyter notebooks, analogous to the exection of the Python scripts.
+
+If running on a single facility, adapt the settings in `exe_runner.ipynb` and execute it.
+
+If running on multiple facilities, adapt the settings in `exe_collection_runner.ipynb` and execute it.
+
+# Installation
 
 This project uses a `conda` environment. For installing dependencies use:
 
@@ -10,18 +67,16 @@ This project uses a `conda` environment. For installing dependencies use:
 conda env create
 ```
 
-## Dependencies
+# Dependencies
 For the latest list of dependencies check the [`environment.yml`](environment.yml).
 
 # Development
-
-## `pre-commit`
 
 Some development guardrails are enforced via [`pre-commit`](https://pre-commit.com/). This is to
 ensure we follow similar code styles or it automatically cleans up jupyter notebooks.
 
 To install `pre-commit` (not necessary if you [installed the conda
-environment](#install-conda-evnironment)):
+environment](#Installation)):
 
 ```shell
 conda/pip install pre-commit
@@ -47,15 +102,22 @@ the name implies, prior to each `git commit`. In its current config, it will for
 block large files to be committed. If it fails, one has to re-stage the affected files (`git add` or
 `git stage`), and re-commit.
 
-## Contributors
-The DLR-DFD team creates and adapts libraries which simplify the usage of satellite data. Our team
-includes (in alphabetical order):
-* Krullikowski, Christian
+# Contributors
+The Sat4Ec project team includes (in alphabetical order):
+* Anghelea, Anca (ESA)
+* José Delgado (RHEA)
+* Krullikowski, Christian (DLR)
+* Martinis, Sandro (DLR)
+* Plank, Simon (DLR)
+* Schönenberger, Klara (Destatis)
 
-German Aerospace Center (DLR)
+European Space Agency (ESA),
+German Aerospace Center (DLR),
+RHEA Group (RHEA),
+Federal Statistical Office of Germany (Destatis)
 
-## Licenses
+# Licenses
 This software is licensed under the [Apache 2.0 License](LICENSE.txt).
 
-Copyright (c) 2023 German Aerospace Center (DLR) * German Remote Sensing Data Center * Department:
+Copyright (c) 2024 German Aerospace Center (DLR) * German Remote Sensing Data Center * Department:
 Geo-Risks and Civil Security

@@ -1,18 +1,19 @@
-from sat4ec.execution.exe_config import Config
-from sat4ec.execution.exe_production import Production
+"""Encapsulate workflow for a single AOI."""
 from pathlib import Path
 
+from sat4ec.execution.exe_config import Config
+from sat4ec.execution.exe_production import Production
 
 if __name__ == "__main__":
     conf = Config(
         aoi_dir=Path(r"input/AOIs"),
-        working_dir=Path(r"/mnt/data1/gitlab/sat4ec/data"),  # Path.home().joinpath("sat4ec"),
+        working_dir=Path(r"/mnt/data1/gitlab/sat4ec/data"),
         out_dir=Path(r"output"),
-        orbit="des",  # ascending or descending orbit
+        orbit="des",  # ascending or descending orbit or both
         aoi="ford_cologne",
         ext="geojson",
-        start="2021-03-01",
-        end="2021-05-01",
+        start="2021-03-01",  # comment this line or enter None if using default start date
+        end="2021-05-01",  # comment this line or enter None if using automatic end date
         monthly=False,
         regression="spline",
         linear=True,
