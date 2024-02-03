@@ -2,7 +2,16 @@
 
 `sat4ec` is a Python package to monitor occupancy rates of automotive producing facilities by exploiting Sentinel-1 IW GRD data.
 
-# Usage
+<img src="docs/aoi_example.png" width="300">
+
+Cars stored on parking lots of automotive producing facilities interact with the Sentinel-1 SAR wave. Their presence or absence either returns a strong or a weak signal. This algorithm aggregates a single mean SAR backscatter value for each AOI and computes a time series. Timestamps of high or low parking lot occupancy rates can be identified through this.
+
+<img src="docs/s1_pixels.png" width="250">
+<img src="docs/s1_pixels_mean.png" width="250">
+
+<img src="docs/bmw.png" width="505">
+
+# Quickstart
 
 ## CLI
 
@@ -102,6 +111,10 @@ the name implies, prior to each `git commit`. In its current config, it will for
 block large files to be committed. If it fails, one has to re-stage the affected files (`git add` or
 `git stage`), and re-commit.
 
+## Testing
+
+The code applies Python unit tests, located in `tests` with test data in `tests/testdata`.
+
 # Contributors
 The Sat4Ec project team includes (in alphabetical order):
 * Anghelea, Anca (ESA)
@@ -121,3 +134,15 @@ This software is licensed under the [Apache 2.0 License](LICENSE.txt).
 
 Copyright (c) 2024 German Aerospace Center (DLR) * German Remote Sensing Data Center * Department:
 Geo-Risks and Civil Security
+
+# Changelog
+
+See [changelog](CHANGELOG.md)
+
+# Contributing
+
+The development team welcomes contributions from the community.  For more detailed information, see our guide on [contributing](CONTRIBUTING.md) if you're interested in getting involved.
+
+# What is Sat4Ec?
+
+The project Sat4Ec is funded by the European Statistical Office (Eurostat). The project aims to estimate the gross domnestic product (GDP) from satellite time series in Germany.
