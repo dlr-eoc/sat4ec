@@ -20,7 +20,7 @@ class TestAD(unittest.TestCase):
     def __init__(self: TestAD, *args: int, **kwargs: int) -> None:
         """Initialize TestGetData class."""
         super().__init__(*args, **kwargs)
-        self.out_dir = TEST_DIR.joinpath("output", "vw_wolfsburg")
+        self.out_dir = TEST_DIR.joinpath("output", "bmw_regensburg")
         (
             self.raw_data,
             self.raw_monthly_data,
@@ -29,7 +29,7 @@ class TestAD(unittest.TestCase):
             self.raw_monthly_anomaly_data,
             self.linear_data,
             self.linear_monthly_data,
-        ) = prepare_test_dataframes(data_dir=TEST_DIR.joinpath("input"))
+        ) = prepare_test_dataframes(data_dir=TEST_DIR.joinpath("bmw_regensburg"))
 
     def create_output_dir(self: TestAD) -> None:
         """Create output directory if not existing."""
@@ -112,7 +112,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_maxima()
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 25)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 47)
 
     def test_find_minima_regression(self: TestAD) -> None:
         """Test finding minimas on regression data."""
@@ -138,7 +138,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_minima()
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 24)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 46)
 
     def test_find_extrema_regression(self: TestAD) -> None:
         """Test finding extrema on regression data."""
@@ -164,7 +164,7 @@ class TestAD(unittest.TestCase):
         )
 
         anomaly.find_feature_extrema()
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 43)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 77)
 
     def test_find_uncorrected_extrema(self: TestAD) -> None:
         """Test computing uncorrected extrema."""
@@ -191,7 +191,7 @@ class TestAD(unittest.TestCase):
 
         anomaly.find_maxima()  # find maxima on dataframe
         anomaly.find_minima()  # find minima on dataframe
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 49)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 93)
 
     def test_find_extrema_monthly(self: TestAD) -> None:
         """Test finding extrema on monthly data."""
@@ -218,7 +218,7 @@ class TestAD(unittest.TestCase):
 
         anomaly.find_feature_extrema()
 
-        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 6)
+        self.assertEqual(len(anomaly.dataframe[anomaly.dataframe["0_anomaly"]]), 12)
 
     def test_anomaly_save_monthly(self: TestAD) -> None:
         """Test saving anomalies from monthly data."""
@@ -252,7 +252,7 @@ class TestAD(unittest.TestCase):
         self.assertTrue(
             anomaly_collection.out_dir.joinpath(
                 "anomalies",
-                f"indicator_1_anomalies_raw_monthly_{anomaly_collection.orbit}_{anomaly_collection.pol}.csv",
+                f"indicator_1_anomalies_raw_single_aoi_monthly_{anomaly_collection.orbit}_{anomaly_collection.pol}.csv",
             ).exists()
         )
 
@@ -287,6 +287,6 @@ class TestAD(unittest.TestCase):
         self.assertTrue(
             anomaly_collection.out_dir.joinpath(
                 "anomalies",
-                f"indicator_1_anomalies_regression_{anomaly_collection.orbit}_{anomaly_collection.pol}.csv",
+                f"indicator_1_anomalies_regression_single_aoi_{anomaly_collection.orbit}_{anomaly_collection.pol}.csv",
             ).exists()
         )

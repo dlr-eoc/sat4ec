@@ -54,12 +54,12 @@ class AOI:
 
     def __init__(self: AOI, data: str | Path | Polygon, aoi_split: bool = False, name: str = "aoi") -> None:
         """Initialize AOI class."""
+        self.aoi = None
         self.name = name
         self.geometry = None
         self.features = None
         self.schema = None
         self.record = None
-        self.aoi = None
         self.aoi_split = aoi_split
 
         if isinstance(data, str):

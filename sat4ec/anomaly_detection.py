@@ -128,11 +128,11 @@ class Anomaly:
         factor: float = 0.2,
     ) -> None:
         """Initialize Anomaly class."""
+        self.dataframe = data
         self.parameters = parameters
         self.fid = fid
         self.column = f"{self.fid}_{anomaly_column}"  # dataframe column containing the anomaly data
         self.ad = None
-        self.dataframe = data
         self.dataframe_bak = self.dataframe.copy(deep=True)
         self.linear_regression_df = linear_data
         self.factor = factor  # factor representing sensitive/insensitive standard deviation
