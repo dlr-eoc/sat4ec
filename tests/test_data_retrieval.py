@@ -25,9 +25,15 @@ class TestGetData(unittest.TestCase):
         """Initialize TestGetData class."""
         super().__init__(*args, **kwargs)
         self.tear_down = True  # delete output data per default, switch to False in test methods if required
-        self.out_dir = TEST_DIR.joinpath("output", "vw_wolfsburg")
-        self.daily_out_file = TEST_DIR.joinpath("orbit_input", "raw", "indicator_1_rawdata_daily_aoi_split_asc_VH.csv")
-        self.aoi_collection = AOI(data=TEST_DIR.joinpath("input", "AOIs", "vw_wolfsburg_aoi_split.geojson"))
+        self.out_dir = TEST_DIR.joinpath("output", "bmw_regensburg")
+        self.daily_out_file = TEST_DIR.joinpath(  # needed to test past and future data
+            "output",
+            "bmw_regensburg",
+            "orbit_input",
+            "raw",
+            "indicator_1_rawdata_daily_aoi_split_asc_VH.csv",
+        )
+        self.aoi_collection = AOI(data=TEST_DIR.joinpath("AOIs", "bmw_regensburg.geojson"))
         self.features = list(self.aoi_collection.get_feature())
         self.feature = self.features[0]
 
@@ -47,6 +53,14 @@ class TestGetData(unittest.TestCase):
             orbit=self.indicator.orbit,
             pol=self.indicator.pol,
         )
+
+    def create_output_dir(self: TestGetData) -> None:
+        """Create output directory if not existing."""
+        if not self.out_dir.joinpath("raw").exists():
+            self.out_dir.joinpath("raw").mkdir(parents=True)
+
+        if not self.daily_out_file.parent.exists():
+            self.daily_out_file.parent.mkdir(parents=True)
 
     def tearDown(self: TestGetData) -> None:
         """Delete test output data."""

@@ -15,7 +15,7 @@ from data_retrieval import IndicatorData as IData
 from plot_data import Plots
 from stac import StacCollection
 from system.helper_functions import get_last_month, mutliple_orbits_raw_range
-from system.subset_collections import OrbitCollection as Orbits
+from system.orbit_collections import OrbitCollection as Orbits
 from system.subset_collections import SubsetCollection as Subsets
 
 

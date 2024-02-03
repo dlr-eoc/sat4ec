@@ -15,7 +15,7 @@ from system.helper_functions import (
     get_split_keyword,
     mutliple_orbits_raw_range,
 )
-from system.subset_collections import OrbitCollection as Orbits
+from system.orbit_collections import OrbitCollection as Orbits
 
 
 class Plots:
