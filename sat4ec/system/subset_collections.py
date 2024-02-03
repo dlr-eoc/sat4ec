@@ -32,8 +32,8 @@ class SubsetCollection:
         aoi_split: bool = False,
     ) -> None:
         """Initialize SubsetCollection class."""
-        self.dataframe = None
         self.archive_dataframe = None  # dataframe that might has been saved before, for comparison with new data
+        self.dataframe = None
         self.regression_dataframe = None
         self.linear_dataframe = None  # dataframe for default linear regression
         self.out_dir = out_dir

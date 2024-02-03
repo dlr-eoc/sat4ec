@@ -17,12 +17,13 @@ class OrbitCollection:
 
     def __init__(self: OrbitCollection, orbit: str = "asc", monthly: bool = False) -> None:
         """Initialize OrbitCollection class."""
-        self.orbit = orbit
-        self.monthly = monthly
         self.asc_anomalies = None
         self.des_anomalies = None
         self.asc_subsets = None
         self.des_subsets = None
+        self.orbits = None
+        self.orbit = orbit
+        self.monthly = monthly
 
         self._get_orbits()
 

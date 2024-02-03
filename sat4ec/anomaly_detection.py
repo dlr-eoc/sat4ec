@@ -24,6 +24,7 @@ class Anomalies:
         aoi_split: bool = False,
     ) -> None:
         """Initialize Anomalies class."""
+        self.dataframe = None
         self.indicator_df = self._get_data(data)
         self.linear_regression_df = self._get_data(linear_data)
         self.column = anomaly_column  # dataframe column containing the anomaly data

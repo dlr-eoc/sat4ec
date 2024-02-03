@@ -75,6 +75,7 @@ class IndicatorData(Config):
     ) -> None:
         """Initialize IndicatorData class."""
         super().__init__()
+        self.dataframe = pd.DataFrame()
         self.config = None
         self.archive_data = archive_data
         self.aoi = aoi
@@ -90,7 +91,6 @@ class IndicatorData(Config):
         self.eval_script = None
         self.request = None
         self.stats = None
-        self.dataframe = pd.DataFrame()
         self.regression_dataframe = None
         self.linear_dataframe = None  # dataframe for default linear regression
         self.pol = pol
