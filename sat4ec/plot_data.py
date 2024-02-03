@@ -36,6 +36,7 @@ class Plots:
         max_cols: int = 2,
     ) -> None:
         """Initialize class Plots."""
+        self.features = features
         self.raw_range_dataframe = raw_range
         self.name = name
         self.out_dir = out_dir
@@ -44,7 +45,6 @@ class Plots:
         self.monthly = monthly
         self.linear = linear  # wether to plot linear regression or not
         self.linear_fill = linear_fill  # wether to plot linear insensitive area or not
-        self.features = features
         self.aoi_split = aoi_split
         self.max_cols = max_cols
         self._get_subplots()

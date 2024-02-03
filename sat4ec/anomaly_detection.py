@@ -96,7 +96,7 @@ class Anomalies:
         """Save raw data anomalies."""
         out_file = self.out_dir.joinpath(
             "anomalies",
-            f"indicator_1_anomalies_raw_{get_split_keyword(aoi_split=self.aoi_split)}_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+            f"indicator_1_anomalies_{get_split_keyword(aoi_split=self.aoi_split)}_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
         self.dataframe.to_csv(out_file, decimal=".")
 
@@ -104,7 +104,7 @@ class Anomalies:
         """Save regressed anomalies."""
         out_file = self.out_dir.joinpath(
             "anomalies",
-            f"indicator_1_anomalies_regression_{get_split_keyword(aoi_split=self.aoi_split)}_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
+            f"indicator_1_anomalies_regression_{get_split_keyword(aoi_split=self.aoi_split)}_{self.orbit}_{self.pol}.csv",
         )
         self.dataframe.to_csv(out_file, decimal=".")
 

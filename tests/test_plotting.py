@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from anomaly_detection import Anomalies
 from system.helper_functions import mutliple_orbits_raw_range
-from system.subset_collections import OrbitCollection as Orbits
+from system.orbit_collections import OrbitCollection as Orbits
 from system.subset_collections import SubsetCollection as Subsets
 from test_helper_functions import prepare_test_dataframes
 
@@ -26,13 +26,13 @@ class TestPlotting(unittest.TestCase):
         """Initialize TestPlotting class."""
         super().__init__(*args, **kwargs)
         self.tear_down = True  # delete output data per default, switch to False in test methods if required
-        self.out_dir = TEST_DIR.joinpath("output", "vw_wolfsburg")
+        self.out_dir = TEST_DIR.joinpath("output", "bmw_regensburg")
         self.monthly = False
         self.orbit_collection = Orbits(orbit="both", monthly=self.monthly)
-        self._prepare(data_dir=TEST_DIR.joinpath("orbit_input"))
+        self._prepare(data_dir=TEST_DIR.joinpath("bmw_regensburg"))
         self.collection = Plots(
             out_dir=self.out_dir,
-            name="VW Wolfsburg",
+            name="BMW Regensburg",
             orbit=self.orbit_collection.orbit,
             monthly=self.monthly,
             linear=True,
@@ -56,7 +56,7 @@ class TestPlotting(unittest.TestCase):
                 aoi_split=aoi_split,
             )
 
-            subsets = Subsets(orbit=orbit)
+            subsets = Subsets(orbit=orbit, out_dir=self.out_dir)
             anomalies = Anomalies()
 
             if self.monthly:
@@ -119,7 +119,7 @@ class TestPlotting(unittest.TestCase):
     def test_monthly_raw_range_plot(self: TestPlotting) -> None:
         """Test plotting monthly data with raw data range."""
         self.monthly = True
-        self._prepare()
+        self._prepare(data_dir=TEST_DIR.joinpath("bmw_regensburg"))
 
         self.collection = Plots(
             out_dir=self.out_dir,
@@ -279,11 +279,11 @@ class TestPlotting(unittest.TestCase):
 
     def test_plot_aoi_split_anomalies_reg_std(self: TestPlotting) -> None:
         """Test plotting splitwise with regression and standard deviation."""
-        self._prepare(aoi_split=True)
+        self._prepare(data_dir=TEST_DIR.joinpath("bmw_regensburg"), aoi_split=True)
 
         self.collection = Plots(
             out_dir=self.out_dir,
-            name="VW Wolfsburg",
+            name="BMW Regensburg",
             orbit=self.orbit_collection.orbit,
             monthly=self.monthly,
             linear=True,
@@ -329,11 +329,11 @@ class TestPlotting(unittest.TestCase):
     def test_plot_monthly_aoi_split_anomalies_reg_std(self: TestPlotting) -> None:
         """Test plotting monthly data splitwise with anomalies."""
         self.monthly = True
-        self._prepare(aoi_split=True)
+        self._prepare(data_dir=TEST_DIR.joinpath("bmw_regensburg"), aoi_split=True)
 
         self.collection = Plots(
             out_dir=self.out_dir,
-            name="VW Wolfsburg",
+            name="BMW Regensburg",
             orbit=self.orbit_collection.orbit,
             monthly=self.monthly,
             linear=True,
@@ -376,7 +376,7 @@ class TestPlotting(unittest.TestCase):
     def test_plot_anomalies_monthly_raw(self: TestPlotting) -> None:
         """Test plotting monthly data with anomalies."""
         self.monthly = True
-        self._prepare()
+        self._prepare(data_dir=TEST_DIR.joinpath("bmw_regensburg"))
         self.collection.raw_dataframe = self.raw_monthly_data
         self.collection.anomaly_dataframe = self.raw_monthly_anomaly_data
         self.collection.monthly = True
@@ -437,21 +437,24 @@ class TestPlotting(unittest.TestCase):
 
         if self.orbit_collection.orbit == "both":
             self.assertTrue(
-                self.out_dir.joinpath("plot", "indicator_1_vw_wolfsburg_regression_asc_des_VH.png").exists()
+                self.out_dir.joinpath(
+                    "plot", "png", "indicator_1_bmw_regensburg_regression_single_aoi_asc_des_VH.png"
+                ).exists()
             )
 
         else:
             self.assertTrue(
                 self.out_dir.joinpath(
                     "plot",
-                    f"indicator_1_vw_wolfsburg_regression_{self.orbit_collection.orbit}_VH.png",
+                    "png",
+                    f"indicator_1_bmw_regensburg_regression_{self.orbit_collection.orbit}_VH.png",
                 ).exists()
             )
 
     def test_save_plot_monthly(self: TestPlotting) -> None:
         """Test plotting monthly data."""
         self.monthly = True
-        self._prepare()
+        self._prepare(data_dir=TEST_DIR.joinpath("bmw_regensburg"))
         self.collection.raw_dataframe = self.raw_monthly_data
         self.collection.anomaly_dataframe = self.raw_monthly_anomaly_data
         self.collection.monthly = True
@@ -487,13 +490,16 @@ class TestPlotting(unittest.TestCase):
 
         if self.orbit_collection.orbit == "both":
             self.assertTrue(
-                self.out_dir.joinpath("plot", "indicator_1_vw_wolfsburg_rawdata_monthly_asc_des_VH.png").exists()
+                self.out_dir.joinpath(
+                    "plot", "png", "indicator_1_bmw_regensburg_rawdata_monthly_single_aoi_asc_des_VH.png"
+                ).exists()
             )
 
         else:
             self.assertTrue(
                 self.out_dir.joinpath(
                     "plot",
-                    f"indicator_1_vw_wolfsburg_rawdata_monthly_{self.orbit_collection.orbit}_VH.png",
+                    "png",
+                    f"indicator_1_bmw_regensburg_rawdata_monthly_single_aoi_{self.orbit_collection.orbit}_VH.png",
                 ).exists()
             )

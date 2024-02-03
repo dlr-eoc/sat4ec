@@ -187,7 +187,6 @@ class SubsetCollection:
 
         lin_out_file = self.out_dir.joinpath(
             "regression",
-            "linear"
             f"indicator_1_linear_{get_split_keyword(aoi_split=self.aoi_split)}_{get_monthly_keyword(monthly=self.monthly)}{self.orbit}_{self.pol}.csv",
         )
         create_out_dir(base_dir=lin_out_file.parent)
