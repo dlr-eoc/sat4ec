@@ -8,10 +8,8 @@ sat4ec/__pycache__
 sat4ec/execution/__pycache__
 sat4ec/system/__pycache__
 sat4ec/system/credentials.yaml
-sat4ec/NOTES.txt
 results
 credentials
-obsolete
 tests/testdata
 data
 docs
