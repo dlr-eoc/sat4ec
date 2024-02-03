@@ -21,17 +21,16 @@ class TestAOI(unittest.TestCase):
     def __init__(self: TestAOI, *args: int, **kwargs: int) -> None:
         """Initialize TestAOI class."""
         super().__init__(*args, **kwargs)
-        self.data_dir = TEST_DIR.joinpath("vw_wolfsburg2subfeatures")
 
     def test_open_aoi_file(self: TestAOI) -> None:
         """Test open AOI file."""
         # provide as pathlib.Path
-        with AOI(data=TEST_DIR.joinpath("AOIs", "vw_wolfsburg.geojson")) as aoi_collection:
+        with AOI(data=TEST_DIR.joinpath("AOIs", "bmw_regensburg.geojson")) as aoi_collection:
             self.assertTrue(isinstance(aoi_collection.filename, Path))
             self.assertTrue(isinstance(aoi_collection.aoi, Collection))
 
         # provide as string
-        with AOI(data=str(TEST_DIR.joinpath("AOIs", "vw_wolfsburg.geojson").absolute())) as aoi_collection:
+        with AOI(data=str(TEST_DIR.joinpath("AOIs", "bmw_regensburg.geojson").absolute())) as aoi_collection:
             self.assertTrue(isinstance(aoi_collection.filename, Path))
             self.assertTrue(isinstance(aoi_collection.aoi, Collection))
 
@@ -49,7 +48,7 @@ class TestAOI(unittest.TestCase):
     def test_get_aoi_features(self: TestAOI) -> None:
         """Test AOI with features."""
         # provide as pathlib.Path
-        with AOI(data=TEST_DIR.joinpath("AOIs", "vw_wolfsburg2subfeatures.geojson")) as aoi_collection:
+        with AOI(data=TEST_DIR.joinpath("AOIs", "bmw_regensburg.geojson")) as aoi_collection:
             features = list(aoi_collection.get_feature())
             feature = features[0]
 
