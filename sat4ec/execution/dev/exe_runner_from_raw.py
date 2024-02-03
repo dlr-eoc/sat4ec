@@ -1,7 +1,8 @@
-from source.execution.exe_config import Config
-from source.execution.exe_production import Production
+"""Encapsulate workflow for a single AOI without downloading from Sentinel Hub."""
 from pathlib import Path
 
+from sat4ec.execution.exe_config import Config
+from sat4ec.execution.exe_production import Production
 
 if __name__ == "__main__":
     conf = Config(
@@ -9,7 +10,6 @@ if __name__ == "__main__":
         working_dir=Path(r"/mnt/data1/gitlab/sat4ec/data"),  # Path.home().joinpath("sat4ec"),
         out_dir=Path(r"output"),
         orbit="both",  # ascending or descending orbit or both
-        pol="VH",  # only use VH polarization
         aoi="vw_wolfsburg",
         ext="geojson",
         start="2016-01-01",
@@ -19,4 +19,4 @@ if __name__ == "__main__":
         aoi_split=False,
     )
     prod = Production(config=conf)
-    prod.workflow(_path=r"/mnt/data1/gitlab/sat4ec/source")
+    prod.workflow(_path=r"/")

@@ -1,84 +1,148 @@
 # Sat4Ec
 
-## Installation
+`sat4ec` is a Python package to monitor occupancy rates of automotive producing facilities by exploiting Sentinel-1 IW GRD data.
 
-Build the docker image.
+<img src="docs/aoi_example.png" width="300">
 
-```
-docker build -f sat4ec.Dockerfile -t sat4ec .
-```
+Cars stored on parking lots of automotive producing facilities interact with the Sentinel-1 SAR wave. Their presence or absence either returns a strong or a weak signal. This algorithm aggregates a single mean SAR backscatter value for each AOI and computes a time series. Timestamps of high or low parking lot occupancy rates can be identified through this.
 
-## Usage
+<img src="docs/s1_pixels.png" width="250">
+<img src="docs/s1_pixels_mean.png" width="250">
 
-### Preparation
+<img src="docs/bmw.png" width="505">
 
-Define an area of interest (AOI) over a production parking lot and save as geojson or gpkg.
+# Quickstart
 
-![AOI BMW Regensburg](docs/aoi_bmw_regensburg.png)
+## CLI
 
-Cars are often parked in very small space and covered with a protective layer.
-
-![AOI BMW Regensburg cars](docs/bmw_regensburg_car_zoom.png)
-
-### Execution
-
-Execute the docker container.
+This package provides standalone CLI functionality
 
 ```
-docker run
--v /PATH/TO/INPUT/DIR/:/scratch/in/
--v /PATH/TO/OUTDIR/:/scratch/out/
---rm sat4ec
---aoi_data <Path to AOI file or AOI as POLYGON or AOI as WKT>
---start_date <Begin of the time series, as YYYY-MM-DD>
---end_date <End of the time series, as YYYY-MM-DD>
---name <Name of the location, appears as title in the plot, e.g. BMW Regensburg>
---polarization <VH or VV polarization, default is VH>
---orbit <Ascending or descending orbit, announce as asc or des>
---columns <statistical parameters to plot, choose from [mean, std, min, max], default are [mean, std]>
+usage: main.py [-h] --aoi_data AOI [--aoi_split {true,false}] --out_dir OUT --start_date YYYY-MM-DD [--end_date YYYY-MM-DD] [--polarization {VH,VV}] [--aggregate {daily,monthly}] [--orbit {asc,des,both}]
+               [--name NAME] [--regression {spline,poly,rolling}] [--linear {true,false}] [--linear_fill {true,false}] [--overwrite_raw {true,false}]
+
+Compute aggregated statistics on Sentinel-1 data
+
+options:
+  -h, --help            show this help message and exit
+  --aoi_data AOI        Path to AOI.[GEOJSON, SHP, GPKG], AOI geometry as WKT, Polygon or Multipolygon.
+  --aoi_split {true,false}
+                        Wether to split the AOI into separate features or not, default: false.
+  --out_dir OUT         Path to output directory.
+  --start_date YYYY-MM-DD
+                        Begin of the time series, as YYYY-MM-DD, like 2020-11-01
+  --end_date YYYY-MM-DD
+                        End of the time series, as YYYY-MM-DD, like 2020-11-01
+  --polarization {VH,VV}
+                        Polarization of Sentinel-1 data, default: VH
+  --aggregate {daily,monthly}
+                        Aggregation interval, default: daily
+  --orbit {asc,des,both}
+                        Orbit of Sentinel-1 data, default: ascending
+  --name NAME           Name of the location, e.g. BMW Regensburg. Appears in the plot title.
+  --regression {spline,poly,rolling}
+                        Type of the regression, default: spline.
+  --linear {true,false}
+                        Wether to plot the linear regression with insensitive range or not, default: false.
+  --linear_fill {true,false}
+                        Wether to fill the linear insensitive range or not, default: false.
+  --overwrite_raw {true,false}
+                        Overwrite existing raw data if desired, default: false.
 ```
 
-`--polarization`, `--orbit` and `--columns` hold default values and do not have to be declared in intetended to use default parameters.
+## Python Module
 
-An exemplarily docker call looks like this:
+The main functionality is encapsulated inside the follwing scripts, setting the parameters and executing the main script.
 
+### Executing Python scripts
+
+If running on a single facility, adapt the settings in `sat4ec/execution/dev/exe_runner.py` and execute it.
+
+If running on multiple facilities, adapt the settings in `sat4ec/execution/dev/exe_collection_runner.py` and execute it.
+
+### Executing Jupyter Notebooks
+
+The code also runs in the [Euro Data Cube](https://www.eurodatacube.com/). There, the execution is triggered from jupyter notebooks, analogous to the exection of the Python scripts.
+
+If running on a single facility, adapt the settings in `exe_runner.ipynb` and execute it.
+
+If running on multiple facilities, adapt the settings in `exe_collection_runner.ipynb` and execute it.
+
+# Installation
+
+This project uses a `conda` environment. For installing dependencies use:
+
+```bash
+conda env create
 ```
-docker run
--v /PATH/TO/INPUT/DIR/:/scratch/in/
--v /PATH/TO/OUTDIR/:/scratch/out/
---rm sat4ec
---aoi_data /path/to/aoi.geojson
---start_date 2020-01-01
---end_date 2020-12-31
---name BMW Regensburg
---orbit des
+
+# Dependencies
+For the latest list of dependencies check the [`environment.yml`](environment.yml).
+
+# Development
+
+Some development guardrails are enforced via [`pre-commit`](https://pre-commit.com/). This is to
+ensure we follow similar code styles or it automatically cleans up jupyter notebooks.
+
+To install `pre-commit` (not necessary if you [installed the conda
+environment](#Installation)):
+
+```shell
+conda/pip install pre-commit
 ```
 
-## Results
+To initialize all pre-commit hooks, run:
 
-The default settings plot the aggregated mean Sentinel-1 backscatter per AOI with the aggregated standard deviation. All units are in dB. Each datapoint is represented by a distinct date with a 1 day resolution. This data is plotted in grey colors and already shows the timely variation of backscatter. To draw a clearer picture, mean and standard deviation data is interpolated with a weighted spline function. The spline weights were computed with `local_mean / global_mean`, giving datapoints exceeding the global mean a higher significance.
-
-![](docs/indicator_1_bmw_regensburg_splinedata_asc_VH.png)
-
-## Data
-
-### Sentinel Hub
-
-Sentinel-1 data downloaded via [Sentinel Hub](https://collections.sentinel-hub.com/sentinel-1-grd/) is the sole source for the statistical analysis. The data is requested as S1 GRD sigma0 and. Custom pre-processing steps include Lee speckle filtering and transformation into decibel [dB] values.
-
-### Google
-
-Sentinel-1 data downloaded via the Google Earth Engine was provided with several [pre-processing steps](https://developers.google.com/earth-engine/guides/sentinel1#sentinel-1-preprocessing). This data is used for raster visualizations alone.
-
-## Development
-
-### Execution
-If not intended to run with docker, e.g. for local testing, call and modify the [runner script](tests/sat4ec_runner.py).
-
-### Virtual environment
+```shell
+pre-commit install
 ```
-conda create -n sat4ec Python=3.11
-conda install matplotlib jupyterlab
-conda install gdal fiona shapely geopandas pandas seaborn
-conda install sentinelhub
+
+To test whether `pre-commit` works:
+
+```shell
+pre-commit run --all-files
 ```
+
+It will check all files tracked by git and apply the triggers set up in
+[`.pre-commit-config.yaml`](.pre-commit-config.yaml). That is, it will run triggers, possibly
+changing the contents of the file (e.g. `black` formatting). Once set up, `pre-commit` will run, as
+the name implies, prior to each `git commit`. In its current config, it will format code with
+`black` and `isort`, clean up `jupyter notebook` output cells, remove trailing whitespaces and will
+block large files to be committed. If it fails, one has to re-stage the affected files (`git add` or
+`git stage`), and re-commit.
+
+## Testing
+
+The code applies Python unit tests, located in `tests` with test data in `tests/testdata`.
+
+# Contributors
+The Sat4Ec project team includes (in alphabetical order):
+* Anghelea, Anca (ESA)
+* José Delgado (RHEA)
+* Krullikowski, Christian (DLR)
+* Martinis, Sandro (DLR)
+* Plank, Simon (DLR)
+* Schönenberger, Klara (Destatis)
+
+European Space Agency (ESA),
+German Aerospace Center (DLR),
+RHEA Group (RHEA),
+Federal Statistical Office of Germany (Destatis)
+
+# Licenses
+This software is licensed under the [Apache 2.0 License](LICENSE.txt).
+
+Copyright (c) 2024 German Aerospace Center (DLR) * German Remote Sensing Data Center * Department:
+Geo-Risks and Civil Security
+
+# Changelog
+
+See [changelog](CHANGELOG.md)
+
+# Contributing
+
+The development team welcomes contributions from the community.  For more detailed information, see our guide on [contributing](CONTRIBUTING.md) if you're interested in getting involved.
+
+# What is Sat4Ec?
+
+The project Sat4Ec is funded by the European Statistical Office (Eurostat). The project aims to estimate the gross domnestic product (GDP) from satellite time series in Germany.

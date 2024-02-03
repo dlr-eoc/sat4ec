@@ -1,21 +1,33 @@
+"""Configure execution parameters."""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+
 class Config:
+    """Encapsulate configuration to execute main script."""
+
     def __init__(
-        self,
-        orbit="asc",
-        aoi=None,
-        ext="geojson",
-        working_dir=None,
-        out_dir=None,
-        aoi_dir=None,
-        start=None,
-        end=None,
-        monthly=False,
-        regression="spline",
-        linear=False,
-        linear_fill=False,
-        aoi_split=False,
-        overwrite_raw=False,
-    ):
+        self: Config,
+        aoi: str,
+        working_dir: Path,
+        out_dir: Path,
+        aoi_dir: Path,
+        orbit: str = "asc",
+        ext: str = "geojson",
+        start: str | None = None,
+        end: str | None = None,
+        monthly: bool = False,
+        regression: str = "spline",
+        linear: bool = False,
+        linear_fill: bool = False,
+        aoi_split: bool = False,
+        overwrite_raw: bool = False,
+    ) -> None:
+        """Initialize Config class."""
         self.orbit = orbit
         self.pol = "VH"
         self.aoi_dir = aoi_dir
@@ -36,13 +48,13 @@ class Config:
         self._get_aoi_dir()
         self._get_aoi()
 
-    def _get_out_dir(self):
+    def _get_out_dir(self: Config) -> None:
         self.out_dir = self.working_dir.joinpath(self.out_dir, self.aoi)
 
-    def _get_aoi_dir(self):
+    def _get_aoi_dir(self: Config) -> None:
         self.aoi_dir = self.working_dir.joinpath(self.aoi_dir)
         self.aoi_dir.exists()
 
-    def _get_aoi(self):
+    def _get_aoi(self: Config) -> None:
         self.aoi = self.aoi_dir.joinpath(f"{self.aoi}.{self.ext}")
         self.aoi_name = self.aoi.stem

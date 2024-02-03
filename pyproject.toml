@@ -1,0 +1,66 @@
+[project]
+name = "sat4ec"
+dynamic = ["version"]
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.11"
+
+[tool.coverage.run]
+parallel = true
+
+[tool.coverage.report]
+exclude_also = [
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+show_missing = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-select = [
+    "ANN",
+    "ARG",
+    "B",
+    "BLE",
+    "C4",
+    "D",
+    "ERA",
+    "FIX",
+    "ICN",
+    "I",
+    "N",
+    "NPY",
+    "PIE",
+    "PL",
+    "PTH",
+    "Q",
+    "RET",
+    "RSE",
+    "RUF",
+    "SIM",
+    "T10",
+    "T20",
+    "TCH",
+    "TID",
+    "YTT",
+    "UP",
+    "W",
+]
+ignore = ["PLR0913"]
