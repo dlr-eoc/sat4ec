@@ -252,7 +252,7 @@ class TestAD(unittest.TestCase):
         self.assertTrue(
             anomaly_collection.out_dir.joinpath(
                 "anomalies",
-                f"indicator_1_anomalies_raw_single_aoi_monthly_{anomaly_collection.orbit}_{anomaly_collection.pol}.csv",
+                f"indicator_1_anomalies_single_aoi_monthly_{anomaly_collection.orbit}_{anomaly_collection.pol}.csv",
             ).exists()
         )
 
