@@ -23,6 +23,7 @@ class StacCollection:
         monthly: bool = False,
     ) -> None:
         """Initialize StacCollection class."""
+        self.dataframe = pd.DataFrame()
         self.features = features
         self.geometries = geometries
         self.orbit = orbit
@@ -30,7 +31,6 @@ class StacCollection:
         self.out_dir = out_dir
         self.monthly = monthly
         self.anomalies_df = None
-        self.dataframe = pd.DataFrame()
 
         self._get_data(data=data)
 
@@ -112,9 +112,9 @@ class StacItems(Config):
         """Initialize SatcItems class."""
         super().__init__()
 
+        self.dataframe = None  # output
         self.config = None
         self.catalog = None
-        self.dataframe = None  # output
         self.anomalies_df = anomalies_df
         self.fid = fid
         self.geometry = geometry

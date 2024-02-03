@@ -23,14 +23,13 @@ class TestGetData(unittest.TestCase):
         """Initialize TestGetData class."""
         super().__init__(*args, **kwargs)
         self.tear_down = True
-        self.out_dir = TEST_DIR.joinpath("output", "vw_wolfsburg")
-        self.data_dir = TEST_DIR.joinpath("orbit_input")
+        self.out_dir = TEST_DIR.joinpath("output", "bmw_regensburg")
         self.orbit = "asc"
         self.aoi_split = True
         self.pol = "VH"
         self.crs = CRS.WGS84
         self.aoi_collection = AOI(
-            data=TEST_DIR.joinpath("input", "AOIs", "vw_wolfsburg2subfeatures.geojson"),
+            data=TEST_DIR.joinpath("AOIs", "bmw_regensburg.geojson"),
             aoi_split=self.aoi_split,
         )
         (
@@ -41,7 +40,7 @@ class TestGetData(unittest.TestCase):
             self.raw_monthly_anomaly_data,
             self.linear_data,
             self.linear_monthly_data,
-        ) = prepare_test_dataframes(self.data_dir, aoi_split=True)
+        ) = prepare_test_dataframes(data_dir=TEST_DIR.joinpath("bmw_regensburg"), aoi_split=True)
         self._get_features()
         self._get_geometries()
         self.create_output_dir()
@@ -74,9 +73,9 @@ class TestGetData(unittest.TestCase):
     def test_dataframe_from_file(self: TestGetData) -> None:
         """Test read dataframe from Path."""
         stac_collection = StacCollection(
-            data=self.data_dir.joinpath(
+            data=TEST_DIR.joinpath("bmw_regensburg").joinpath(
                 "anomalies",
-                f"indicator_1_anomalies_regression_daily_aoi_split_{self.orbit}_VH.csv",
+                f"indicator_1_anomalies_regression_split_aoi_{self.orbit}_VH.csv",
             ),
         )
 
@@ -96,10 +95,12 @@ class TestGetData(unittest.TestCase):
         """Test read dataframe from file string."""
         stac_collection = StacCollection(
             data=str(
-                self.data_dir.joinpath(
+                TEST_DIR.joinpath("bmw_regensburg")
+                .joinpath(
                     "anomalies",
-                    f"indicator_1_anomalies_regression_daily_aoi_split_{self.orbit}_VH.csv",
-                ).absolute()
+                    f"indicator_1_anomalies_regression_split_aoi_{self.orbit}_VH.csv",
+                )
+                .absolute()
             ),
         )
 
