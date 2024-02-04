@@ -60,9 +60,13 @@ def plot_data(
 
 def run_indicator(_indicator: IData) -> IData:
     """Encapsulate call of Indicator class."""
-    _indicator.get_request_grd()
-    _indicator.get_data()
-    _indicator.stats_to_df()
+    if _indicator.online:
+        _indicator.get_request_grd()
+        _indicator.get_data()
+        _indicator.stats_to_df()
+
+    else:
+        _indicator.get_offline_data()
 
     return _indicator
 
@@ -76,6 +80,7 @@ def compute_raw_data(
     orbit: str = "asc",
     pol: str = "VH",
     monthly: bool = False,
+    online: bool = True,
 ) -> IData:
     """Fetch raw data from Sentinel Hub."""
     indicator = IData(
@@ -88,6 +93,7 @@ def compute_raw_data(
         orbit=orbit,
         pol=pol,
         monthly=monthly,
+        online=online,
     )
     existing_keyword, column_keyword = indicator.check_existing_data()
 
@@ -192,6 +198,7 @@ def main(
     aoi_split: bool = False,
     linear_fill: bool = False,
     overwrite_raw: bool = False,
+    online: bool = True,
 ) -> 0:
     """Encapsulate entry point for main functions."""
     orbit_collection = Orbits(orbit=in_orbit, monthly=monthly)
@@ -223,6 +230,7 @@ def main(
                     orbit=orbit,
                     pol=pol,
                     monthly=monthly,
+                    online=online,
                 )
                 subsets.add_subset(df=indicator.dataframe)
                 subsets.add_feature(feature)
@@ -256,15 +264,16 @@ def main(
             )
             orbit_collection.add_anomalies(anomalies=raw_anomalies, orbit=orbit)
 
-            get_s1_scenes(
-                data=raw_anomalies.dataframe,
-                features=subsets.features,
-                geometries=subsets.geometries,
-                orbit=orbit,
-                pol=pol,
-                out_dir=subsets.out_dir,
-                monthly=monthly,
-            )
+            if online:
+                get_s1_scenes(
+                    data=raw_anomalies.dataframe,
+                    features=subsets.features,
+                    geometries=subsets.geometries,
+                    orbit=orbit,
+                    pol=pol,
+                    out_dir=subsets.out_dir,
+                    monthly=monthly,
+                )
 
         else:
             reg_anomalies = compute_anomaly(
@@ -279,15 +288,16 @@ def main(
             )
             orbit_collection.add_anomalies(anomalies=reg_anomalies, orbit=orbit)
 
-            get_s1_scenes(
-                data=reg_anomalies.dataframe,
-                features=subsets.features,
-                geometries=subsets.geometries,
-                orbit=orbit,
-                pol=pol,
-                out_dir=subsets.out_dir,
-                monthly=monthly,
-            )
+            if online:
+                get_s1_scenes(
+                    data=reg_anomalies.dataframe,
+                    features=subsets.features,
+                    geometries=subsets.geometries,
+                    orbit=orbit,
+                    pol=pol,
+                    out_dir=subsets.out_dir,
+                    monthly=monthly,
+                )
 
     plot_data(
         orbit_collection=orbit_collection,
@@ -334,6 +344,7 @@ def run() -> int:
     linear_fill = parse_boolean(param=args.linear_fill, literal="linear_fill")
     aoi_split = parse_boolean(param=args.aoi_split, literal="aoi_split")
     overwrite_raw = parse_boolean(param=args.overwrite_raw, literal="overwrite_raw")
+    online = parse_boolean(param=args.online_data, literal="online_data")
 
     if args.aggregate[0] == "daily":
         aggregate = False
@@ -360,6 +371,7 @@ def run() -> int:
         aoi_split=aoi_split,
         linear_fill=linear_fill,
         overwrite_raw=overwrite_raw,
+        online=online,
     )
 
     return 0
@@ -453,6 +465,13 @@ def parse_commandline_args(args: list[str] | None = None) -> argparse.Namespace:
         help="Overwrite existing raw data if desired, default: false.",
         choices=["true", "false"],
         default="false",
+    )
+    parser.add_argument(
+        "--online_data",
+        nargs=1,
+        help="Load statistics from Sentinel Hub or use offline data only, default: true.",
+        choices=["true", "false"],
+        default="true",
     )
 
     return parser.parse_args(args)

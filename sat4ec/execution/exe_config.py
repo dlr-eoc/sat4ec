@@ -26,6 +26,7 @@ class Config:
         linear_fill: bool = False,
         aoi_split: bool = False,
         overwrite_raw: bool = False,
+        online: bool = True,
     ) -> None:
         """Initialize Config class."""
         self.orbit = orbit
@@ -43,6 +44,7 @@ class Config:
         self.linear_fill = linear_fill
         self.aoi_split = aoi_split
         self.overwrite_raw = overwrite_raw
+        self.online = online
 
         self._get_out_dir()
         self._get_aoi_dir()
