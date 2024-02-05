@@ -10,7 +10,7 @@ if __name__ == "__main__":
         working_dir=Path(r"/mnt/data1/gitlab/sat4ec/data"),
         out_dir=Path(r"output"),
         orbit="des",  # ascending or descending orbit or both
-        aoi="ford_cologne",
+        aoi="mercedes_bremen",
         ext="geojson",
         start="2021-03-01",  # comment this line or enter None if using default start date
         end="2021-05-01",  # comment this line or enter None if using automatic end date
@@ -20,6 +20,7 @@ if __name__ == "__main__":
         linear_fill=False,
         aoi_split=True,
         overwrite_raw=False,
+        online=False,
     )
     prod = Production(config=conf)
     prod.workflow(_path=r"/")

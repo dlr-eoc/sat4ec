@@ -38,6 +38,7 @@ if __name__ == "__main__":
             linear=True,
             linear_fill=False,
             aoi_split=True,
+            online=False,
         )
         prod = Production(config=conf)
         prod.workflow()

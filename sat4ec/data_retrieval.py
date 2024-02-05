@@ -72,6 +72,7 @@ class IndicatorData(Config):
         orbit: str = "asc",
         pol: str = "VH",
         monthly: bool = False,
+        online: bool = True,  # load statistics from Sentinel Hub, False if solely using offline data
     ) -> None:
         """Initialize IndicatorData class."""
         super().__init__()
@@ -98,6 +99,7 @@ class IndicatorData(Config):
         self.thresholds = {"min": None, "max": None}
         self.outliers = None
         self.monthly = monthly
+        self.online = online
 
         self.get_start_end_date(start=start_date, end=end_date)
         self._get_geometry()
@@ -341,6 +343,10 @@ class IndicatorData(Config):
     def remove_duplicate_date(self: IndicatorData) -> None:
         """Remove duplicate dates."""
         self.dataframe = self.dataframe[~self.dataframe.index.duplicated()]
+
+    def get_offline_data(self: IndicatorData) -> None:
+        """Get dataframe from disk as using Sentinel Hub is not desired."""
+        self.dataframe = self.archive_data
 
     def slice_dates(self: IndicatorData) -> None:
         """Slice a specific part of the time series."""

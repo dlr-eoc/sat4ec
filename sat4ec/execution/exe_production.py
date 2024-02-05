@@ -54,6 +54,8 @@ class Production:
                 "true" if self.config.aoi_split else "false",
                 "--overwrite_raw",
                 "true" if self.config.overwrite_raw else "false",
+                "--online_data",
+                "true" if self.config.online else "false",
             ],
             capture_output=False,
             check=False,
