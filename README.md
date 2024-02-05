@@ -118,7 +118,7 @@ The code applies Python unit tests, located in `tests` with test data in `tests/
 # Contributors
 The Sat4Ec project team includes (in alphabetical order):
 * Anghelea, Anca (ESA)
-* José Delgado (RHEA)
+* Delgado, José (RHEA)
 * Krullikowski, Christian (DLR)
 * Martinis, Sandro (DLR)
 * Plank, Simon (DLR)
@@ -145,4 +145,4 @@ The development team welcomes contributions from the community.  For more detail
 
 # What is Sat4Ec?
 
-The project Sat4Ec is funded by the European Statistical Office (Eurostat). The project aims to estimate the gross domnestic product (GDP) from satellite time series in Germany.
+The project Sat4Ec is funded by the European Statistical Office (Eurostat). The project aims to estimate the gross domnestic product (GDP) from satellite time series in Germany. The idea observing car occupancy rates and linking those to economic variables was originally developed by ESA and the RHEA Group.
