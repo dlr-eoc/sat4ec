@@ -2,14 +2,14 @@
 
 `sat4ec` is a Python package to monitor occupancy rates of automotive producing facilities by exploiting Sentinel-1 IW GRD data.
 
-<img src="docs/aoi_example.png" width="300">
+<img src="docs/readme_images/aoi_example.png" width="300">
 
 Cars stored on parking lots of automotive producing facilities interact with the Sentinel-1 SAR wave. Their presence or absence either returns a strong or a weak signal. This algorithm aggregates a single mean SAR backscatter value for each AOI and computes a time series. Timestamps of high or low parking lot occupancy rates can be identified through this.
 
-<img src="docs/s1_pixels.png" width="250">
-<img src="docs/s1_pixels_mean.png" width="250">
+<img src="docs/readme_images/s1_pixels.png" width="250">
+<img src="docs/readme_images/s1_pixels_mean.png" width="250">
 
-<img src="docs/bmw.png" width="505">
+<img src="docs/readme_images/bmw.png" width="505">
 
 # Quickstart
 
