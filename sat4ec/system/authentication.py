@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from sentinelhub import SHConfig
-from system.helper_functions import load_yaml
+#from system.helper_functions import load_yaml
 
 
 class Config:
@@ -17,7 +17,7 @@ class Config:
         self.config = None
 
         self._check_directory()
-        self._get_credentials()
+        # self._get_credentials()
         self._get_config()
 
     @staticmethod

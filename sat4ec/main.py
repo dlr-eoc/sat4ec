@@ -5,6 +5,7 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
+import os 
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -17,7 +18,7 @@ from stac import StacCollection
 from system.helper_functions import get_last_month, mutliple_orbits_raw_range
 from system.orbit_collections import OrbitCollection as Orbits
 from system.subset_collections import SubsetCollection as Subsets
-
+from system.authentication import Config
 
 def plot_data(
     out_dir: Path,
@@ -101,7 +102,7 @@ def compute_raw_data(
         indicator = run_indicator(indicator)
 
     elif existing_keyword and not column_keyword:  # archive data present
-        # decide if executing following code: indicator = run_indicator(indicator)
+        indicator = run_indicator(indicator)
         pass
 
     # check if new feature and earlier and/or future data required
@@ -213,9 +214,11 @@ def main(
                 overwrite_raw=overwrite_raw,
                 aoi_split=aoi_split,
             )
+            print("Checking for existing raw data...")
             subsets.check_existing_raw()
 
             for _, feature in enumerate(aoi_collection.get_feature()):
+                # print(f"Computing raw data for feature {feature}")
                 indicator = compute_raw_data(
                     archive_data=subsets.archive_dataframe.loc[
                         :,
@@ -241,16 +244,20 @@ def main(
         if len(subsets.features) > 1:
             subsets.aggregate_columns()
 
+        print("Saving raw data...")
         subsets.save_daily_raw()  # save raw data
 
         if monthly:
             subsets.monthly_aggregate()
             subsets.save_monthly_raw()  # save monthly raw data
 
+        print("Applying regression...")
         subsets.apply_regression(mode=regression)
+        #print("Saving regression results...")
         subsets.save_regression(mode=regression)  # save spline data
         orbit_collection.add_subsets(subsets=subsets, orbit=orbit)
 
+        print("Computing anomalies...")
         if monthly:
             raw_anomalies = compute_anomaly(
                 df=subsets.dataframe,
@@ -265,6 +272,7 @@ def main(
             orbit_collection.add_anomalies(anomalies=raw_anomalies, orbit=orbit)
 
             if online:
+                #print("Getting scenes...")
                 get_s1_scenes(
                     data=raw_anomalies.dataframe,
                     features=subsets.features,
@@ -289,6 +297,7 @@ def main(
             orbit_collection.add_anomalies(anomalies=reg_anomalies, orbit=orbit)
 
             if online:
+                #print("Getting scenes...")
                 get_s1_scenes(
                     data=reg_anomalies.dataframe,
                     features=subsets.features,
@@ -299,6 +308,7 @@ def main(
                     monthly=monthly,
                 )
 
+    print("Plotting data...")
     plot_data(
         orbit_collection=orbit_collection,
         out_dir=subsets.out_dir,
@@ -328,6 +338,8 @@ def parse_boolean(param: str, literal: str) -> bool:
 
 def run() -> int:
     """Encapsulate entry point for CLI."""
+        
+    print("Parsing arguments...")
     args = parse_commandline_args()
 
     end_date = get_last_month() if not args.end_date or args.end_date == "None" else args.end_date

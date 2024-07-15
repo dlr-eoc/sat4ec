@@ -27,10 +27,11 @@ class Config:
         aoi_split: bool = False,
         overwrite_raw: bool = False,
         online: bool = True,
+        pol: str = "VH",
     ) -> None:
         """Initialize Config class."""
         self.orbit = orbit
-        self.pol = "VH"
+        self.pol = pol #"VH"
         self.aoi_dir = aoi_dir
         self.aoi = aoi
         self.ext = ext
