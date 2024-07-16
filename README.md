@@ -4,7 +4,7 @@
 
 <img src="docs/readme_images/aoi_example.png" width="300">
 
-Cars stored on parking lots of automotive producing facilities interact with the Sentinel-1 SAR wave. Their presence or absence either returns a strong or a weak signal. This algorithm aggregates a single mean SAR backscatter value for each AOI and computes a time series. Timestamps of high or low parking lot occupancy rates can be identified through this.
+Cars stored on parking lots of automotive producing facilities interact with the Sentinel-1 SAR wave: their presence or absence returns a strong or weak signal, respectively. The Sat4Ec algorithm aggregates a single mean SAR backscatter value for each AOI and computes a time series. In this way, timestamps of high or low parking lot occupancy rates can be identified.
 
 <img src="docs/readme_images/s1_pixels.png" width="250">
 <img src="docs/readme_images/s1_pixels_mean.png" width="250">
@@ -52,21 +52,17 @@ options:
 
 ## Python Module
 
-The main functionality is encapsulated inside the follwing scripts, setting the parameters and executing the main script.
+The main functionality is encapsulated inside the follwing scripts.
+
+### Executing Jupyter Notebook
+
+The algorithm can simply be run from the jupyter notebook `sat4ec.ipynb`. 
 
 ### Executing Python scripts
 
 If running on a single facility, adapt the settings in `sat4ec/execution/dev/exe_runner.py` and execute it.
 
 If running on multiple facilities, adapt the settings in `sat4ec/execution/dev/exe_collection_runner.py` and execute it.
-
-### Executing Jupyter Notebooks
-
-The code also runs in the [Euro Data Cube](https://www.eurodatacube.com/). There, the execution is triggered from jupyter notebooks, analogous to the exection of the Python scripts.
-
-If running on a single facility, adapt the settings in `exe_runner.ipynb` and execute it.
-
-If running on multiple facilities, adapt the settings in `exe_collection_runner.ipynb` and execute it.
 
 # Installation
 
@@ -119,6 +115,7 @@ The code applies Python unit tests, located in `tests` with test data in `tests/
 The Sat4Ec project team includes (in alphabetical order):
 * Anghelea, Anca (ESA)
 * Delgado, José (RHEA)
+* Kraft, Franziska (DLR)
 * Krullikowski, Christian (DLR)
 * Martinis, Sandro (DLR)
 * Plank, Simon (DLR)
