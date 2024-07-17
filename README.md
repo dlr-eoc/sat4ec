@@ -13,9 +13,16 @@ Cars stored on parking lots of automotive producing facilities interact with the
 
 # Quickstart
 
+## Python Module
+
+The main functionality is encapsulated inside the following scripts:
+
+- The algorithm can simply be run from the **Jupyter notebook** `sat4ec.ipynb`. 
+- Alternatively, the algorithm can also be executed from the **Python script** `sat4ec/execution/dev/exe_runner.py`.
+
 ## CLI
 
-This package provides standalone CLI functionality
+This package also provides standalone CLI functionality:
 
 ```
 usage: main.py [-h] --aoi_data AOI [--aoi_split {true,false}] --out_dir OUT --start_date YYYY-MM-DD [--end_date YYYY-MM-DD] [--polarization {VH,VV}] [--aggregate {daily,monthly}] [--orbit {asc,des,both}]
@@ -49,20 +56,6 @@ options:
   --overwrite_raw {true,false}
                         Overwrite existing raw data if desired, default: false.
 ```
-
-## Python Module
-
-The main functionality is encapsulated inside the follwing scripts.
-
-### Executing Jupyter Notebook
-
-The algorithm can simply be run from the jupyter notebook `sat4ec.ipynb`. 
-
-### Executing Python scripts
-
-If running on a single facility, adapt the settings in `sat4ec/execution/dev/exe_runner.py` and execute it.
-
-If running on multiple facilities, adapt the settings in `sat4ec/execution/dev/exe_collection_runner.py` and execute it.
 
 # Installation
 
