@@ -13,5 +13,6 @@ credentials
 tests/testdata
 data
 docs
+output
 
 !tests/testdata/AOIs/*.geojson

@@ -24,9 +24,13 @@ class Production:
 
     def workflow(self: Production, _path: str = r"sat4ec") -> None:
         """Set workflow parameters."""
-        subprocess.run(
+        python_command = "python" if os.name == "nt" else "python3"
+        env = os.environ.copy()
+
+        #subprocess.run(
+        process = subprocess.Popen(
             [
-                "python3",
+                python_command,
                 f"{Path(_path).joinpath('main.py')}",
                 "--aoi_data",
                 self.config.aoi,
@@ -57,6 +61,23 @@ class Production:
                 "--online_data",
                 "true" if self.config.online else "false",
             ],
-            capture_output=False,
-            check=False,
+            # capture_output=False,
+            # check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            env=env,
         )
+
+        # Capture and print stdout and stderr
+        for line in process.stdout:
+            print(line.strip())
+        for line in process.stderr:
+            print(line.strip())
+
+        # Wait for the process to finish and get the return code
+        return_code = process.wait()
+        if return_code == 0:
+            print("Subprocess completed successfully.")
+        else:
+            print("Subprocess failed.")

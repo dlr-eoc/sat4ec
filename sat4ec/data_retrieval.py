@@ -191,9 +191,11 @@ class IndicatorData(Config):
         """Check for existing archive data."""
         if self.archive_data is not None:  # if some raw date has already been saved
             if f"{self.fid}_mean" in self.archive_data.columns:  # feature exists in archive data
+                #print("Feature already exists in archive.")
                 return True, True
 
         else:  # no archive data
+            #print("Feature does not exist in archive.")
             return False, None
 
         return True, False  # archive data present, but required feature not recorded
@@ -293,7 +295,13 @@ class IndicatorData(Config):
 
     def get_data(self: IndicatorData) -> None:
         """Extract data from request."""
-        self.stats = self.request.get_data()[0]
+        #self.stats = self.request.get_data()[0]
+
+        try:
+            self.stats = self.request.get_data()[0]
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+
 
     @staticmethod
     def get_band_stats(bands: dict) -> Generator[Band, Band]:
@@ -361,10 +369,10 @@ class IndicatorData(Config):
         # if closest available date is in another month, get the closest date that comes later
         # by that ensure that monthly statistics remain valid
         # e.g. if start_slice = 2021-03-01 but closest date is 2021-02-28, select next date like 2021-03-02
-        if pd.to_datetime(start_slice).month != closest_start.month.values[0]:
-            closest_start = self.dataframe.iloc[[np.searchsorted(self.dataframe.index, start_slice)]].index
+        # if pd.to_datetime(start_slice).month != closest_start.month.values[0]:
+        #     closest_start = self.dataframe.iloc[[np.searchsorted(self.dataframe.index, start_slice)]].index
 
-        if pd.to_datetime(end_slice).month != closest_end.month.values[0]:
-            closest_end = self.dataframe.iloc[[np.searchsorted(self.dataframe.index, end_slice)]].index
+        # if pd.to_datetime(end_slice).month != closest_end.month.values[0]:
+        #     closest_end = self.dataframe.iloc[[np.searchsorted(self.dataframe.index, end_slice)]].index
 
         self.dataframe = self.dataframe.loc[closest_start[0] : closest_end[0]]

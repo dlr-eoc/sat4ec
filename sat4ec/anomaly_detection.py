@@ -248,7 +248,7 @@ class Anomaly:
             negative[self.column].subtract(self.global_mean).abs().mul(2)
         )
 
-        self.dataframe.copy().loc[
+        self.dataframe.loc[
             :, f"{self.fid}_anomaly"  # all rows  # index of column
         ] = False  # boolean values were overwritten before and must be reset
         self.dataframe.loc[
@@ -266,6 +266,6 @@ class Anomaly:
         """Find minima of data curve."""
         self.flip_data()  # flip data to make original minima to maximas that can be detected
         self.find_maxima()  # find maxima (originally minima) on dataframe
-        self.dataframe.copy().loc[:, self.column] = self.dataframe_bak.loc[
+        self.dataframe.loc[:, self.column] = self.dataframe_bak.loc[
             :, self.column
         ]  # revert flipped data column to original state

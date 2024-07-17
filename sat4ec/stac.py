@@ -89,7 +89,9 @@ class StacCollection:
 
     def sort_columns(self: StacCollection) -> None:
         """Sort dataframe columns."""
-        self.dataframe = self.dataframe[["interval_from"], *sorted(self.dataframe.columns[1:])]
+        #self.dataframe = self.dataframe[["interval_from"], *sorted(self.dataframe.columns[1:])]
+        sorted_columns = ["interval_from"] + sorted(col for col in self.dataframe.columns if col != "interval_from")
+        self.dataframe = self.dataframe[sorted_columns]
 
     def save(self: StacCollection) -> None:
         """Save dataframe with Sentinel-1 scene names."""
