@@ -43,8 +43,8 @@ class Plots:
         self.orbit = orbit
         self.pol = pol
         self.monthly = monthly
-        self.linear = linear  # wether to plot linear regression or not
-        self.linear_fill = linear_fill  # wether to plot linear insensitive area or not
+        self.linear = linear  # whether to plot linear regression or not
+        self.linear_fill = linear_fill  # whether to plot linear insensitive area or not
         self.aoi_split = aoi_split
         self.max_cols = max_cols
         self._get_subplots()
