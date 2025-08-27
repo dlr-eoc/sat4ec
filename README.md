@@ -6,7 +6,7 @@
 
 Cars stored on parking lots of automotive producing facilities interact with the Sentinel-1 SAR wave: their presence or absence returns a strong or weak signal, respectively. The Sat4Ec algorithm aggregates a single mean SAR backscatter value for each AOI and computes a time series. In this way, timestamps of high or low parking lot occupancy rates can be identified.
 
-**Example Output for BMW Regensburg**
+**Example Output for BMW Regensburg**  
 <img src="docs/readme_images/s1_pixels.png" width="250"> <img src="docs/readme_images/s1_pixels_mean.png" width="250">
 <img src="docs/readme_images/bmw.png" width="505">
 
