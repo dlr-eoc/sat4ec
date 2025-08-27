@@ -1,6 +1,6 @@
 # Sat4Ec
 
-`sat4ec` is a Python package to monitor occupancy rates of automotive producing facilities by exploiting Sentinel-1 IW GRD data.
+`sat4ec` is a Python package to monitor occupancy rates of German automotive producing sites by exploiting Sentinel-1 IW GRD data.
 
 <img src="docs/readme_images/aoi_example.png" width="300">
 
@@ -11,7 +11,14 @@ Cars stored on parking lots of automotive producing facilities interact with the
 
 <img src="docs/readme_images/bmw.png" width="505">
 
+The following peer-reviewed publication describes the methods and validation process in more detail:
+> Kraft, F., Martinis, S., Krullikowski, C., Plank, S., Anghelea, A., Delago Blasco, J. M., Schönenberger, K., Köhlmann, M., & Brauchler, M. (2025). Satellite Data for Economic Insights: Towards Tracking Automotive Production in Germany with Sentinel-1 for Economic Nowcasting. <i>IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing</i>, 1–10. https://doi.org/10.1109/JSTARS.2025.3601351
+
 # Quickstart
+
+## Prerequisites
+
+The `sat4ec` indicator requires an active [SentinelHub](https://www.sentinel-hub.com/) subscription or [Copernicus Data Space Ecosystem (CDSE)](https://dataspace.copernicus.eu/) registration.
 
 ## Python Module
 
@@ -107,7 +114,7 @@ The code applies Python unit tests, located in `tests` with test data in `tests/
 # Contributors
 The Sat4Ec project team includes (in alphabetical order):
 * Anghelea, Anca (ESA)
-* Delgado, José (RHEA)
+* Delgado Blasco, José Manuel (Ranstad)
 * Kraft, Franziska (DLR)
 * Krullikowski, Christian (DLR)
 * Martinis, Sandro (DLR)
@@ -116,7 +123,7 @@ The Sat4Ec project team includes (in alphabetical order):
 
 European Space Agency (ESA),
 German Aerospace Center (DLR),
-RHEA Group (RHEA),
+Randstad Italia SPA (Ranstad),
 Federal Statistical Office of Germany (Destatis)
 
 # Licenses
