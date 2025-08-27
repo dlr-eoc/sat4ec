@@ -5,9 +5,9 @@ from pathlib import Path
 import os
 
 from sentinelhub import SHConfig
-# from oauthlib.oauth2 import BackendApplicationClient
-# from requests_oauthlib import OAuth2Session
-#from system.helper_functions import load_yaml
+from sentinelhub.download.sentinelhub_statistical_client import SentinelHubStatisticalDownloadClient
+
+# from system.helper_functions import load_yaml
 
 
 class Config:
@@ -29,11 +29,40 @@ class Config:
             Path(__file__).parent.mkdir(parents=True)
 
     def _get_config(self: Config) -> None:
-        """Transfer credentials to Sentinel Hub."""
+        """Transfer credentials to Sentinel Hub with correct base URL."""
         self.config = SHConfig()
 
         self.config.sh_client_id = os.environ.get("SH_CLIENT_ID") #self.id
         self.config.sh_client_secret = os.environ.get("SH_CLIENT_SECRET") #self.secret
+
+        # defining correct environment for data access
+        env = os.environ.get("SH_ENV", "commercial").lower()
+
+        if env == "cdse":
+            self.config.sh_base_url = "https://sh.dataspace.copernicus.eu"
+            self.config.sh_token_url = (
+                "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
+            )
+
+        else:  # commercial
+            self.config.sh_base_url = "https://services.sentinel-hub.com"
+            self.config.sh_token_url = (
+                "https://services.sentinel-hub.com/auth/realms/main/protocol/openid-connect/token"
+            )
+
+        print(f"[DEBUG Config] Using environment: {env}")
+        print(f"[DEBUG Config] sh_base_url = {self.config.sh_base_url}")
+        print(f"[DEBUG Config] sh_token_url = {self.config.sh_token_url}")
+
+        _original_execute_download = SentinelHubStatisticalDownloadClient._execute_download
+
+        def _execute_download_patched(self, request):
+            """Force statistical requests to use the correct base URL from config."""
+            if hasattr(self, "config") and getattr(self.config, "sh_base_url", None):
+                request.url = f"{self.config.sh_base_url}/api/v1/statistics"
+            return _original_execute_download(self, request)
+
+        SentinelHubStatisticalDownloadClient._execute_download = _execute_download_patched
 
     # def _get_credentials(self: Config) -> None:
     #     """Read credentials from file."""
