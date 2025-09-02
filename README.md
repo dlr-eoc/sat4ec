@@ -11,7 +11,7 @@ Cars stored on parking lots of automotive producing facilities interact with the
 <img src="docs/readme_images/bmw.png" width="505">
 
 The following peer-reviewed publication describes the methods and validation process in more detail:
-> Kraft, F., Martinis, S., Krullikowski, C., Plank, S., Anghelea, A., Delago Blasco, J. M., Schönenberger, K., Köhlmann, M., & Brauchler, M. (2025). Satellite Data for Economic Insights: Towards Tracking Automotive Production in Germany with Sentinel-1 for Economic Nowcasting. <i>IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing</i>, 1–10. https://doi.org/10.1109/JSTARS.2025.3601351
+> Kraft, F., Martinis, S., Krullikowski, C., Plank, S., Anghelea, A., Delago Blasco, J. M., Schönenberger, K., Köhlmann, M., & Brauchler, M. (2025). Satellite Data for Economic Insights: Towards Tracking Automotive Production in Germany with Sentinel-1 for Economic Nowcasting. <i>IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing</i>. https://doi.org/10.1109/JSTARS.2025.3601351
 
 # Quickstart
 
