@@ -141,4 +141,4 @@ The development team welcomes contributions from the community.  For more detail
 
 # What is Sat4Ec?
 
-The project Sat4Ec is funded by the European Statistical Office (Eurostat). The project aims to estimate the gross domnestic product (GDP) from satellite time series in Germany. The idea observing car occupancy rates and linking those to economic variables was originally developed by ESA and the RHEA Group.
+The project ‘Satellite-based economic flash estimation (Sat4Ec)’ was funded by the European Statistical Office (Eurostat) as part of the European Union's Single Market Programme in the thematic area SMP-ESS-2022-GEOS-IBA-REGIO (project-ID: 101113054). The project aimed to develop economic indicators from satellite time series, which could support estimations of the gross domestic product (GDP) in Germany. The idea of observing production parking lot occupancy rates and linking those to economic variables was originally developed by ESA and the RHEA Group.
