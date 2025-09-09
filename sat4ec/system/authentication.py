@@ -50,10 +50,6 @@ class Config:
                 "https://services.sentinel-hub.com/auth/realms/main/protocol/openid-connect/token"
             )
 
-        print(f"[DEBUG Config] Using environment: {env}")
-        print(f"[DEBUG Config] sh_base_url = {self.config.sh_base_url}")
-        print(f"[DEBUG Config] sh_token_url = {self.config.sh_token_url}")
-
         _original_execute_download = SentinelHubStatisticalDownloadClient._execute_download
 
         def _execute_download_patched(self, request):
