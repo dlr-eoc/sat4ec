@@ -77,7 +77,7 @@ class IndicatorData(Config):
         """Initialize IndicatorData class."""
         super().__init__()
         self.dataframe = pd.DataFrame()
-        self.config = None
+        #self.config = None
         self.archive_data = archive_data
         self.aoi = aoi
         self.fid = fid

@@ -1,17 +1,23 @@
 # Sat4Ec
 
-`sat4ec` is a Python package to monitor occupancy rates of automotive producing facilities by exploiting Sentinel-1 IW GRD data.
+`sat4ec` is a Python package to monitor occupancy rates of German automotive producing sites by exploiting Sentinel-1 IW GRD data.
 
 <img src="docs/readme_images/aoi_example.png" width="300">
 
 Cars stored on parking lots of automotive producing facilities interact with the Sentinel-1 SAR wave: their presence or absence returns a strong or weak signal, respectively. The Sat4Ec algorithm aggregates a single mean SAR backscatter value for each AOI and computes a time series. In this way, timestamps of high or low parking lot occupancy rates can be identified.
 
-<img src="docs/readme_images/s1_pixels.png" width="250">
-<img src="docs/readme_images/s1_pixels_mean.png" width="250">
-
+**Example Output for BMW Regensburg**  
+<img src="docs/readme_images/s1_pixels.png" width="250"> <img src="docs/readme_images/s1_pixels_mean.png" width="250">
 <img src="docs/readme_images/bmw.png" width="505">
 
+The following peer-reviewed publication describes the methods and validation process in more detail:
+> Kraft, F., Martinis, S., Krullikowski, C., Plank, S., Anghelea, A., Delago Blasco, J. M., Schönenberger, K., Köhlmann, M., & Brauchler, M. (2025). Satellite Data for Economic Insights: Towards Tracking Automotive Production in Germany with Sentinel-1 for Economic Nowcasting. <i>IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing</i>. https://doi.org/10.1109/JSTARS.2025.3601351
+
 # Quickstart
+
+## Prerequisites
+
+The `sat4ec` indicator requires an active [SentinelHub](https://www.sentinel-hub.com/) subscription or [Copernicus Data Space Ecosystem (CDSE)](https://dataspace.copernicus.eu/) registration.
 
 ## Python Module
 
@@ -107,7 +113,7 @@ The code applies Python unit tests, located in `tests` with test data in `tests/
 # Contributors
 The Sat4Ec project team includes (in alphabetical order):
 * Anghelea, Anca (ESA)
-* Delgado, José (RHEA)
+* Delgado Blasco, José Manuel (Ranstad)
 * Kraft, Franziska (DLR)
 * Krullikowski, Christian (DLR)
 * Martinis, Sandro (DLR)
@@ -116,7 +122,7 @@ The Sat4Ec project team includes (in alphabetical order):
 
 European Space Agency (ESA),
 German Aerospace Center (DLR),
-RHEA Group (RHEA),
+Randstad Italia SPA (Ranstad),
 Federal Statistical Office of Germany (Destatis)
 
 # Licenses
@@ -135,4 +141,4 @@ The development team welcomes contributions from the community.  For more detail
 
 # What is Sat4Ec?
 
-The project Sat4Ec is funded by the European Statistical Office (Eurostat). The project aims to estimate the gross domnestic product (GDP) from satellite time series in Germany. The idea observing car occupancy rates and linking those to economic variables was originally developed by ESA and the RHEA Group.
+The project ‘Satellite-based economic flash estimation (Sat4Ec)’ was funded by the European Statistical Office (Eurostat) as part of the European Union's Single Market Programme in the thematic area SMP-ESS-2022-GEOS-IBA-REGIO (project-ID: 101113054). The project aimed to develop economic indicators from satellite time series, which could support estimations of the gross domestic product (GDP) in Germany. The idea of observing production parking lot occupancy rates and linking those to economic variables was originally developed by ESA and the RHEA Group.
