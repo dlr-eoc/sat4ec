@@ -115,7 +115,7 @@ class StacItems(Config):
         super().__init__()
 
         self.dataframe = None  # output
-        self.config = None
+        # self.config = None
         self.catalog = None
         self.anomalies_df = anomalies_df
         self.fid = fid
