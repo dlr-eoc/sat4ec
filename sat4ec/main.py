@@ -218,7 +218,7 @@ def main(
             subsets.check_existing_raw()
 
             for _, feature in enumerate(aoi_collection.get_feature()):
-                print(f"Computing raw data for feature {feature}")
+                # print(f"Computing raw data for feature {feature}")
                 indicator = compute_raw_data(
                     archive_data=subsets.archive_dataframe.loc[
                         :,
